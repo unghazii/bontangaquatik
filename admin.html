@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - Bontang Aquatik</title>
+  <meta name="description" content="Panel admin Bontang Aquatik untuk mengelola peserta, jadwal, kehadiran, dan rapor.">
+  <meta name="robots" content="noindex, nofollow">
+
+  <link rel="icon" type="image/jpeg" href="assets/images/logo.jpeg">
+  <link rel="apple-touch-icon" href="assets/images/logo.jpeg">
+
+  <link rel="stylesheet" href="assets/css/global.css">
+  <link rel="stylesheet" href="assets/css/navbar.css">
+  <link rel="stylesheet" href="assets/css/admin.css">
+</head>
+<body>
+
+  <div class="admin-dashboard">
+    <div class="container">
+
+      <!-- Admin Header -->
+      <div class="admin-header">
+        <div>
+          <h1>Admin Panel</h1>
+          <p>Login sebagai <span id="admin-username">admin</span></p>
+        </div>
+        <button id="btn-refresh" class="btn btn-secondary btn-sm">Refresh Data</button>
+      </div>
+
+      <!-- Stats -->
+      <div class="admin-stats">
+        <div class="admin-stat">
+          <div class="icon-bg blue">👥</div>
+          <div>
+            <div class="stat-label">Total Peserta</div>
+            <div class="stat-value" id="stat-total-peserta">0</div>
+          </div>
+        </div>
+        <div class="admin-stat">
+          <div class="icon-bg green">✅</div>
+          <div>
+            <div class="stat-label">Peserta Aktif</div>
+            <div class="stat-value" id="stat-aktif-peserta">0</div>
+          </div>
+        </div>
+        <div class="admin-stat">
+          <div class="icon-bg orange">📅</div>
+          <div>
+            <div class="stat-label">Total Jadwal</div>
+            <div class="stat-value" id="stat-total-jadwal">0</div>
+          </div>
+        </div>
+        <div class="admin-stat">
+          <div class="icon-bg purple">📊</div>
+          <div>
+            <div class="stat-label">Total Kehadiran</div>
+            <div class="stat-value" id="stat-total-kehadiran">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="peserta">👥 Data Peserta</button>
+        <button class="tab-btn" data-tab="jadwal">📅 Jadwal Pelatihan</button>
+        <button class="tab-btn" data-tab="kehadiran">📊 Data Kehadiran</button>
+      </div>
+
+      <!-- TAB: PESERTA -->
+      <div class="tab-content active" id="tab-peserta">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <input type="text" id="search-peserta" class="search-input" placeholder="🔍 Cari nama / username / WA...">
+            <select id="filter-peserta-kelas" class="filter-select">
+              <option value="">Semua Kelas</option>
+              <option value="Grup A">Grup A</option>
+              <option value="Grup B">Grup B</option>
+              <option value="Grup C">Grup C</option>
+            </select>
+            <select id="filter-peserta-paid" class="filter-select">
+              <option value="">Semua Status</option>
+              <option value="paid">Sudah Lunas</option>
+              <option value="unpaid">Belum Lunas</option>
+            </select>
+            <select id="sort-peserta" class="filter-select">
+              <option value="">Urutkan</option>
+              <option value="nama-asc">Nama A→Z</option>
+              <option value="nama-desc">Nama Z→A</option>
+              <option value="usia-asc">Usia ↑</option>
+              <option value="usia-desc">Usia ↓</option>
+              <option value="persen-desc">Kehadiran Tertinggi</option>
+              <option value="persen-asc">Kehadiran Terendah</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Nama</th>
+                <th>Username</th>
+                <th>Usia</th>
+                <th>WhatsApp</th>
+                <th>Kelas</th>
+                <th>Mulai</th>
+                <th>Akhir</th>
+                <th>Pembayaran</th>
+                <th>Hadir/Total</th>
+                <th>Persentase</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-peserta">
+              <tr><td colspan="11" style="text-align:center;padding:30px;">Memuat...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB: JADWAL -->
+      <div class="tab-content" id="tab-jadwal">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <input type="text" id="search-jadwal" class="search-input" placeholder="🔍 Cari kelas / lokasi / tanggal...">
+            <select id="filter-jadwal-kelas" class="filter-select">
+              <option value="">Semua Kelas</option>
+              <option value="Grup A">Grup A</option>
+              <option value="Grup B">Grup B</option>
+              <option value="Grup C">Grup C</option>
+            </select>
+            <select id="filter-jadwal-status" class="filter-select">
+              <option value="">Semua Status</option>
+              <option value="Aktif">Aktif</option>
+              <option value="Pending">Pending</option>
+              <option value="Cancel">Cancel</option>
+            </select>
+            <select id="sort-jadwal" class="filter-select">
+              <option value="tanggal-desc">Terbaru</option>
+              <option value="tanggal-asc">Terlama</option>
+              <option value="kelas">Per Kelas</option>
+            </select>
+          </div>
+          <button id="btn-add-jadwal" class="btn btn-sm">+ Tambah Jadwal</button>
+        </div>
+
+        <!-- <p class="info-tip">💡 <strong>Tip:</strong> Klik pada baris jadwal untuk melihat daftar peserta yang hadir/izin pada sesi tersebut.</p> -->
+
+        <div class="table-wrapper">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Tanggal</th>
+                <th>Pukul</th>
+                <th>Kelas</th>
+                <th>Lokasi</th>
+                <th>Status</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-jadwal">
+              <tr><td colspan="6" style="text-align:center;padding:30px;">Memuat...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB: KEHADIRAN -->
+      <div class="tab-content" id="tab-kehadiran">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <input type="text" id="search-kehadiran" class="search-input" placeholder="🔍 Cari nama peserta / kelas...">
+            <select id="filter-periode" class="filter-select">
+              <option value="all">Semua Waktu</option>
+              <option value="minggu">Minggu Ini</option>
+              <option value="bulan">Bulan Ini</option>
+              <option value="tahun">Tahun Ini</option>
+            </select>
+            <select id="filter-kehadiran-kelas" class="filter-select">
+              <option value="">Semua Kelas</option>
+              <option value="Grup A">Grup A</option>
+              <option value="Grup B">Grup B</option>
+              <option value="Grup C">Grup C</option>
+            </select>
+            <select id="filter-kehadiran-status" class="filter-select">
+              <option value="">Semua Status</option>
+              <option value="hadir">Hadir</option>
+              <option value="izin">Izin</option>
+            </select>
+            <select id="sort-kehadiran" class="filter-select">
+              <option value="tanggal-desc">Terbaru</option>
+              <option value="tanggal-asc">Terlama</option>
+              <option value="nama">Per Nama</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Tanggal</th>
+                <th>Pukul</th>
+                <th>Nama Peserta</th>
+                <th>Kelas</th>
+                <th>Lokasi</th>
+                <th>Status</th>
+                <th>Catatan</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-kehadiran">
+              <tr><td colspan="8" style="text-align:center;padding:30px;">Memuat...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/utils.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Peserta - Bontang Aquatik</title>
+  <meta name="description" content="Dashboard peserta Bontang Aquatik. Lihat jadwal latihan, lakukan absensi, dan akses rapor latihan Anda.">
+  <meta name="robots" content="noindex, follow">
+
+  <link rel="icon" type="image/jpeg" href="assets/images/logo.jpeg">
+  <link rel="apple-touch-icon" href="assets/images/logo.jpeg">
+
+  <link rel="stylesheet" href="assets/css/global.css">
+  <link rel="stylesheet" href="assets/css/navbar.css">
+  <link rel="stylesheet" href="assets/css/peserta.css">
+</head>
+<body>
+
+  <div class="dashboard">
+    <div class="container">
+
+      <!-- Dashboard Header -->
+      <div class="dashboard-header">
+        <div>
+          <h1>Halo, <span id="user-nama">Peserta</span> 👋</h1>
+          <p>Selamat datang di Dashboard Bontang Aquatik</p>
+        </div>
+        <div class="dashboard-header-right">
+          <button id="btn-rapor" class="btn btn-accent btn-sm">📒 Rapor Saya</button>
+          <div class="kelas-badge">Kelas: <span id="user-kelas">-</span></div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Jadwal</div>
+          <div class="stat-value" id="stat-total">0</div>
+          <div class="stat-sub">Sesi pelatihan terjadwal</div>
+        </div>
+        <div class="stat-card success">
+          <div class="stat-label">Total Hadir</div>
+          <div class="stat-value" id="stat-hadir">0</div>
+          <div class="stat-sub">Sesi yang sudah dihadiri</div>
+        </div>
+        <div class="stat-card warning">
+          <div class="stat-label">Persentase Kehadiran</div>
+          <div class="stat-value" id="stat-persen">0%</div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Jadwal -->
+      <div class="dashboard-section">
+        <div class="section-head">
+          <h2>📅 Jadwal Pelatihan</h2>
+          <span class="jadwal-count" id="jadwal-count">0 jadwal</span>
+        </div>
+
+        <!-- Toolbar Search & Filter (BARU) -->
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <input type="text" id="search-jadwal-peserta" class="search-input"
+                  placeholder="🔍 Cari tanggal / lokasi / pukul...">
+            <select id="filter-jadwal-peserta-status" class="filter-select">
+              <option value="">Semua Status Jadwal</option>
+              <option value="Aktif">Aktif</option>
+              <option value="Pending">Pending</option>
+              <option value="Cancel">Cancel</option>
+            </select>
+            <select id="filter-jadwal-peserta-kehadiran" class="filter-select">
+              <option value="">Semua Status Saya</option>
+              <option value="hadir">Sudah Hadir</option>
+              <option value="izin">Sudah Izin</option>
+              <option value="belum">Belum Direspons</option>
+            </select>
+            <select id="sort-jadwal-peserta" class="filter-select">
+              <option value="tanggal-desc">Terbaru</option>
+              <option value="tanggal-asc">Terlama</option>
+              <option value="upcoming">Mendatang Dulu</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="jadwal-list">
+          <div class="empty-state">
+            <div class="icon">⏳</div>
+            <p>Memuat jadwal...</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/utils.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/peserta.js"></script>
+</body>
+</html>

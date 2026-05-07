@@ -1,0 +1,241 @@
+/* ================== NAVBAR — Layout Fleksibel & Kontras (Request 3 & 4) ================== */
+.navbar {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--color-card);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  color: var(--color-text-heading);
+  border-bottom: 1px solid var(--color-border);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+[data-theme="dark"] .navbar { background: rgba(11, 15, 18, 0.85); }
+[data-theme="light"] .navbar { background: rgba(255, 255, 255, 0.92); }
+
+.navbar-inner {
+  max-width: 1200px; margin: 0 auto;
+  padding: 12px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px;
+}
+
+/* Brand di kiri */
+.navbar-brand {
+  display: flex; align-items: center; gap: 10px;
+  color: var(--color-text-heading); font-weight: 700; font-size: 18px;
+  flex-shrink: 0;
+}
+.navbar-brand:hover { color: var(--color-primary); }
+.navbar-brand-logo {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; color: #fff;
+  box-shadow: 0 4px 12px rgba(22, 154, 196, 0.35);
+  overflow: hidden;
+}
+.navbar-brand-logo img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Wadah menu (kanan) — terbagi 2 sub-section */
+.navbar-menu {
+  display: flex; align-items: center; gap: 24px;
+  flex: 1; justify-content: flex-end;
+}
+.navbar-links {
+  display: flex; align-items: center; gap: 4px;
+}
+.navbar-actions {
+  display: flex; align-items: center; gap: 10px;
+  flex-shrink: 0;
+}
+
+/* Link menu */
+.nav-link {
+  color: var(--color-text-secondary);
+  padding: 10px 14px; border-radius: var(--radius-md);
+  font-size: 14px; font-weight: 500;
+  transition: var(--transition); position: relative;
+}
+.nav-link:hover { color: var(--color-accent); }
+.nav-link.active { color: var(--color-primary); }
+.nav-link.active::after {
+  content: ''; position: absolute;
+  bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 24px; height: 2px;
+  background: var(--color-primary); border-radius: 2px;
+}
+
+/* === REQUEST 4: Tombol "Daftar Sekarang" — kontras tinggi (orange + putih) === */
+.nav-cta {
+  background: var(--color-accent) !important;
+  color: #FFFFFF !important;            /* PUTIH MURNI agar kontras */
+  border: 1.5px solid var(--color-accent) !important;
+  padding: 8px 18px !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 14px rgba(255, 106, 0, 0.35);
+  transition: var(--transition);
+}
+.nav-cta:hover {
+  background: var(--color-accent-hover) !important;
+  border-color: var(--color-accent-hover) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 6px 18px rgba(255, 106, 0, 0.45);
+  transform: translateY(-1px);
+}
+
+/* Toggle mobile */
+.navbar-toggle {
+  display: none;
+  background: none; border: none;
+  color: var(--color-text-heading);
+  font-size: 24px; cursor: pointer; padding: 6px;
+}
+.navbar-toggle:hover { color: var(--color-accent); }
+
+/* User info */
+.user-info {
+  display: flex; align-items: center; gap: 10px;
+  color: var(--color-text-heading); font-size: 13px;
+  padding: 6px 14px;
+  background: var(--color-bg-section);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  white-space: nowrap;
+}
+.user-info span { font-weight: 500; }
+
+/* ================== RESPONSIVE ================== */
+
+/* Tablet: kompakkan link */
+@media (max-width: 992px) {
+  .navbar-menu { gap: 14px; }
+  .nav-link { padding: 8px 10px; font-size: 13px; }
+  .navbar-brand span { font-size: 16px; }
+}
+
+/* Mobile: collapse */
+@media (max-width: 768px) {
+  .navbar-toggle { display: block; }
+  .navbar-menu {
+    display: none;
+    position: absolute; top: 100%; left: 0; right: 0;
+    flex-direction: column; align-items: stretch;
+    gap: 8px; padding: 14px;
+    background: var(--color-bg);
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    box-shadow: var(--shadow-md);
+  }
+  .navbar-menu.show { display: flex; }
+  .navbar-links {
+    flex-direction: column; align-items: stretch; gap: 2px;
+  }
+  .navbar-links .nav-link {
+    width: 100%; text-align: left; padding: 10px 14px;
+  }
+  .navbar-links .nav-link.active::after { display: none; }
+  .navbar-actions {
+    flex-direction: column; align-items: stretch; gap: 8px;
+    border-top: 1px solid var(--color-border);
+    padding-top: 12px; margin-top: 4px;
+  }
+  .navbar-actions .theme-toggle {
+    width: 100%; height: 42px; border-radius: var(--radius-md);
+  }
+  .nav-cta { width: 100%; text-align: center; }
+  .user-info { width: 100%; justify-content: space-between; }
+}
+
+/* ================== FOOTER (dengan maps carousel - request 5) ================== */
+.footer {
+  background: var(--color-bg-section); color: var(--color-text-secondary);
+  padding: 50px 0 20px; margin-top: 80px;
+  border-top: 1px solid var(--color-border);
+}
+[data-theme="dark"] .footer { background: var(--color-bg); }
+
+.footer-grid {
+  display: grid; grid-template-columns: 1fr 1.4fr;
+  gap: 40px; margin-bottom: 30px;
+}
+.footer h4 {
+  color: var(--color-primary); font-size: 13px;
+  margin-bottom: 14px; text-transform: uppercase; letter-spacing: 1.5px;
+}
+.footer p, .footer a, .footer li {
+  color: var(--color-text-secondary); font-size: 13px; line-height: 1.9;
+}
+.footer a:hover { color: var(--color-accent); }
+
+.footer-bottom {
+  border-top: 1px solid var(--color-border); padding-top: 20px;
+  text-align: center; font-size: 12px; color: var(--color-disabled-text);
+}
+
+/* === MAPS CAROUSEL === */
+.footer-maps { position: relative; }
+.maps-carousel {
+  display: flex; overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none; gap: 0;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+.maps-carousel::-webkit-scrollbar { display: none; }
+
+.map-slide {
+  flex: 0 0 100%; min-width: 100%;
+  scroll-snap-align: start; position: relative;
+}
+.map-frame {
+  position: relative; width: 100%; height: 280px;
+  background: var(--color-bg-section);
+}
+.map-frame iframe {
+  width: 100%; height: 100%; border: 0; display: block;
+}
+.map-open-btn {
+  position: absolute; bottom: 12px; right: 12px;
+  background: var(--color-accent); color: #fff !important;
+  padding: 8px 14px; border-radius: 999px; font-size: 12px; font-weight: 600;
+  box-shadow: 0 4px 14px rgba(255, 106, 0, 0.40);
+  text-decoration: none;
+  transition: var(--transition); z-index: 2;
+}
+.map-open-btn:hover {
+  background: var(--color-accent-hover); color: #fff !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(255, 106, 0, 0.50);
+}
+.map-caption {
+  padding: 12px 14px; background: var(--color-card);
+  border-top: 1px solid var(--color-border);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.map-caption strong { color: var(--color-text-heading); font-size: 14px; }
+.map-caption span { color: var(--color-text-secondary); font-size: 12px; }
+
+.map-dots {
+  display: flex; justify-content: center; gap: 8px;
+  margin-top: 12px;
+}
+.map-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--color-border-strong);
+  border: none; cursor: pointer;
+  transition: var(--transition); padding: 0;
+}
+.map-dot.active {
+  background: var(--color-primary);
+  transform: scale(1.4);
+  box-shadow: 0 0 0 3px rgba(22, 154, 196, 0.20);
+}
+.map-hint {
+  text-align: center; font-size: 11px;
+  color: var(--color-text-secondary); margin-top: 8px;
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+  .map-frame { height: 240px; }
+}
