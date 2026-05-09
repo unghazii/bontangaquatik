@@ -36,9 +36,6 @@ function renderClassesSection() {
         <h3>${nama}</h3>
         <p class="class-team">${d.mascot_name}</p>
       </div>
-      <div class="class-price">
-        ${d.tarif_label}<span>/bulan</span>
-      </div>
       <ul class="class-features">
         ${d.fasilitas.map(f => `<li>✓ ${f}</li>`).join('')}
       </ul>
