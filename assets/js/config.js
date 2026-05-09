@@ -14,8 +14,8 @@ const CONFIG = {
 
   // Kontak
   CONTACT: {
-    whatsapp: '6285751438324',         // nomor admin (untuk redirect setelah registrasi)
-    email: 'bontang.aquatik@gmail.com',
+    whatsapp: '62816679671',         // nomor admin (untuk redirect setelah registrasi)
+    email: 'bontangakuatikswimmingclub@gmail.com',
     alamat: 'Bontang, Kalimantan Timur'
   },
 
