@@ -17,7 +17,7 @@
   <meta property="og:type" content="website">
   <meta property="og:title" content="Bontang Aquatik - Kelas Pelatihan Renang Profesional di Bontang">
   <meta property="og:description" content="Klub pelatihan renang profesional di Bontang. Latihan di Kenari Waterpark Bontang & Ekuator dengan pelatih bersertifikat.">
-  <meta property="og:image" content="assets/images/logo.jpeg">
+  <meta property="og:image" content="assets/images/logo.webp">
   <meta property="og:locale" content="id_ID">
   <meta property="og:site_name" content="Bontang Aquatik">
 
@@ -25,7 +25,14 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Bontang Aquatik - Kelas Renang Bontang">
   <meta name="twitter:description" content="Klub pelatihan renang profesional di Bontang dengan pelatih bersertifikat.">
-  <meta name="twitter:image" content="assets/images/logo.jpeg">
+  <meta name="twitter:image" content="assets/images/logo.webp">
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Bontang Aquatik">
+  <meta name="theme-color" content="#169AC4">
 
   <!-- ===== FAVICON ===== -->
   <link rel="icon" type="image/jpeg" href="assets/images/logo.webp">
@@ -38,7 +45,7 @@
     "@type": "SportsActivityLocation",
     "name": "Bontang Aquatik",
     "description": "Klub pelatihan renang profesional di Bontang dengan pelatih bersertifikat. Latihan di Kenari Waterpark Bontang dan Grand Equator Hotel Bontang.",
-    "image": "assets/images/logo.jpeg",
+    "image": "assets/images/logo.webp",
     "address": {
       "@type": "PostalAddress",
       "addressLocality": "Bontang",
@@ -119,18 +126,18 @@
   </section>
 
   <!-- ===== JADWAL LATIHAN (Request 7 - Kids Friendly) ===== -->
-  <!-- <section class="section schedule-section" id="jadwal">
+  <section class="section schedule-section" id="jadwal">
     <div class="container">
       <div class="section-header">
         <span class="label">Jadwal Latihan</span>
-        <h2>Yuk Cek Jadwal Renang Kamu! 🏊</h2>
-        <p>Pilih tim sesuai jadwal yang kamu suka — ada Tim Lumba-Lumba, Tim Hiu, dan Tim Kura-Kura!</p>
+        <h2>Yuk Cek Jadwal Renang Kamu!</h2>
+        <p>Pilih tim sesuai jadwal yang kamu suka.</p>
       </div>
-      <div class="schedule-grid" id="schedule-grid"> -->
+      <div class="schedule-grid" id="schedule-grid">
         <!-- Auto-rendered by home.js -->
-      <!-- </div>
+      </div>
     </div>
-  </section> -->
+  </section>
 
   <!-- GALLERY -->
   <section class="section section-alt" id="galeri">
@@ -141,13 +148,9 @@
         <p>Lihat keseruan kegiatan latihan dan momen tak terlupakan dari para peserta Bontang Aquatik.</p>
       </div>
       <div class="gallery-grid">
-        <!-- Ganti div dengan <img src="assets/images/gallery/foto1.jpg" alt="Latihan Renang Bontang"> -->
-        <!-- <div class="gallery-item">📷</div>
-        <div class="gallery-item">📷</div>
-        <div class="gallery-item">📷</div>
-        <div class="gallery-item">📷</div>
-        <div class="gallery-item">📷</div>
-        <div class="gallery-item">📷</div> -->
+        <!-- <img src="assets/images/gallery/foto1.jpeg" alt="Latihan Renang Bontang">
+        <img src="assets/images/gallery/foto2.jpeg" alt="Latihan Renang Bontang">
+        <img src="assets/images/gallery/foto3.jpeg" alt="Latihan Renang Bontang"> -->
         <img src="assets/images/gallery/foto4.jpeg" alt="Latihan Renang Bontang">
         <img src="assets/images/gallery/foto5.jpeg" alt="Latihan Renang Bontang">
         <img src="assets/images/gallery/foto6.jpeg" alt="Latihan Renang Bontang">
@@ -192,6 +195,23 @@
           <span class="text-muted">Kunjungi Kami</span>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- ============== SECTION BERITA (Hidden by default; ditampilkan jika ada data) ============== -->
+  <section class="section news-section hidden" id="berita">
+    <div class="container">
+      <div class="section-header">
+        <span class="label">📰 Berita Terbaru</span>
+        <h2>Informasi & Berita Bontang Aquatik</h2>
+        <p>Info lomba, tips renang, dan kabar terbaru dari pelatih.</p>
+      </div>
+      <div class="news-carousel-wrapper">
+        <button class="news-nav news-prev" aria-label="Sebelumnya" id="news-prev">◀</button>
+        <div class="news-carousel" id="news-carousel"></div>
+        <button class="news-nav news-next" aria-label="Berikutnya" id="news-next">▶</button>
+      </div>
+      <div class="news-dots" id="news-dots"></div>
     </div>
   </section>
 

@@ -128,13 +128,6 @@
 }
 .empty-state .icon { font-size: 52px; margin-bottom: 14px; opacity: 0.4; }
 
-@media (max-width: 768px) {
-  .stats-grid { grid-template-columns: 1fr; }
-  .dashboard-header { padding: 24px 22px; flex-direction: column; align-items: flex-start; }
-  .dashboard-header-right { width: 100%; }
-  #btn-rapor { flex: 1; }
-}
-
 /* Header section dengan badge count */
 .section-head {
   display: flex; justify-content: space-between; align-items: center;
@@ -148,4 +141,110 @@
   padding: 4px 12px; border-radius: 999px;
   font-size: 12px; font-weight: 600;
   white-space: nowrap;
+}
+
+.jadwal-card.aktif { border-left: 4px solid var(--color-success); }
+.jadwal-card.pending { border-left: 4px solid var(--color-warning); }
+.jadwal-card.cancel { border-left: 4px solid var(--color-danger); opacity: 0.7; }
+.jadwal-card .jadwal-head {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.jadwal-card .jadwal-detail {
+  display: flex; gap: 16px; flex-wrap: wrap;
+  font-size: 13px; color: var(--color-text-secondary);
+  margin-bottom: 14px;
+}
+.jadwal-card .jadwal-detail span { display: flex; align-items: center; gap: 6px; }
+.jadwal-badge {
+  font-size: 11px; font-weight: 700;
+  padding: 3px 10px; border-radius: 999px;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.jadwal-badge.aktif {
+  background: var(--badge-success-bg); color: var(--badge-success-text);
+  border: 1px solid var(--badge-success-border);
+}
+.jadwal-badge.pending {
+  background: var(--badge-warning-bg); color: var(--badge-warning-text);
+  border: 1px solid var(--badge-warning-border);
+}
+.jadwal-badge.cancel {
+  background: var(--badge-danger-bg); color: var(--badge-danger-text);
+  border: 1px solid var(--badge-danger-border);
+}
+.jadwal-badge.personal {
+  background: var(--color-accent-soft); color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+}
+.jadwal-status-done {
+  padding: 8px 14px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 600;
+}
+.jadwal-status-done.success { background: var(--badge-success-bg); color: var(--badge-success-text); }
+.jadwal-status-done.info { background: var(--badge-info-bg); color: var(--badge-info-text); }
+.jadwal-status-done.muted { background: var(--color-bg-section); color: var(--color-text-secondary); }
+.jadwal-status-done small { display: block; font-weight: 400; opacity: 0.8; margin-top: 4px; }
+
+/* ============== RAPOR DISPLAY (Modal) ============== */
+.rapor-display { padding: 4px 0; }
+.rapor-section { margin-bottom: 20px; }
+.rapor-section-title {
+  margin: 0 0 8px;
+  font-size: 15px; font-weight: 700;
+  color: var(--color-primary);
+}
+.rapor-periode {
+  font-size: 13px; color: var(--color-text-secondary);
+  margin: 0 0 12px;
+}
+.rapor-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 13px;
+}
+.rapor-table th,
+.rapor-table td {
+  border: 1px solid var(--color-border-strong);
+  padding: 8px 10px; text-align: center;
+}
+.rapor-table th {
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  font-weight: 700; font-size: 12px;
+  text-transform: uppercase; letter-spacing: 0.3px;
+}
+.rapor-table td:nth-child(2) {
+  text-align: left; font-weight: 600;
+  color: var(--color-text-heading);
+}
+.rapor-field { margin-bottom: 12px; }
+.rapor-field label {
+  display: block; font-size: 12px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  color: var(--color-text-secondary);
+  margin-bottom: 6px;
+}
+.rapor-value-box {
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  background: var(--color-bg-section);
+  font-size: 14px; color: var(--color-text-main);
+  min-height: 36px;
+}
+.rapor-value-box.tall { min-height: 70px; }
+.rapor-pelatih {
+  text-align: right; font-size: 13px;
+  color: var(--color-text-secondary);
+  margin: 10px 0 0;
+}
+
+@media (max-width: 768px) {
+  .stats-grid { grid-template-columns: 1fr; }
+  .dashboard-header { padding: 24px 22px; flex-direction: column; align-items: flex-start; }
+  .dashboard-header-right { width: 100%; }
+  #btn-rapor { flex: 1; }
+  .rapor-table { font-size: 11px; }
+  .rapor-table th, .rapor-table td { padding: 6px 4px; }
+  .jadwal-card .jadwal-detail { font-size: 12px; gap: 10px; }
 }

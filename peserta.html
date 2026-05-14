@@ -7,8 +7,8 @@
   <meta name="description" content="Dashboard peserta Bontang Aquatik. Lihat jadwal latihan, lakukan absensi, dan akses rapor latihan Anda.">
   <meta name="robots" content="noindex, follow">
 
-  <link rel="icon" type="image/jpeg" href="assets/images/logo.jpeg">
-  <link rel="apple-touch-icon" href="assets/images/logo.jpeg">
+  <link rel="icon" type="image/jpeg" href="assets/images/logo.webp">
+  <link rel="apple-touch-icon" href="assets/images/logo.webp">
 
   <link rel="stylesheet" href="assets/css/global.css">
   <link rel="stylesheet" href="assets/css/navbar.css">
@@ -26,7 +26,7 @@
           <p>Selamat datang di Dashboard Bontang Aquatik</p>
         </div>
         <div class="dashboard-header-right">
-          <button id="btn-rapor" class="btn btn-accent btn-sm">📒 Rapor Saya</button>
+          <button id="btn-rapor" class="btn btn-accent btn-sm">Rapor Saya</button>
           <div class="kelas-badge">Kelas: <span id="user-kelas">-</span></div>
         </div>
       </div>
@@ -95,10 +95,16 @@
     </div>
   </div>
 
+  <!-- Libraries untuk PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.0/jspdf.plugin.autotable.min.js"></script>
+
   <script src="assets/js/config.js"></script>
   <script src="assets/js/utils.js"></script>
   <script src="assets/js/auth.js"></script>
   <script src="assets/js/api.js"></script>
+  <script src="assets/js/pdf-rapor.js"></script>
   <script src="assets/js/peserta.js"></script>
+  <script src="assets/js/pwa.js"></script>
 </body>
 </html>

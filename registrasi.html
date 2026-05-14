@@ -4,102 +4,153 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Daftar Kelas Renang - Bontang Aquatik</title>
-  <meta name="description" content="Formulir pendaftaran kelas renang Bontang Aquatik. Pilih kelas Grup A, B, atau C sesuai kebutuhan. Latihan di Kenari Waterpark Bontang & Ekuator Bontang.">
-  <meta name="keywords" content="daftar renang bontang, registrasi bontang aquatik, pendaftaran kelas renang, les renang bontang">
+  <meta name="description" content="Formulir pendaftaran kelas renang Bontang Aquatik. Pilih kelas Grup A, B, atau C.">
+  <meta name="keywords" content="daftar renang bontang, registrasi bontang aquatik, pendaftaran kelas renang">
   <meta name="robots" content="index, follow">
-
-  <meta property="og:title" content="Daftar Kelas Renang - Bontang Aquatik">
-  <meta property="og:description" content="Daftarkan diri Anda di kelas pelatihan renang profesional Bontang Aquatik.">
-  <meta property="og:image" content="assets/images/logo.jpeg">
-
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#169AC4">
   <link rel="icon" type="image/jpeg" href="assets/images/logo.jpeg">
   <link rel="apple-touch-icon" href="assets/images/logo.jpeg">
-
   <link rel="stylesheet" href="assets/css/global.css">
   <link rel="stylesheet" href="assets/css/navbar.css">
   <link rel="stylesheet" href="assets/css/auth.css">
 </head>
 <body>
-
   <div class="auth-page">
-    <div class="auth-container" style="max-width: 720px;">
+    <div class="auth-container" style="max-width: 760px;">
       <div class="auth-card">
         <div class="auth-header">
           <div class="icon">📝</div>
           <h1>Daftar Kelas Renang</h1>
-          <p>Lengkapi data Anda untuk mulai latihan di Bontang Aquatik Swimming Club</p>
+          <p>Lengkapi data Anda untuk mulai latihan di Bontang Aquatik</p>
         </div>
         <div class="auth-body">
+
+          <!-- Stepper untuk UX -->
+          <div class="stepper" id="form-stepper">
+            <div class="step active" data-step="1"><span class="step-num">1</span><span class="step-label">Akun</span></div>
+            <div class="step" data-step="2"><span class="step-num">2</span><span class="step-label">Data Pribadi</span></div>
+            <div class="step" data-step="3"><span class="step-num">3</span><span class="step-label">Sekolah</span></div>
+            <div class="step" data-step="4"><span class="step-num">4</span><span class="step-label">Kelas</span></div>
+          </div>
 
           <!-- Info kelas referensi -->
           <div class="class-info-banner">
             <h4>Info Kelas Tersedia</h4>
-            <!-- <p class="text-muted" style="font-size:13px;margin-bottom:12px;">⚠️ Usia minimal pendaftaran: <strong>5 tahun</strong></p> -->
+            <!-- <p class="text-muted" style="font-size:13px;margin-bottom:12px;">Usia minimal pendaftaran: <strong>5 tahun</strong></p> -->
             <div class="class-info-list" id="class-info-list"></div>
           </div>
 
-          <form id="form-registrasi">
-            <div class="form-grid-2">
-              <div class="form-group">
-                <label>Nama Lengkap *</label>
-                <input type="text" name="nama_lengkap" class="form-control" required placeholder="Nama lengkap peserta">
-              </div>
-              <div class="form-group">
-                <label>Usia (tahun) *</label>
-                <input type="number" name="usia" id="usia" class="form-control" required min="5" max="80" placeholder="Contoh: 8">
-                <p class="form-helper">Minimal 5 tahun</p>
-              </div>
-            </div>
+          <form id="form-registrasi" autocomplete="on">
 
-            <div class="form-grid-2">
-              <div class="form-group">
-                <label>Nama Panggilan *</label>
-                <input type="text" name="username" class="form-control" required placeholder="Untuk login nanti" autocomplete="username">
+            <!-- STEP 1: Akun -->
+            <div class="form-step active" data-step="1">
+              <h4 class="form-section-title">Data Akun</h4>
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label>Nama Lengkap *</label>
+                  <input type="text" name="nama_lengkap" class="form-control" required placeholder="Nama lengkap peserta">
+                </div>
+                <div class="form-group">
+                  <label>Nama Panggilan *</label>
+                  <input type="text" name="username" class="form-control" required placeholder="Untuk login" autocomplete="username">
+                </div>
               </div>
-              <div class="form-group">
-                <label>Nomor WhatsApp *</label>
-                <input type="tel" name="nomor_whatsapp" class="form-control" required placeholder="62816679671">
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>Password *</label>
-              <div class="password-wrap">
-                <input type="password" name="password" id="password" class="form-control" required minlength="6" placeholder="Minimal 6 karakter">
-                <button type="button" class="password-toggle" id="toggle-password">👁️</button>
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label>Password *</label>
+                  <div class="password-wrap">
+                    <input type="password" name="password" id="password" class="form-control" required minlength="6" placeholder="Minimal 6 karakter">
+                    <button type="button" class="password-toggle" id="toggle-password">👁️</button>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Nomor WhatsApp *</label>
+                  <input type="tel" name="nomor_whatsapp" class="form-control" required placeholder="6281234567890" inputmode="numeric">
+                </div>
               </div>
             </div>
 
-            <hr class="form-divider">
-            <h4 class="form-section-title">📚 Pilihan Kelas & Periode</h4>
-
-            <div class="form-group">
-              <label>Pilih Kelas *</label>
-              <select name="kelas" id="kelas" class="form-control" required></select>
+            <!-- STEP 2: Data Pribadi -->
+            <div class="form-step" data-step="2">
+              <h4 class="form-section-title">👤 Data Pribadi</h4>
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label>Jenis Kelamin *</label>
+                  <select name="jenis_kelamin" id="jenis_kelamin" class="form-control" required>
+                    <option value="">- Pilih -</option>
+                    <option value="Laki-laki">Laki-laki</option>
+                    <option value="Perempuan">Perempuan</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>NISNAS *</label>
+                  <input type="text" name="nisnas" class="form-control" required pattern="[0-9]*" inputmode="numeric" placeholder="Nomor Induk Siswa">
+                </div>
+              </div>
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label>Tempat Lahir *</label>
+                  <input type="text" name="tempat_lahir" class="form-control" required placeholder="Contoh: Bontang">
+                </div>
+                <div class="form-group">
+                  <label>Tanggal Lahir *</label>
+                  <input type="date" name="tanggal_lahir" id="tanggal_lahir" class="form-control" required>
+                  <p class="form-helper" id="kelompok-umur-preview"></p>
+                </div>
+              </div>
             </div>
 
-            <div class="form-grid-2">
+            <!-- STEP 3: Sekolah -->
+            <div class="form-step" data-step="3">
+              <h4 class="form-section-title">🏫 Data Sekolah</h4>
               <div class="form-group">
-                <label>Mulai Pelatihan Sejak *</label>
-                <input type="date" name="tanggal_mulai" id="tanggal_mulai" class="form-control" required>
-                <!-- <p class="form-helper">Default: hari ini</p> -->
+                <label>Asal Sekolah *</label>
+                <input type="text" name="asal_sekolah" class="form-control" required placeholder="Contoh: TK Ihyausunah / SD Negeri 001">
+                <p class="form-helper">⚠️ Harap gunakan format penulisan yang benar karena akan ditampilkan dalam rapor kemajuan peserta.</p>
+              </div>
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label>Kelas Sekolah *</label>
+                  <input type="text" name="kelas_sekolah" class="form-control" required placeholder="Contoh: 2A / 3 SD / Kelas B">
+                </div>
+                <div class="form-group">
+                  <label>Wali Kelas *</label>
+                  <input type="text" name="wali_kelas" class="form-control" required placeholder="Nama wali kelas">
+                </div>
+              </div>
+            </div>
+
+            <!-- STEP 4: Kelas Renang -->
+            <div class="form-step" data-step="4">
+              <h4 class="form-section-title">🏊 Pilihan Kelas Renang</h4>
+              <div class="form-group">
+                <label>Pilih Kelas *</label>
+                <select name="kelas" id="kelas" class="form-control" required></select>
+              </div>
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label>Mulai Pelatihan Sejak *</label>
+                  <input type="date" name="tanggal_mulai" id="tanggal_mulai" class="form-control" required>
+                </div>
+                <div class="form-group">
+                  <label>Durasi (bulan) *</label>
+                  <input type="number" name="durasi" id="durasi" class="form-control" required min="1" max="24" value="1">
+                </div>
               </div>
               <div class="form-group">
-                <label>Durasi Pelatihan (bulan) *</label>
-                <input type="number" name="durasi" id="durasi" class="form-control" required min="1" max="24" value="1" placeholder="Contoh: 3">
-                <!-- <p class="form-helper">Berapa bulan ingin ikut?</p> -->
+                <label>Pelatihan Berakhir Pada</label>
+                <input type="text" id="tanggal_akhir_display" class="form-control" readonly placeholder="Otomatis terisi sesuai durasi">
+                <!-- <p class="form-helper">📅 Otomatis dihitung dari tanggal mulai + durasi</p> -->
               </div>
             </div>
 
-            <div class="form-group">
-              <label>Pelatihan Berakhir Pada</label>
-              <input type="text" id="tanggal_akhir_display" class="form-control" readonly placeholder="Otomatis terisi sesuai durasi">
-              <!-- <p class="form-helper">📅 Otomatis dihitung dari tanggal mulai + durasi</p> -->
+            <!-- Navigation buttons -->
+            <div class="form-nav">
+              <button type="button" class="btn btn-secondary" id="btn-prev" disabled>← Sebelumnya</button>
+              <button type="button" class="btn btn-primary" id="btn-next">Selanjutnya →</button>
+              <button type="submit" class="btn btn-accent hidden" id="btn-submit">Daftar Sekarang →</button>
             </div>
-
-            <button type="submit" class="btn btn-primary btn-block" style="margin-top: 8px;">
-              Daftar Sekarang →
-            </button>
           </form>
         </div>
         <div class="auth-footer">
@@ -114,5 +165,6 @@
   <script src="assets/js/auth.js"></script>
   <script src="assets/js/api.js"></script>
   <script src="assets/js/registrasi.js"></script>
+  <script src="assets/js/pwa.js"></script>
 </body>
 </html>

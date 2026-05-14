@@ -1,6 +1,6 @@
 /**
  * ===================================================================
- * KONFIGURASI APLIKASI — Bontang Aquatik
+ * KONFIGURASI APLIKASI — Bontang Aquatik Swimming Club
  * ===================================================================
  */
 
@@ -10,6 +10,7 @@ const CONFIG = {
 
   // Brand
   BRAND_NAME: 'Bontang Aquatik',
+  BRAND_CLUB: 'BONTANG AQUATIK SWIMMING CLUB',
   BRAND_TAGLINE: 'Klub Pelatihan Renang Profesional di Bontang',
 
   // Kontak
@@ -27,6 +28,32 @@ const CONFIG = {
   // Pilihan kelas
   KELAS_OPTIONS: ['Grup A', 'Grup B', 'Grup C'],
   STATUS_JADWAL: ['Aktif', 'Pending', 'Cancel'],
+  JENIS_KELAMIN_OPTIONS: ['Laki-laki', 'Perempuan'],
+  PREDIKAT_OPTIONS: [
+    'Sangat Baik',
+    'Baik',
+    'Cukup',
+    'Perlu Latihan Lanjut'
+  ],
+
+  // Gaya renang untuk tabel rapor
+  GAYA_RENANG: [
+    { key: 'Bebas',    label: 'Gaya Bebas' },
+    { key: 'Dada',     label: 'Gaya Dada' },
+    { key: 'Kupu',     label: 'Gaya Kupu' },
+    { key: 'Punggung', label: 'Gaya Punggung' }
+  ],
+
+  // Kelompok umur (display purposes)
+  KELOMPOK_UMUR_INFO: {
+    'Senior': '> 19 tahun',
+    'Group 1': '16-18 tahun',
+    'Group 2': '14-15 tahun',
+    'Group 3': '12-13 tahun',
+    'Group 4': '10-11 tahun',
+    'Group 5': '8-9 tahun',
+    'Group 6': '≤ 7 tahun'
+  },
 
   // Detail kelas (untuk section "Kelas Tersedia") — request 6
   KELAS_DETAIL: {
@@ -84,7 +111,7 @@ const CONFIG = {
       { hari: 'Sabtu',  jam: '07:00 - 08:45' }
     ],
     'Grup C': [
-      { hari: 'Sabtu',  jam: '16:00 - 17:30' },
+      { hari: 'Sabtu',  jam: '16:00 - 17:45' },
       { hari: 'Minggu', jam: '08:00 - 09:30' }
     ]
   },

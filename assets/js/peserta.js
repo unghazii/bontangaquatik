@@ -1,33 +1,73 @@
-// Cache jadwal untuk filter/sort tanpa re-fetch ke server
+// =====================================================================
+// Dashboard Peserta — Gabungan:
+//   • LOGIKA   : kode pertama (rapor tabel 4 gaya × 2 jarak + PDF,
+//                jadwal personal, cache data peserta lengkap)
+//   • TAMPILAN : kode kedua (grid card jadwal + modal absen
+//                lengkap dengan checklist equipment + counter jadwal)
+//
+// Filter & sort lengkap (tidak ada yang dihilangkan):
+//   - Search           : tanggal / pukul / lokasi / kelas
+//   - Filter status    : Aktif / Pending / Cancel        (status jadwal)
+//   - Filter kehadiran : hadir / izin / belum             (status saya)
+//   - Filter tipe      : kelas / personal                 (is_personal)
+//   - Sort tanggal     : newest / oldest / upcoming
+// =====================================================================
+
 let cacheJadwalPeserta = [];
+let pesertaLengkapCache = null;
+let raporCache = null;
+
 document.addEventListener('DOMContentLoaded', async () => {
-  if (!Auth.requireRole('peserta')) return;
+  // Auth guard — toleran terhadap dua gaya API (Auth.requireRole atau Auth.getSession)
+  if (typeof Auth.requireRole === 'function') {
+    if (!Auth.requireRole('peserta')) return;
+  } else {
+    const session = Auth.getSession();
+    if (!session || session.role !== 'peserta') {
+      window.location.href = 'login.html';
+      return;
+    }
+  }
   Utils.mountNavbar('peserta');
 
-  const user = Auth.getUser();
+  const user = getCurrentUser();
   document.getElementById('user-nama').textContent = user.nama;
   document.getElementById('user-kelas').textContent = user.kelas || 'Belum ditentukan';
 
   document.getElementById('btn-rapor').addEventListener('click', openRaporModal);
-  // Bind filter & sort listeners
-    ['search-jadwal-peserta',
+
+  // Bind semua kontrol toolbar (defensive: tiap elemen dicek dulu agar
+  // tidak error kalau ada satu yang belum ada di HTML).
+  [
+    'search-jadwal-peserta',
     'filter-jadwal-peserta-status',
     'filter-jadwal-peserta-kehadiran',
-    'sort-jadwal-peserta'].forEach(id => {
-      const el = document.getElementById(id);
-      el.addEventListener('input', applyJadwalPesertaFilters);
-      el.addEventListener('change', applyJadwalPesertaFilters);
-    });
+    'filter-jadwal-peserta-tipe',
+    'sort-jadwal-peserta'
+  ].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', applyJadwalPesertaFilters);
+    el.addEventListener('change', applyJadwalPesertaFilters);
+  });
 
   await loadDashboard();
 });
 
+/** Ambil user dari salah satu API yang tersedia (Auth.getUser / Auth.getSession). */
+function getCurrentUser() {
+  if (typeof Auth.getUser === 'function') return Auth.getUser();
+  const session = Auth.getSession();
+  return session ? session.data : {};
+}
+
 async function loadDashboard() {
-  const user = Auth.getUser();
+  const user = getCurrentUser();
   const [jadwalRes, hadirRes] = await Promise.all([
     API.call('getJadwalPeserta', { id_peserta: user.id }),
     API.call('getKehadiranPeserta', { id_peserta: user.id })
   ]);
+
   if (hadirRes.success) {
     const d = hadirRes.data;
     document.getElementById('stat-total').textContent = d.total_jadwal;
@@ -35,63 +75,78 @@ async function loadDashboard() {
     document.getElementById('stat-persen').textContent = d.persentase + '%';
     document.getElementById('progress-fill').style.width = d.persentase + '%';
   }
+
   if (jadwalRes.success) {
     cacheJadwalPeserta = jadwalRes.data || [];
     applyJadwalPesertaFilters();
   } else {
+    document.getElementById('jadwal-list').innerHTML =
+      `<div class="empty-state"><div class="icon">⚠️</div><p>${Utils.escapeHtml(jadwalRes.message || 'Gagal memuat jadwal')}</p></div>`;
     Utils.notify(jadwalRes.message || 'Gagal memuat jadwal', 'error');
   }
 }
 
-/* ===================== FILTER & SORT JADWAL PESERTA ===================== */
+/* =====================================================================
+   FILTER & SORT JADWAL
+   ===================================================================== */
 function applyJadwalPesertaFilters() {
-  const q = (document.getElementById('search-jadwal-peserta').value || '').toLowerCase();
-  const statusF = document.getElementById('filter-jadwal-peserta-status').value;
-  const kehadiranF = document.getElementById('filter-jadwal-peserta-kehadiran').value;
-  const sort = document.getElementById('sort-jadwal-peserta').value;
+  const q          = (document.getElementById('search-jadwal-peserta')?.value || '').toLowerCase();
+  const statusF    = document.getElementById('filter-jadwal-peserta-status')?.value || '';
+  const kehadiranF = document.getElementById('filter-jadwal-peserta-kehadiran')?.value || '';
+  const tipeF      = document.getElementById('filter-jadwal-peserta-tipe')?.value || '';
+  const sort       = document.getElementById('sort-jadwal-peserta')?.value || 'newest';
 
   let list = cacheJadwalPeserta.filter(j => {
-    // Search: tanggal (tampilan), pukul, lokasi, kelas
+    // ---- Search ----
     const haystack = [
       Utils.formatDate(j.Tanggal).toLowerCase(),
       String(j.Tanggal || '').toLowerCase(),
-      (j.Pukul || '').toLowerCase(),
+      (j.Pukul  || '').toLowerCase(),
       (j.Lokasi || '').toLowerCase(),
-      (j.Kelas || '').toLowerCase()
+      (j.Kelas  || '').toLowerCase()
     ].join(' ');
-    const matchSearch = !q || haystack.includes(q);
+    if (q && !haystack.includes(q)) return false;
 
-    // Status jadwal (Aktif/Pending/Cancel)
-    const matchStatus = !statusF || j.Status === statusF;
+    // ---- Status jadwal (Aktif/Pending/Cancel) ----
+    // Toleran terhadap value "all" maupun "" (keduanya = tidak memfilter).
+    if (statusF && statusF !== 'all' && j.Status !== statusF) return false;
 
-    // Status kehadiran peserta untuk jadwal ini
+    // ---- Status kehadiran saya (hadir/izin/belum) ----
     let myStatus = 'belum';
     if (j.sudah_absen) myStatus = j.status_kehadiran; // 'hadir' atau 'izin'
-    const matchKehadiran = !kehadiranF || myStatus === kehadiranF;
+    if (kehadiranF && kehadiranF !== 'all' && myStatus !== kehadiranF) return false;
 
-    return matchSearch && matchStatus && matchKehadiran;
+    // ---- Tipe (kelas/personal) ----
+    if (tipeF === 'kelas'    && j.is_personal) return false;
+    if (tipeF === 'personal' && !j.is_personal) return false;
+
+    return true;
   });
 
-  // Sorting
+  // ---- Sort ----
   const now = new Date();
   now.setHours(0, 0, 0, 0);
 
   list.sort((a, b) => {
     const da = new Date(a.Tanggal);
     const db = new Date(b.Tanggal);
-    if (sort === 'tanggal-asc') return da - db;
+
+    // Dukung dua skema penamaan agar kompatibel dengan kode lama:
+    //   newest    ≡ tanggal-desc
+    //   oldest    ≡ tanggal-asc
+    //   upcoming  : jadwal ≥ hari ini di atas (asc), lalu yang lewat (desc)
+    if (sort === 'oldest' || sort === 'tanggal-asc') return da - db;
     if (sort === 'upcoming') {
-      // Yang ≥ hari ini di atas (asc); yang sudah lewat di bawah (desc)
       const aFuture = da >= now;
       const bFuture = db >= now;
       if (aFuture && !bFuture) return -1;
       if (!aFuture && bFuture) return 1;
       return aFuture ? (da - db) : (db - da);
     }
-    return db - da; // default: tanggal-desc
+    return db - da; // default: newest / tanggal-desc
   });
 
-  // Update counter
+  // Counter
   const counter = document.getElementById('jadwal-count');
   if (counter) {
     const total = cacheJadwalPeserta.length;
@@ -102,50 +157,64 @@ function applyJadwalPesertaFilters() {
 
   renderJadwal(list);
 }
+
+/* =====================================================================
+   RENDER GRID CARD (gaya kode kedua + badge PERSONAL dari kode pertama)
+   ===================================================================== */
 function renderJadwal(jadwals) {
   const container = document.getElementById('jadwal-list');
-    if (!jadwals || jadwals.length === 0) {
-      const isFiltered = cacheJadwalPeserta.length > 0;
-      container.innerHTML = isFiltered
-        ? `<div class="empty-state">
-            <div class="icon">🔍</div>
-            <p>Tidak ada jadwal yang cocok dengan filter Anda.</p>
-            <p class="text-muted" style="font-size:13px;margin-top:6px;">Coba ubah kata kunci atau reset filter.</p>
-          </div>`
-        : `<div class="empty-state">
-            <div class="icon">📅</div>
-            <p>Belum ada jadwal pelatihan untuk kelas Anda.</p>
-            <p class="text-muted" style="font-size:13px;margin-top:6px;">Jadwal akan otomatis terbuat setelah admin mengkonfirmasi pembayaran.</p>
-          </div>`;
-      return;
-    }
 
-  // jadwals.sort((a, b) => new Date(b.Tanggal) - new Date(a.Tanggal));
+  if (!jadwals || jadwals.length === 0) {
+    const isFiltered = cacheJadwalPeserta.length > 0;
+    container.innerHTML = isFiltered
+      ? `<div class="empty-state">
+          <div class="icon">🔍</div>
+          <p>Tidak ada jadwal yang cocok dengan filter Anda.</p>
+          <p class="text-muted" style="font-size:13px;margin-top:6px;">Coba ubah kata kunci atau reset filter.</p>
+        </div>`
+      : `<div class="empty-state">
+          <div class="icon">📅</div>
+          <p>Belum ada jadwal pelatihan untuk kelas Anda.</p>
+          <p class="text-muted" style="font-size:13px;margin-top:6px;">Jadwal akan otomatis terbuat setelah admin mengkonfirmasi pembayaran.</p>
+        </div>`;
+    return;
+  }
 
   container.innerHTML = `
     <div class="jadwal-grid">
       ${jadwals.map(j => {
         const status = String(j.Status).toLowerCase();
-        const badgeClass = status === 'aktif' ? 'badge-success' : status === 'pending' ? 'badge-warning' : 'badge-danger';
-        const sudahRespond = j.sudah_absen;
-        const kehadiranStatus = j.status_kehadiran;
+        const badgeClass = status === 'aktif' ? 'badge-success'
+                         : status === 'pending' ? 'badge-warning'
+                         : 'badge-danger';
 
+        const sudahRespond     = j.sudah_absen;
+        const kehadiranStatus  = j.status_kehadiran;
+
+        // Action button — sama persis dengan kode kedua
         let actionHtml;
         if (sudahRespond) {
-          if (kehadiranStatus === 'hadir') {
-            actionHtml = `<button class="btn btn-sm btn-success" disabled>✓ Sudah Absen</button>`;
-          } else {
-            actionHtml = `<button class="btn btn-sm btn-secondary" disabled>📝 Sudah Izin</button>`;
-          }
+          actionHtml = (kehadiranStatus === 'hadir')
+            ? `<button class="btn btn-sm btn-success" disabled>✓ Sudah Absen</button>`
+            : `<button class="btn btn-sm btn-secondary" disabled>📝 Sudah Izin</button>`;
         } else if (status === 'aktif') {
           actionHtml = `<button class="btn btn-sm btn-accent" onclick="openAbsenModal('${j.Id_Jadwal}')">Absen / Izin</button>`;
         } else {
           actionHtml = `<button class="btn btn-sm btn-secondary" disabled>Belum Dibuka</button>`;
         }
 
+        // Badge personal — dipertahankan dari kode pertama agar logika
+        // personal tetap terlihat oleh user, tanpa mengubah layout card.
+        const personalBadge = j.is_personal
+          ? `<span class="badge badge-personal" title="Jadwal personal">⭐ PERSONAL</span>`
+          : '';
+
         return `
-          <div class="jadwal-card">
-            <div class="jadwal-date">${Utils.escapeHtml(Utils.formatDate(j.Tanggal))}</div>
+          <div class="jadwal-card${j.is_personal ? ' is-personal' : ''}">
+            <div class="jadwal-date">
+              ${Utils.escapeHtml(Utils.formatDate(j.Tanggal))}
+              ${personalBadge}
+            </div>
             <h4>${Utils.escapeHtml(j.Kelas)}</h4>
             <div class="jadwal-info">
               <span>🕐 ${Utils.escapeHtml(j.Pukul)}</span>
@@ -160,11 +229,17 @@ function renderJadwal(jadwals) {
     </div>`;
 }
 
-/* ===================== ABSEN MODAL ===================== */
+/* =====================================================================
+   MODAL ABSEN — full version dari kode kedua (checklist equipment)
+   ===================================================================== */
 function openAbsenModal(idJadwal) {
-  const eq = CONFIG.EQUIPMENT_INFO;
+  // Defensive: kalau CONFIG.EQUIPMENT_INFO tidak ada, fallback ke list kosong
+  const eq = (typeof CONFIG !== 'undefined' && CONFIG.EQUIPMENT_INFO) ? CONFIG.EQUIPMENT_INFO : {
+    pemula: [], lanjut: [], lain: [], tambahan: []
+  };
+
   const html = `
-    <div class="modal-backdrop active" id="m-absen">
+    <div class="modal-backdrop active" id="m-absen" data-jadwal-id="${idJadwal}">
       <div class="modal" style="max-width:560px;">
         <div class="modal-header">
           <h3>📋 Konfirmasi Absensi</h3>
@@ -211,7 +286,7 @@ function openAbsenModal(idJadwal) {
         <div class="modal-footer">
           <button class="btn btn-secondary" onclick="closeAbsenModal()">Batal</button>
           <button class="btn btn-warning" id="btn-izin" onclick="toggleIzinForm()">📝 Izin</button>
-          <button class="btn btn-primary" id="btn-confirm-absen" onclick="submitAbsen('${idJadwal}')" disabled>✓ Ya, Saya Hadir</button>
+          <button class="btn btn-primary" id="btn-confirm-absen" data-jadwal-id="${idJadwal}" onclick="submitAbsen('${idJadwal}')" disabled>✓ Ya, Saya Hadir</button>
         </div>
       </div>
     </div>`;
@@ -226,7 +301,6 @@ function closeAbsenModal() {
 function toggleAbsenSubmit() {
   const checked = document.getElementById('agree-checkbox').checked;
   const btn = document.getElementById('btn-confirm-absen');
-  // Tombol "Ya, Saya Hadir" hanya aktif jika checkbox dicentang DAN izin section tidak aktif
   const izinActive = !document.getElementById('izin-section').classList.contains('hidden');
   btn.disabled = !(checked && !izinActive);
 }
@@ -239,7 +313,6 @@ function toggleIzinForm() {
 
   sec.classList.toggle('hidden');
   if (willActivate) {
-    // mode IZIN aktif: ubah tombol confirm menjadi "Kirim Izin"
     btnConfirm.textContent = '📤 Kirim Izin';
     btnConfirm.disabled = false;
     btnConfirm.onclick = () => submitIzin();
@@ -247,7 +320,8 @@ function toggleIzinForm() {
   } else {
     btnConfirm.textContent = '✓ Ya, Saya Hadir';
     btnIzin.textContent = '📝 Izin';
-    btnConfirm.onclick = () => submitAbsen(btnConfirm.dataset.jadwalId);
+    const idJadwal = btnConfirm.dataset.jadwalId;
+    btnConfirm.onclick = () => submitAbsen(idJadwal);
     toggleAbsenSubmit();
   }
 }
@@ -257,8 +331,10 @@ async function submitAbsen(idJadwal) {
     Utils.notify('Mohon centang persetujuan peralatan terlebih dahulu', 'warning');
     return;
   }
-  const user = Auth.getUser();
+  Utils.showLoader && Utils.showLoader(true);
+  const user = getCurrentUser();
   const res = await API.call('absen', { id_jadwal: idJadwal, id_peserta: user.id });
+  Utils.showLoader && Utils.showLoader(false);
   if (res.success) {
     Utils.notify(res.message, 'success');
     closeAbsenModal();
@@ -274,17 +350,17 @@ async function submitIzin() {
     Utils.notify('Mohon isi alasan tidak hadir', 'warning');
     return;
   }
-  // Cari ID jadwal dari modal yang sedang terbuka
-  const btn = document.getElementById('btn-confirm-absen');
-  // Kita simpan ID di parent modal saat open
   const modal = document.getElementById('m-absen');
-  const idJadwal = modal.dataset.jadwalId || (btn && btn.dataset.jadwalId);
+  const btn = document.getElementById('btn-confirm-absen');
+  const idJadwal = (modal && modal.dataset.jadwalId) || (btn && btn.dataset.jadwalId);
   if (!idJadwal) {
     Utils.notify('Gagal mengidentifikasi jadwal', 'error');
     return;
   }
-  const user = Auth.getUser();
-  const res = await API.call('izin', { id_jadwal: idJadwal, id_peserta: user.id, catatan: catatan });
+  Utils.showLoader && Utils.showLoader(true);
+  const user = getCurrentUser();
+  const res = await API.call('izin', { id_jadwal: idJadwal, id_peserta: user.id, catatan });
+  Utils.showLoader && Utils.showLoader(false);
   if (res.success) {
     Utils.notify(res.message, 'success');
     closeAbsenModal();
@@ -294,67 +370,112 @@ async function submitIzin() {
   }
 }
 
-// Hook agar dataset.jadwalId tersimpan di modal
-const _origOpen = openAbsenModal;
-openAbsenModal = function(idJadwal) {
-  _origOpen(idJadwal);
-  const modal = document.getElementById('m-absen');
-  if (modal) modal.dataset.jadwalId = idJadwal;
-  const btn = document.getElementById('btn-confirm-absen');
-  if (btn) btn.dataset.jadwalId = idJadwal;
-};
-
-/* ===================== RAPOR MODAL ===================== */
+/* =====================================================================
+   RAPOR — Tabel 4 gaya × 2 jarak + Download PDF (logika dari kode 1)
+   ===================================================================== */
 async function openRaporModal() {
-  const user = Auth.getUser();
-  const res = await API.call('getRaporPeserta', { id_peserta: user.id });
+  Utils.showLoader && Utils.showLoader(true);
+  const user = getCurrentUser();
 
-  let bodyHtml;
-  if (!res.success || !res.data) {
-    bodyHtml = `
-      <div class="rapor-empty">
-        <div class="icon">📋</div>
-        <h4>Rapor Belum Tersedia</h4>
-        <p>Pelatih belum mengunggah rapor latihan Anda. Silakan cek kembali nanti — biasanya rapor diperbarui setelah evaluasi periode latihan.</p>
-        <p class="text-muted" style="font-size:13px;">Jika Anda merasa ada kekeliruan, hubungi pelatih melalui WhatsApp.</p>
+  const [raporRes, pesertaRes] = await Promise.all([
+    API.call('getRaporPeserta',        { id_peserta: user.id }),
+    API.call('getDataLengkapPeserta',  { id_peserta: user.id })
+  ]);
+  Utils.showLoader && Utils.showLoader(false);
+
+  if (pesertaRes.success) pesertaLengkapCache = pesertaRes.data;
+  raporCache = raporRes.success ? raporRes.data : null;
+
+  if (!raporRes.success) {
+    Utils.notify(raporRes.message || 'Gagal memuat rapor', 'error');
+    return;
+  }
+
+  let modalBody;
+  if (!raporRes.data) {
+    modalBody = `
+      <div class="empty-state">
+        <div class="icon">📝</div>
+        <h3>Rapor Belum Tersedia</h3>
+        <p>Rapor akan tersedia setelah pelatih mengisi data evaluasi. Cek kembali nanti.</p>
       </div>`;
   } else {
-    const r = res.data;
-    bodyHtml = `
-      <div class="rapor-content">
+    const r = raporRes.data;
+    const fmt = v => (v && String(v).trim() !== '' && String(v).trim() !== '-') ? String(v).trim() : '-';
+    const periodeStart = pesertaRes.data?.Tanggal_Mulai;
+    const periodeEnd   = pesertaRes.data?.Tanggal_Akhir;
+
+    modalBody = `
+      <div class="rapor-display">
         <div class="rapor-section">
-          <h4>👤 Identitas Peserta</h4>
-          <div class="rapor-row"><span>Nama</span><strong>${Utils.escapeHtml(user.nama)}</strong></div>
-          <div class="rapor-row"><span>Usia</span><strong>${Utils.escapeHtml(user.usia || '-')} tahun</strong></div>
-          <div class="rapor-row"><span>Kelas</span><strong>${Utils.escapeHtml(user.kelas)}</strong></div>
-          <div class="rapor-row"><span>Periode</span><strong>${Utils.escapeHtml(user.tanggal_mulai)} → ${Utils.escapeHtml(user.tanggal_akhir)}</strong></div>
+          <h4 class="rapor-section-title">📊 Capaian Hasil Latihan Renang</h4>
+          <p class="rapor-periode">Periode:
+            <em>${Utils.formatDateLong(periodeStart)} s.d ${Utils.formatDateLong(periodeEnd)}</em>
+          </p>
+          <table class="rapor-table">
+            <thead>
+              <tr><th>NO.</th><th>GAYA RENANG</th><th>25 METER</th><th>50 METER</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>1</td><td>Gaya Bebas</td>    <td>${fmt(r.Waktu_25_Bebas)}</td>    <td>${fmt(r.Waktu_50_Bebas)}</td></tr>
+              <tr><td>2</td><td>Gaya Dada</td>     <td>${fmt(r.Waktu_25_Dada)}</td>     <td>${fmt(r.Waktu_50_Dada)}</td></tr>
+              <tr><td>3</td><td>Gaya Kupu</td>     <td>${fmt(r.Waktu_25_Kupu)}</td>     <td>${fmt(r.Waktu_50_Kupu)}</td></tr>
+              <tr><td>4</td><td>Gaya Punggung</td> <td>${fmt(r.Waktu_25_Punggung)}</td> <td>${fmt(r.Waktu_50_Punggung)}</td></tr>
+            </tbody>
+          </table>
         </div>
+
         <div class="rapor-section">
-          <h4>📊 Penilaian Pelatih</h4>
-          <div class="rapor-grade">
-            <div class="grade-nilai">${Utils.escapeHtml(r.Nilai || '-')}</div>
-            <div class="grade-predikat">${Utils.escapeHtml(r.Predikat || '-')}</div>
+          <div class="rapor-field">
+            <label>Predikat</label>
+            <div class="rapor-value-box">${Utils.escapeHtml(r.Predikat) || '-'}</div>
+          </div>
+          <div class="rapor-field">
+            <label>Deskripsi</label>
+            <div class="rapor-value-box tall">${Utils.escapeHtml(r.Catatan) || '-'}</div>
           </div>
         </div>
-        <div class="rapor-section">
-          <h4>📝 Catatan Pelatih</h4>
-          <div class="rapor-catatan">${Utils.escapeHtml(r.Catatan || 'Tidak ada catatan').replace(/\n/g, '<br>')}</div>
-        </div>
+
+        <p class="rapor-pelatih">Pelatih: <strong>${Utils.escapeHtml(r.Nama_Pelatih || '-')}</strong></p>
       </div>`;
   }
 
+  const downloadBtn = raporRes.data
+    ? `<button class="btn btn-accent" onclick="downloadRaporPDF()">📥 Download PDF</button>`
+    : '';
+
   const html = `
-    <div class="modal-backdrop active" id="m-rapor">
-      <div class="modal" style="max-width:560px;">
+    <div class="modal-backdrop active" id="rapor-modal">
+      <div class="modal modal-md">
         <div class="modal-header">
           <h3>📒 Rapor Latihan</h3>
-          <button class="modal-close" onclick="document.getElementById('m-rapor').remove()">×</button>
+          <button class="modal-close" onclick="document.getElementById('rapor-modal').remove()">×</button>
         </div>
-        <div class="modal-body">${bodyHtml}</div>
+        <div class="modal-body">${modalBody}</div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" onclick="document.getElementById('m-rapor').remove()">Tutup</button>
+          ${downloadBtn}
+          <button class="btn btn-secondary" onclick="document.getElementById('rapor-modal').remove()">Tutup</button>
         </div>
       </div>
     </div>`;
   document.body.insertAdjacentHTML('beforeend', html);
+}
+
+async function downloadRaporPDF() {
+  if (!pesertaLengkapCache) {
+    const user = getCurrentUser();
+    const res = await API.call('getDataLengkapPeserta', { id_peserta: user.id });
+    if (!res.success) { Utils.notify('Gagal memuat data peserta', 'error'); return; }
+    pesertaLengkapCache = res.data;
+  }
+  if (!raporCache) { Utils.notify('Data rapor tidak tersedia', 'error'); return; }
+
+  Utils.showLoader && Utils.showLoader(true);
+  try {
+    await PDFRapor.generate(pesertaLengkapCache, raporCache, raporCache.Nama_Pelatih);
+  } catch (err) {
+    console.error(err);
+    Utils.notify('Gagal generate PDF: ' + err.message, 'error');
+  }
+  Utils.showLoader && Utils.showLoader(false);
 }

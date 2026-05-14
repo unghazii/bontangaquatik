@@ -1,105 +1,168 @@
-// Logic halaman Registrasi
+// Registrasi multi-step dengan validasi & UX premium
+let currentStep = 1;
+const TOTAL_STEPS = 4;
+
 document.addEventListener('DOMContentLoaded', () => {
   Utils.mountNavbar('registrasi');
 
-  // Default tanggal mulai = hari ini
+  // Setup default values
   const todayStr = Utils.formatDateInput(new Date());
   const startInput = document.getElementById('tanggal_mulai');
   startInput.value = todayStr;
   startInput.min = todayStr;
 
-  // Render info kelas (dinamis dari CONFIG)
+  // Max tanggal lahir: hari ini - 5 tahun (min usia 5)
+  const tglLahirInput = document.getElementById('tanggal_lahir');
+  const maxLahir = new Date(); maxLahir.setFullYear(maxLahir.getFullYear() - CONFIG.MIN_AGE);
+  tglLahirInput.max = Utils.formatDateInput(maxLahir);
+
+  // Preview kelompok umur saat user pilih tanggal lahir
+  tglLahirInput.addEventListener('change', () => {
+    const tgl = tglLahirInput.value;
+    if (!tgl) {
+      document.getElementById('kelompok-umur-preview').textContent = '';
+      return;
+    }
+    const usia = Utils.calculateUsia(tgl);
+    if (usia < CONFIG.MIN_AGE) {
+      document.getElementById('kelompok-umur-preview').innerHTML = `<span style="color:var(--color-danger);">⚠️ Usia minimal ${CONFIG.MIN_AGE} tahun</span>`;
+      return;
+    }
+    const kelompok = Utils.calculateKelompokUmur(tgl);
+    const info = CONFIG.KELOMPOK_UMUR_INFO[kelompok] || '';
+    document.getElementById('kelompok-umur-preview').innerHTML = `🏆 Kelompok Umur: <strong style="color:var(--color-primary);">${kelompok}</strong> (${info}) • Usia ${usia} tahun`;
+  });
+
   renderClassInfo();
 
-  // Auto-calc end date saat tanggal mulai / durasi berubah
+  // Auto-calc end date
   const durasiInput = document.getElementById('durasi');
   const endDisplay = document.getElementById('tanggal_akhir_display');
-
   function recalcEnd() {
     const start = startInput.value;
     const durasi = parseInt(durasiInput.value) || 0;
-    if (!start || durasi <= 0) {
-      endDisplay.value = '';
-      return;
-    }
+    if (!start || durasi <= 0) { endDisplay.value = ''; return; }
     const startDate = new Date(start);
     const endDate = Utils.addMonths(startDate, durasi);
     endDisplay.value = Utils.formatDate(endDate);
-    // simpan format YYYY-MM-DD untuk dikirim ke server
     endDisplay.dataset.iso = Utils.formatDateInput(endDate);
   }
   startInput.addEventListener('change', recalcEnd);
   durasiInput.addEventListener('input', recalcEnd);
   recalcEnd();
 
-  // Submit form
-  const form = document.getElementById('form-registrasi');
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const fd = new FormData(form);
-    const usia = parseInt(fd.get('usia'));
-    if (isNaN(usia) || usia < CONFIG.MIN_AGE) {
-      Utils.notify(`Usia minimal ${CONFIG.MIN_AGE} tahun`, 'warning');
-      return;
-    }
-    const password = fd.get('password');
-    if (password.length < 6) {
-      Utils.notify('Password minimal 6 karakter', 'warning');
-      return;
-    }
-    const wa = fd.get('nomor_whatsapp').replace(/[^0-9]/g, '');
-    if (!/^[0-9]{8,15}$/.test(wa)) {
-      Utils.notify('Nomor WhatsApp tidak valid', 'warning');
-      return;
-    }
+  // Stepper navigation
+  document.getElementById('btn-next').addEventListener('click', goNextStep);
+  document.getElementById('btn-prev').addEventListener('click', goPrevStep);
 
-    const data = {
-      nama_lengkap: fd.get('nama_lengkap').trim(),
-      username: fd.get('username').trim(),
-      password: password,
-      nomor_whatsapp: wa,
-      usia: usia,
-      kelas: fd.get('kelas'),
-      tanggal_mulai: startInput.value,
-      tanggal_akhir: endDisplay.dataset.iso || ''
-    };
-
-    const res = await API.call('register', data);
-    if (res.success) {
-      Utils.notify('Registrasi berhasil! Mengarahkan ke WhatsApp admin...', 'success', 4000);
-      form.reset();
-
-      // Redirect ke WA admin (request 10)
-      setTimeout(() => {
-        const waUrl = Utils.waLink(CONFIG.CONTACT.whatsapp, CONFIG.WA_REGISTRATION_MESSAGE);
-        // Buka di tab baru agar user tetap melihat halaman konfirmasi
-        window.open(waUrl, '_blank');
-        // Setelah jeda, arahkan ke login
-        setTimeout(() => window.location.href = 'login.html', 1500);
-      }, 1500);
-    } else {
-      Utils.notify(res.message, 'error');
-    }
-  });
+  // Submit
+  document.getElementById('form-registrasi').addEventListener('submit', submitForm);
 
   // Toggle password
-  const toggleBtn = document.getElementById('toggle-password');
-  if (toggleBtn) {
-    toggleBtn.addEventListener('click', () => {
-      const input = document.getElementById('password');
-      input.type = input.type === 'password' ? 'text' : 'password';
-      toggleBtn.textContent = input.type === 'password' ? '👁️' : '🙈';
-    });
-  }
+  document.getElementById('toggle-password').addEventListener('click', (e) => {
+    const input = document.getElementById('password');
+    input.type = input.type === 'password' ? 'text' : 'password';
+    e.target.textContent = input.type === 'password' ? '👁️' : '🙈';
+  });
 });
 
-/**
- * Render info kelas (jadwal & tarif) sebagai referensi user saat registrasi.
- */
+function validateStep(step) {
+  const stepEl = document.querySelector(`.form-step[data-step="${step}"]`);
+  const inputs = stepEl.querySelectorAll('input[required], select[required]');
+  for (const inp of inputs) {
+    if (!inp.value || inp.value.trim() === '') {
+      inp.focus();
+      Utils.notify(`Mohon lengkapi: ${inp.previousElementSibling.textContent.replace('*', '').trim()}`, 'warning');
+      return false;
+    }
+  }
+  // Custom validations per step
+  if (step === 1) {
+    const password = stepEl.querySelector('[name="password"]').value;
+    if (password.length < 6) { Utils.notify('Password minimal 6 karakter', 'warning'); return false; }
+    const wa = stepEl.querySelector('[name="nomor_whatsapp"]').value.replace(/[^0-9]/g, '');
+    if (!/^[0-9]{8,15}$/.test(wa)) { Utils.notify('Nomor WhatsApp tidak valid (8-15 digit)', 'warning'); return false; }
+  }
+  if (step === 2) {
+    const tglLahir = stepEl.querySelector('[name="tanggal_lahir"]').value;
+    const usia = Utils.calculateUsia(tglLahir);
+    if (usia < CONFIG.MIN_AGE) { Utils.notify(`Usia minimal ${CONFIG.MIN_AGE} tahun`, 'warning'); return false; }
+    const nisnas = stepEl.querySelector('[name="nisnas"]').value;
+    if (!/^[0-9]+$/.test(nisnas)) { Utils.notify('NISNAS harus berupa angka', 'warning'); return false; }
+  }
+  return true;
+}
+
+function goNextStep() {
+  if (!validateStep(currentStep)) return;
+  if (currentStep < TOTAL_STEPS) {
+    currentStep++;
+    updateStepUI();
+  }
+}
+
+function goPrevStep() {
+  if (currentStep > 1) {
+    currentStep--;
+    updateStepUI();
+  }
+}
+
+function updateStepUI() {
+  document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
+  document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.add('active');
+  document.querySelectorAll('.step').forEach(s => {
+    const n = Number(s.dataset.step);
+    s.classList.toggle('active', n === currentStep);
+    s.classList.toggle('completed', n < currentStep);
+  });
+  document.getElementById('btn-prev').disabled = (currentStep === 1);
+  document.getElementById('btn-next').classList.toggle('hidden', currentStep === TOTAL_STEPS);
+  document.getElementById('btn-submit').classList.toggle('hidden', currentStep !== TOTAL_STEPS);
+  // Scroll to top of form smoothly
+  document.getElementById('form-stepper').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function submitForm(e) {
+  e.preventDefault();
+  if (!validateStep(currentStep)) return;
+
+  const fd = new FormData(e.target);
+  const data = {
+    nama_lengkap: fd.get('nama_lengkap').trim(),
+    username: fd.get('username').trim(),
+    password: fd.get('password'),
+    nomor_whatsapp: fd.get('nomor_whatsapp').replace(/[^0-9]/g, ''),
+    jenis_kelamin: fd.get('jenis_kelamin'),
+    tempat_lahir: fd.get('tempat_lahir').trim(),
+    tanggal_lahir: fd.get('tanggal_lahir'),
+    nisnas: fd.get('nisnas').trim(),
+    asal_sekolah: fd.get('asal_sekolah').trim(),
+    kelas_sekolah: fd.get('kelas_sekolah').trim(),
+    wali_kelas: fd.get('wali_kelas').trim(),
+    kelas: fd.get('kelas'),
+    tanggal_mulai: fd.get('tanggal_mulai'),
+    tanggal_akhir: document.getElementById('tanggal_akhir_display').dataset.iso || ''
+  };
+
+  const res = await API.call('register', data);
+  if (res.success) {
+    Utils.notify('Registrasi berhasil! Mengarahkan ke WhatsApp admin...', 'success', 4000);
+    e.target.reset();
+    setTimeout(() => {
+      const waUrl = Utils.waLink(CONFIG.CONTACT.whatsapp, CONFIG.WA_REGISTRATION_MESSAGE);
+      window.open(waUrl, '_blank');
+      setTimeout(() => window.location.href = 'login.html', 1500);
+    }, 1500);
+  } else {
+    Utils.notify(res.message, 'error');
+  }
+}
+
 function renderClassInfo() {
   const container = document.getElementById('class-info-list');
   if (!container) return;
-  const html = Object.entries(CONFIG.KELAS_DETAIL).map(([nama, d]) => `
+  container.innerHTML = Object.entries(CONFIG.KELAS_DETAIL).map(([nama, d]) => `
     <div class="class-info-item ${d.recommended ? 'recommended' : ''}">
       <div class="class-info-head">
         <span class="class-info-mascot">${d.mascot}</span>
@@ -112,15 +175,13 @@ function renderClassInfo() {
       </div>
     </div>
   `).join('');
-  container.innerHTML = html;
 
-  // Populate dropdown kelas
   const select = document.getElementById('kelas');
   if (select) {
     select.innerHTML = '<option value="">- Pilih grup kelas -</option>' +
       Object.keys(CONFIG.KELAS_DETAIL).map(k => {
         const d = CONFIG.KELAS_DETAIL[k];
-        return `<option value="${k}">${k}</option>`;
+        return `<option value="${k}">${k} • ${d.lokasi}</option>`;
       }).join('');
   }
 }

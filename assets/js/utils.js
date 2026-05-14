@@ -27,7 +27,7 @@ const Theme = {
 Theme.init();
 
 /* ============================================
-   UTILS
+    UTILS
    ============================================ */
 const Utils = {
   notify(msg, type = 'info', duration = 3500) {
@@ -67,6 +67,14 @@ const Utils = {
     return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
   },
 
+  formatDateLong(d) {
+    if (!d) return '-';
+    const date = (d instanceof Date) ? d : new Date(d);
+    if (isNaN(date.getTime())) return d;
+    const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+  },
+
   formatDateInput(d) {
     if (!d) return '';
     const date = (d instanceof Date) ? d : new Date(d);
@@ -85,6 +93,50 @@ const Utils = {
     // handle overflow (mis. 31 Jan + 1 bulan → 28/29 Feb, bukan 3 Mar)
     if (d.getMonth() !== ((targetMonth % 12) + 12) % 12) d.setDate(0);
     return d;
+  },
+
+  /** Hitung usia (tahun) dari tanggal lahir */
+  calculateUsia(tanggalLahir) {
+    if (!tanggalLahir) return 0;
+    const lahir = new Date(tanggalLahir);
+    if (isNaN(lahir.getTime())) return 0;
+    const now = new Date();
+    let usia = now.getFullYear() - lahir.getFullYear();
+    const m = now.getMonth() - lahir.getMonth();
+    if (m < 0 || (m === 0 && now.getDate() < lahir.getDate())) usia--;
+    return usia;
+  },
+
+  /** Hitung kelompok umur per 1 Jan tahun ini */
+  calculateKelompokUmur(tanggalLahir) {
+    if (!tanggalLahir) return '';
+    const lahir = new Date(tanggalLahir);
+    if (isNaN(lahir.getTime())) return '';
+    const refDate = new Date(new Date().getFullYear(), 0, 1);
+    let umur = refDate.getFullYear() - lahir.getFullYear();
+    const m = refDate.getMonth() - lahir.getMonth();
+    if (m < 0 || (m === 0 && refDate.getDate() < lahir.getDate())) umur--;
+    if (umur > 19) return 'Senior';
+    if (umur >= 16) return 'Group 1';
+    if (umur >= 14) return 'Group 2';
+    if (umur >= 12) return 'Group 3';
+    if (umur >= 10) return 'Group 4';
+    if (umur >= 8)  return 'Group 5';
+    return 'Group 6';
+  },
+
+  /** Validasi & normalisasi waktu mm:ss:ms (digit auto-pad) */
+  normalizeWaktu(input) {
+    if (!input) return '';
+    const cleaned = String(input).trim();
+    if (cleaned === '' || cleaned === '-') return '';
+    // Accept: mm:ss:ms / mm.ss.ms / mm:ss / single number etc
+    const parts = cleaned.split(/[:.]/);
+    if (parts.length < 2) return cleaned;
+    const mm = String(parts[0] || '00').padStart(2, '0');
+    const ss = String(parts[1] || '00').padStart(2, '0');
+    const ms = String(parts[2] || '00').padStart(2, '0');
+    return `${mm}.${ss}.${ms}`;
   },
 
   formatBool(v) { return (v === true || String(v).toUpperCase() === 'TRUE') ? 'TRUE' : 'FALSE'; },
@@ -124,7 +176,7 @@ const Utils = {
   },
 
   /* ============================================
-     NAVBAR
+      NAVBAR
      ============================================ */
   mountNavbar(activeRoute = '') {
     const session = Auth.getSession();
@@ -150,7 +202,7 @@ const Utils = {
         <div class="navbar-inner">
           <a href="index.html" class="navbar-brand">
             <div class="navbar-brand-logo">
-              <img src="assets/images/logo.jpeg" alt="${CONFIG.BRAND_NAME}" onerror="this.style.display='none';this.parentElement.textContent='🏊';">
+              <img src="assets/images/logo.webp" alt="${CONFIG.BRAND_NAME}" onerror="this.style.display='none';this.parentElement.textContent='🏊';">
             </div>
             <span>${CONFIG.BRAND_NAME}</span>
           </a>
@@ -177,7 +229,7 @@ const Utils = {
   },
 
   /* ============================================
-     FOOTER (dengan maps carousel — request 5)
+      FOOTER (dengan maps carousel — request 5)
      ============================================ */
   mountFooter() {
     const locs = CONFIG.LOCATIONS;

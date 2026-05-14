@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   renderClassesSection();
   renderScheduleSection();
+  loadBerita();
 
   Utils.mountFooter();
 
@@ -82,4 +83,80 @@ function renderScheduleSection() {
       </div>
     `;
   }).join('');
+}
+
+/* ============================================================
+   SECTION BERITA — Carousel horizontal
+   - Section hidden by default; ditampilkan hanya jika ada data
+   - Auto-loop swipe via scroll-snap
+   ============================================================ */
+async function loadBerita() {
+  const section = document.getElementById('berita');
+  const carousel = document.getElementById('news-carousel');
+  if (!section || !carousel) return;
+
+  const res = await API.call('getActiveBerita');
+  if (!res.success || !res.data || res.data.length === 0) {
+    // Hide section seluruhnya jika tidak ada berita (Request 4)
+    section.classList.add('hidden');
+    return;
+  }
+
+  const berita = res.data;
+  carousel.innerHTML = berita.map((b, i) => `
+    <article class="news-card" data-index="${i}">
+      <div class="news-card-head">
+        <div class="news-date">${Utils.escapeHtml(Utils.formatDateLong(b.Tanggal))}</div>
+        <div class="news-badge">📢 Berita</div>
+      </div>
+      <h3 class="news-title">${Utils.escapeHtml(b.Judul)}</h3>
+      <p class="news-desc">${Utils.escapeHtml(b.Deskripsi || '').substring(0, 200)}${(b.Deskripsi || '').length > 200 ? '…' : ''}</p>
+      ${b.Link ? `<a href="${Utils.escapeHtml(b.Link)}" target="_blank" rel="noopener" class="btn btn-accent btn-sm news-link">Baca Selengkapnya →</a>` : `<span class="text-muted" style="font-size:12px;">Tidak ada link lanjutan</span>`}
+    </article>
+  `).join('');
+
+  // Render dots
+  const dotsContainer = document.getElementById('news-dots');
+  dotsContainer.innerHTML = berita.map((_, i) =>
+    `<button class="news-dot ${i === 0 ? 'active' : ''}" data-idx="${i}" aria-label="Berita ${i + 1}"></button>`
+  ).join('');
+
+  // Show section
+  section.classList.remove('hidden');
+
+  // Carousel logic
+  const dots = dotsContainer.querySelectorAll('.news-dot');
+  const cards = carousel.querySelectorAll('.news-card');
+
+  const scrollToIdx = (idx) => {
+    const card = cards[idx];
+    if (card) carousel.scrollTo({ left: card.offsetLeft - 12, behavior: 'smooth' });
+  };
+
+  dots.forEach(d => d.addEventListener('click', () => scrollToIdx(Number(d.dataset.idx))));
+
+  // Update dot active on scroll
+  let scrollTimer;
+  carousel.addEventListener('scroll', () => {
+    clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(() => {
+      let activeIdx = 0;
+      let minDist = Infinity;
+      cards.forEach((c, i) => {
+        const dist = Math.abs(c.offsetLeft - carousel.scrollLeft - 12);
+        if (dist < minDist) { minDist = dist; activeIdx = i; }
+      });
+      dots.forEach((d, i) => d.classList.toggle('active', i === activeIdx));
+    }, 100);
+  });
+
+  // Nav buttons
+  document.getElementById('news-prev').addEventListener('click', () => {
+    const active = Array.from(dots).findIndex(d => d.classList.contains('active'));
+    scrollToIdx(Math.max(0, active - 1));
+  });
+  document.getElementById('news-next').addEventListener('click', () => {
+    const active = Array.from(dots).findIndex(d => d.classList.contains('active'));
+    scrollToIdx(Math.min(berita.length - 1, active + 1));
+  });
 }

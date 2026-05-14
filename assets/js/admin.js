@@ -1,536 +1,881 @@
-// Admin Dashboard
-let cachePeserta = [];
-let cacheJadwal = [];
-let cacheKehadiran = [];
+// =============================================================
+// Admin Panel — Refined with Cupertino icons, smooth UX
+// =============================================================
+let pesertaCache = [], jadwalCache = [], kehadiranCache = [], raporCache = [], beritaCache = [], pesertaListLunas = [];
 
-document.addEventListener('DOMContentLoaded', async () => {
-  if (!Auth.requireRole('admin')) return;
-  Utils.mountNavbar('admin');
+// =============================================================
+// CUPERTINO ICONS — inline SVG helper
+// Stroke-based, rounded, currentColor-driven
+// =============================================================
+const Icons = (() => {
+  const wrap = (paths, opts = {}) => {
+    const sw = opts.sw || 1.8;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+  };
+  return {
+    pencil: () => wrap(`<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>`),
+    trash:  () => wrap(`<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>`),
+    eye:    () => wrap(`<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`),
+    link:   () => wrap(`<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>`),
+    plus:   () => wrap(`<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>`, { sw: 2 }),
+    check:  () => wrap(`<polyline points="20 6 9 17 4 12"/>`, { sw: 2.2 }),
+    x:      () => wrap(`<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>`, { sw: 2 }),
+    clock:  () => wrap(`<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>`),
+    info:   () => wrap(`<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>`),
+    star:   () => wrap(`<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>`),
+    download: () => wrap(`<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>`),
+    mail:   () => wrap(`<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>`),
+    hourglass: () => wrap(`<path d="M6 2h12M6 22h12M6 2v6a6 6 0 0 0 12 0V2M6 22v-6a6 6 0 0 1 12 0v6"/>`),
+    user:   () => wrap(`<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>`),
+    school: () => wrap(`<path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>`),
+    pool:   () => wrap(`<path d="M2 20c2 0 2-1 4-1s2 1 4 1 2-1 4-1 2 1 4 1 2-1 4-1"/><path d="M2 16c2 0 2-1 4-1s2 1 4 1 2-1 4-1 2 1 4 1 2-1 4-1"/><path d="M6 12V6a4 4 0 0 1 4-4M18 12V6a4 4 0 0 0-4-4"/>`),
+    note:   () => wrap(`<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>`),
+  };
+})();
 
-  document.getElementById('admin-username').textContent = Auth.getUser().username;
-
-  // Tabs
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+// =============================================================
+// MODAL HELPER — keyboard, click-outside, focus management
+// =============================================================
+const ModalHelper = {
+  setup() {
+    // Single global ESC listener — closes topmost modal
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const modals = document.querySelectorAll('.modal-backdrop.active');
+        if (modals.length) {
+          const top = modals[modals.length - 1];
+          top.remove();
+        }
+      }
     });
+    // Delegated click-outside to close
+    document.addEventListener('mousedown', (e) => {
+      if (e.target.classList && e.target.classList.contains('modal-backdrop')) {
+        e.target.classList.add('closing');
+        setTimeout(() => e.target.remove(), 150);
+      }
+    });
+  },
+  focusFirst(modalEl) {
+    if (!modalEl) return;
+    const first = modalEl.querySelector('input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not(.modal-close)');
+    if (first) requestAnimationFrame(() => first.focus());
+  },
+};
+
+// =============================================================
+// RIPPLE EFFECT — delegated, lightweight
+// =============================================================
+function setupRipple() {
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn, .icon-btn');
+    if (!btn || btn.disabled) return;
+    const rect = btn.getBoundingClientRect();
+    btn.style.setProperty('--rx', (e.clientX - rect.left) + 'px');
+    btn.style.setProperty('--ry', (e.clientY - rect.top) + 'px');
+    btn.classList.remove('is-rippling');
+    void btn.offsetWidth; // force reflow
+    btn.classList.add('is-rippling');
+    setTimeout(() => btn.classList.remove('is-rippling'), 600);
   });
+}
 
-  // Filter & search listeners — Peserta
-  ['search-peserta', 'filter-peserta-kelas', 'filter-peserta-paid', 'sort-peserta'].forEach(id => {
-    document.getElementById(id).addEventListener('input', () => applyPesertaFilters());
-    document.getElementById(id).addEventListener('change', () => applyPesertaFilters());
-  });
+// =============================================================
+// SKELETON LOADER
+// =============================================================
+function renderSkeleton(tbodyId, cols = 7, rows = 5) {
+  const tbody = document.getElementById(tbodyId);
+  if (!tbody) return;
+  let html = '';
+  for (let i = 0; i < rows; i++) {
+    let tds = '';
+    for (let c = 0; c < cols; c++) {
+      const w = 40 + Math.random() * 50;
+      tds += `<td><div class="skel-bar" style="width:${w}%"></div></td>`;
+    }
+    html += `<tr class="skeleton-row">${tds}</tr>`;
+  }
+  tbody.innerHTML = html;
+}
 
-  // Filter & search listeners — Jadwal
-  ['search-jadwal', 'filter-jadwal-kelas', 'filter-jadwal-status', 'sort-jadwal'].forEach(id => {
-    document.getElementById(id).addEventListener('input', () => applyJadwalFilters());
-    document.getElementById(id).addEventListener('change', () => applyJadwalFilters());
-  });
+// =============================================================
+// INIT
+// =============================================================
+document.addEventListener('DOMContentLoaded', async () => {
+  Utils.mountNavbar('admin');
+  const session = Auth.getSession();
+  if (!session || session.role !== 'admin') { window.location.href = 'login.html'; return; }
 
-  // Filter & search listeners — Kehadiran
-  ['search-kehadiran', 'filter-periode', 'filter-kehadiran-kelas', 'filter-kehadiran-status', 'sort-kehadiran'].forEach(id => {
-    document.getElementById(id).addEventListener('input', () => applyKehadiranFilters());
-    document.getElementById(id).addEventListener('change', () => loadKehadiran());
-  });
+  ModalHelper.setup();
+  setupRipple();
+  setupTabs();
 
-  document.getElementById('btn-add-jadwal').addEventListener('click', () => openJadwalModal());
-  document.getElementById('btn-refresh').addEventListener('click', loadAll);
+  // Show skeletons immediately
+  renderSkeleton('tbody-peserta', 7, 6);
+  renderSkeleton('tbody-jadwal', 8, 6);
+  renderSkeleton('tbody-berita', 5, 4);
+  renderSkeleton('tbody-kehadiran', 7, 6);
+  renderSkeleton('tbody-rapor', 5, 4);
 
-  await loadAll();
+  await Promise.all([loadPeserta(), loadJadwal(), loadKehadiran(), loadRapor(), loadBerita()]);
+  updateStats();
+  setupFilters();
 });
 
-async function loadAll() {
-  await Promise.all([loadPeserta(), loadJadwal(), loadKehadiran()]);
-  updateStats();
+// =============================================================
+// TABS
+// =============================================================
+function setupTabs() {
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => {
+      x.classList.remove('active');
+      x.setAttribute('aria-selected', 'false');
+    });
+    document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    t.setAttribute('aria-selected', 'true');
+    document.getElementById('tab-' + t.dataset.tab).classList.add('active');
+  }));
+}
+
+function setupFilters() {
+  ['search-peserta', 'filter-kelas-peserta', 'filter-status-peserta'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', applyPesertaFilters);
+  });
+  ['search-jadwal', 'filter-kelas-jadwal', 'filter-status-jadwal', 'filter-tipe-jadwal'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', applyJadwalFilters);
+  });
+  ['search-berita'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', applyBeritaFilters);
+  });
+  ['search-kehadiran', 'filter-kelas-kehadiran', 'filter-status-kehadiran', 'filter-periode'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', applyKehadiranFilters);
+  });
+  document.getElementById('filter-periode')?.addEventListener('change', loadKehadiran);
+  document.getElementById('search-rapor')?.addEventListener('input', applyRaporFilters);
 }
 
 function updateStats() {
-  document.getElementById('stat-total-peserta').textContent = cachePeserta.length;
-  document.getElementById('stat-aktif-peserta').textContent = cachePeserta.filter(p =>
-    p.Status_Pembayaran === true || String(p.Status_Pembayaran).toUpperCase() === 'TRUE'
-  ).length;
-  document.getElementById('stat-total-jadwal').textContent = cacheJadwal.length;
-  document.getElementById('stat-total-kehadiran').textContent = cacheKehadiran.length;
+  document.getElementById('stat-peserta').textContent = pesertaCache.length;
+  document.getElementById('stat-jadwal').textContent = jadwalCache.length;
+  document.getElementById('stat-kehadiran').textContent = kehadiranCache.length;
+  document.getElementById('stat-pending').textContent = pesertaCache.filter(p => !Utils.formatBool(p.Status_Pembayaran).includes('TRUE')).length;
 }
 
-/* ============================================================
-   PESERTA — Filter kompleks (kelas, pembayaran, sort)
-   ============================================================ */
+// =============================================================
+// PESERTA
+// =============================================================
 async function loadPeserta() {
   const res = await API.call('getAllPeserta');
-  if (res.success) {
-    cachePeserta = res.data;
-    applyPesertaFilters();
-  } else { Utils.notify(res.message, 'error'); }
+  if (!res.success) { Utils.notify(res.message, 'error'); return; }
+  pesertaCache = res.data || [];
+  pesertaListLunas = pesertaCache.filter(p => Utils.formatBool(p.Status_Pembayaran) === 'TRUE');
+  applyPesertaFilters();
 }
 
 function applyPesertaFilters() {
-  const q = document.getElementById('search-peserta').value.toLowerCase();
-  const kelasFilter = document.getElementById('filter-peserta-kelas').value;
-  const paidFilter = document.getElementById('filter-peserta-paid').value;
-  const sort = document.getElementById('sort-peserta').value;
-
-  let list = cachePeserta.filter(p => {
-    const matchSearch = (p.Nama_Lengkap || '').toLowerCase().includes(q) ||
-                        (p.Username || '').toLowerCase().includes(q) ||
-                        (p.Kelas || '').toLowerCase().includes(q) ||
-                        String(p.Nomor_Whatsapp || '').includes(q);
-    const matchKelas = !kelasFilter || p.Kelas === kelasFilter;
-    const isPaid = p.Status_Pembayaran === true || String(p.Status_Pembayaran).toUpperCase() === 'TRUE';
-    const matchPaid = !paidFilter || (paidFilter === 'paid' ? isPaid : !isPaid);
-    return matchSearch && matchKelas && matchPaid;
+  const search = (document.getElementById('search-peserta')?.value || '').toLowerCase();
+  const fKelas = document.getElementById('filter-kelas-peserta')?.value || 'all';
+  const fStatus = document.getElementById('filter-status-peserta')?.value || 'all';
+  let filtered = [...pesertaCache];
+  if (search) filtered = filtered.filter(p =>
+    String(p.Nama_Lengkap).toLowerCase().includes(search) ||
+    String(p.Username).toLowerCase().includes(search) ||
+    String(p.Nomor_Whatsapp).toLowerCase().includes(search)
+  );
+  if (fKelas !== 'all') filtered = filtered.filter(p => p.Kelas === fKelas);
+  if (fStatus !== 'all') filtered = filtered.filter(p => {
+    const isPaid = Utils.formatBool(p.Status_Pembayaran) === 'TRUE';
+    return fStatus === 'paid' ? isPaid : !isPaid;
   });
-
-  list.sort((a, b) => {
-    if (sort === 'nama-asc') return (a.Nama_Lengkap || '').localeCompare(b.Nama_Lengkap || '');
-    if (sort === 'nama-desc') return (b.Nama_Lengkap || '').localeCompare(a.Nama_Lengkap || '');
-    if (sort === 'persen-desc') return (b.persentase || 0) - (a.persentase || 0);
-    if (sort === 'persen-asc') return (a.persentase || 0) - (b.persentase || 0);
-    if (sort === 'usia-asc') return (a.Usia || 0) - (b.Usia || 0);
-    if (sort === 'usia-desc') return (b.Usia || 0) - (a.Usia || 0);
-    return 0;
-  });
-
-  renderPeserta(list);
+  renderPeserta(filtered);
 }
 
-function renderPeserta(list) {
+function renderPeserta(data) {
   const tbody = document.getElementById('tbody-peserta');
-  if (!list || list.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:30px;">Tidak ada data sesuai filter</td></tr>`;
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">Tidak ada data peserta</td></tr>`;
     return;
   }
-  tbody.innerHTML = list.map(p => {
-    const isPaid = p.Status_Pembayaran === true || String(p.Status_Pembayaran).toUpperCase() === 'TRUE';
-    const persenClass = p.persentase >= 75 ? 'high' : p.persentase >= 40 ? 'mid' : 'low';
-    return `
-      <tr>
-        <td>${Utils.escapeHtml(p.Nama_Lengkap)}</td>
-        <td>${Utils.escapeHtml(p.Username)}</td>
-        <td>${Utils.escapeHtml(p.Usia || '-')}</td>
-        <td>${Utils.escapeHtml(p.Nomor_Whatsapp)}</td>
-        <td>${Utils.escapeHtml(p.Kelas || '-')}</td>
-        <td>${Utils.escapeHtml(p.Tanggal_Mulai || '-')}</td>
-        <td>${Utils.escapeHtml(p.Tanggal_Akhir || '-')}</td>
-        <td><span class="badge ${isPaid ? 'badge-success' : 'badge-warning'}">${isPaid ? 'LUNAS' : 'BELUM'}</span></td>
-        <td>${p.total_hadir} / ${p.total_jadwal}</td>
-        <td>
-          <div class="persen-cell">
-            <div class="persen-bar"><div class="persen-fill ${persenClass}" style="width:${p.persentase}%"></div></div>
-            <span class="persen-text">${p.persentase}%</span>
-          </div>
-        </td>
-        <td>
-          <div class="action-btns">
-            <button class="icon-btn edit" onclick="openPesertaModal('${p.Id_Peserta}')" title="Edit Data">✏️</button>
-            <button class="icon-btn rapor" onclick="openRaporAdminModal('${p.Id_Peserta}', '${Utils.escapeHtml(p.Nama_Lengkap)}')" title="Edit Rapor">📋</button>
-            <button class="icon-btn delete" onclick="deletePeserta('${p.Id_Peserta}')" title="Hapus">🗑️</button>
-          </div>
-        </td>
-      </tr>`;
+  tbody.innerHTML = data.map(p => {
+    const isPaid = Utils.formatBool(p.Status_Pembayaran) === 'TRUE';
+    const persenColor = p.persentase >= 75 ? 'success' : p.persentase >= 50 ? 'warning' : 'danger';
+    return `<tr class="row-clickable" onclick="openPesertaDetailModal('${p.Id_Peserta}')">
+      <td>${Utils.escapeHtml(p.Nama_Lengkap)}</td>
+      <td>${p.Usia || '-'}</td>
+      <td>${Utils.escapeHtml(p.Jenis_Kelamin) || '-'}</td>
+      <td><span class="kelas-tag">${Utils.escapeHtml(p.Kelas) || '-'}</span></td>
+      <td><span class="status-badge ${isPaid ? 'success' : 'warning'}">${isPaid ? Icons.check() + ' Lunas' : Icons.clock() + ' Belum'}</span></td>
+      <td><div class="persen-cell"><div class="persen-bar ${persenColor}" style="width:${p.persentase}%;"></div><span>${p.persentase}%</span></div></td>
+      <td onclick="event.stopPropagation();">
+        <div class="action-btns">
+          <button class="icon-btn edit" title="Edit peserta" aria-label="Edit peserta" onclick="openPesertaEditModal('${p.Id_Peserta}')">${Icons.pencil()}</button>
+          <button class="icon-btn delete" title="Hapus peserta" aria-label="Hapus peserta" onclick="deletePesertaConfirm('${p.Id_Peserta}','${Utils.escapeHtml(p.Nama_Lengkap)}')">${Icons.trash()}</button>
+        </div>
+      </td>
+    </tr>`;
   }).join('');
 }
 
-function openPesertaModal(id) {
-  const p = cachePeserta.find(x => x.Id_Peserta === id);
+function openPesertaDetailModal(id) {
+  const p = pesertaCache.find(x => x.Id_Peserta === id);
   if (!p) return;
-  const isPaid = p.Status_Pembayaran === true || String(p.Status_Pembayaran).toUpperCase() === 'TRUE';
-
+  const isPaid = Utils.formatBool(p.Status_Pembayaran) === 'TRUE';
   const html = `
-    <div class="modal-backdrop active" id="m-peserta">
-      <div class="modal">
+    <div class="modal-backdrop active" id="peserta-detail-modal">
+      <div class="modal modal-md">
         <div class="modal-header">
-          <h3>Edit Peserta</h3>
-          <button class="modal-close" onclick="closeModal('m-peserta')">×</button>
+          <h3>${Icons.user()} Detail Peserta</h3>
+          <button class="modal-close" aria-label="Tutup" onclick="document.getElementById('peserta-detail-modal').remove()">${Icons.x()}</button>
         </div>
         <div class="modal-body">
-          <div class="form-group"><label>Nama Lengkap</label>
-            <input class="form-control" id="ep-nama" value="${Utils.escapeHtml(p.Nama_Lengkap)}"></div>
-          <div style="display:grid;grid-template-columns:1fr 100px;gap:12px;">
-            <div class="form-group"><label>Username</label>
-              <input class="form-control" id="ep-username" value="${Utils.escapeHtml(p.Username)}"></div>
-            <div class="form-group"><label>Usia</label>
-              <input type="number" class="form-control" id="ep-usia" value="${Utils.escapeHtml(p.Usia || '')}" min="5"></div>
-          </div>
-          <div class="form-group"><label>Password Baru <small>(kosongkan jika tidak diubah)</small></label>
-            <input type="password" class="form-control" id="ep-password" placeholder="•••••••"></div>
-          <div class="form-group"><label>Nomor WhatsApp</label>
-            <input class="form-control" id="ep-wa" value="${Utils.escapeHtml(p.Nomor_Whatsapp)}"></div>
-          <div class="form-group"><label>Kelas</label>
-            <select class="form-control" id="ep-kelas">
-              <option value="">- Pilih Kelas -</option>
-              ${CONFIG.KELAS_OPTIONS.map(k => `<option value="${k}" ${p.Kelas === k ? 'selected' : ''}>${k}</option>`).join('')}
-            </select>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-            <div class="form-group"><label>Tanggal Mulai</label>
-              <input type="date" class="form-control" id="ep-mulai" value="${Utils.formatDateInput(p.Tanggal_Mulai)}"></div>
-            <div class="form-group"><label>Tanggal Akhir</label>
-              <input type="date" class="form-control" id="ep-akhir" value="${Utils.formatDateInput(p.Tanggal_Akhir)}"></div>
-          </div>
-          <div class="form-group">
-            <label class="checkbox-row">
-              <input type="checkbox" id="ep-paid" ${isPaid ? 'checked' : ''}>
-              <span>Status Pembayaran <strong>LUNAS</strong></span>
-            </label>
-            <p class="form-helper" style="color:var(--color-accent);">⚡ Saat pembayaran dikonfirmasi pertama kali, jadwal akan otomatis di-generate sesuai grup & periode peserta.</p>
+          <div class="detail-grid">
+            <div class="detail-section">
+              <h4>${Icons.user()} Identitas</h4>
+              <div class="detail-row"><span>Nama Lengkap</span><strong>${Utils.escapeHtml(p.Nama_Lengkap)}</strong></div>
+              <div class="detail-row"><span>Username</span><strong>${Utils.escapeHtml(p.Username)}</strong></div>
+              <div class="detail-row"><span>Jenis Kelamin</span><strong>${Utils.escapeHtml(p.Jenis_Kelamin) || '-'}</strong></div>
+              <div class="detail-row"><span>Tempat Lahir</span><strong>${Utils.escapeHtml(p.Tempat_Lahir) || '-'}</strong></div>
+              <div class="detail-row"><span>Tanggal Lahir</span><strong>${Utils.formatDate(p.Tanggal_Lahir)}</strong></div>
+              <div class="detail-row"><span>Usia</span><strong>${p.Usia || '-'} tahun</strong></div>
+              <div class="detail-row"><span>Kelompok Umur</span><strong>${Utils.escapeHtml(p.Kelompok_Umur) || '-'}</strong></div>
+              <div class="detail-row"><span>NISNAS</span><strong>${Utils.escapeHtml(p.NISNAS) || '-'}</strong></div>
+              <div class="detail-row"><span>WhatsApp</span><strong>${Utils.escapeHtml(p.Nomor_Whatsapp)}</strong></div>
+            </div>
+            <div class="detail-section">
+              <h4>${Icons.school()} Sekolah</h4>
+              <div class="detail-row"><span>Asal Sekolah</span><strong>${Utils.escapeHtml(p.Asal_Sekolah) || '-'}</strong></div>
+              <div class="detail-row"><span>Kelas Sekolah</span><strong>${Utils.escapeHtml(p.Kelas_Sekolah) || '-'}</strong></div>
+              <div class="detail-row"><span>Wali Kelas</span><strong>${Utils.escapeHtml(p.Wali_Kelas) || '-'}</strong></div>
+            </div>
+            <div class="detail-section">
+              <h4>${Icons.pool()} Pelatihan</h4>
+              <div class="detail-row"><span>Kelas</span><strong>${Utils.escapeHtml(p.Kelas)}</strong></div>
+              <div class="detail-row"><span>Mulai</span><strong>${Utils.formatDate(p.Tanggal_Mulai)}</strong></div>
+              <div class="detail-row"><span>Berakhir</span><strong>${Utils.formatDate(p.Tanggal_Akhir)}</strong></div>
+              <div class="detail-row"><span>Pembayaran</span><strong><span class="status-badge ${isPaid ? 'success' : 'warning'}">${isPaid ? Icons.check() + ' Lunas' : Icons.clock() + ' Belum'}</span></strong></div>
+              <div class="detail-row"><span>Total Jadwal</span><strong>${p.total_jadwal}</strong></div>
+              <div class="detail-row"><span>Total Hadir</span><strong>${p.total_hadir}</strong></div>
+              <div class="detail-row"><span>Persentase</span><strong>${p.persentase}%</strong></div>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" onclick="closeModal('m-peserta')">Batal</button>
-          <button class="btn btn-primary" onclick="savePeserta('${id}')">Simpan</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('peserta-detail-modal').remove()">Tutup</button>
+          <button class="btn btn-primary btn-icon" onclick="document.getElementById('peserta-detail-modal').remove(); openPesertaEditModal('${id}')">${Icons.pencil()} <span>Edit Data</span></button>
         </div>
       </div>
     </div>`;
   document.body.insertAdjacentHTML('beforeend', html);
+  ModalHelper.focusFirst(document.getElementById('peserta-detail-modal'));
+}
+
+function openPesertaEditModal(id) {
+  const p = pesertaCache.find(x => x.Id_Peserta === id);
+  if (!p) return;
+  const isPaid = Utils.formatBool(p.Status_Pembayaran) === 'TRUE';
+  const kelasOpts = CONFIG.KELAS_OPTIONS.map(k => `<option value="${k}" ${p.Kelas === k ? 'selected' : ''}>${k}</option>`).join('');
+  const jkOpts = CONFIG.JENIS_KELAMIN_OPTIONS.map(j => `<option value="${j}" ${p.Jenis_Kelamin === j ? 'selected' : ''}>${j}</option>`).join('');
+  const html = `
+    <div class="modal-backdrop active" id="peserta-edit-modal">
+      <div class="modal modal-md">
+        <div class="modal-header">
+          <h3>${Icons.pencil()} Edit Peserta</h3>
+          <button class="modal-close" aria-label="Tutup" onclick="document.getElementById('peserta-edit-modal').remove()">${Icons.x()}</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-grid-2">
+            <div class="form-group"><label>Nama Lengkap *</label><input id="e-nama" class="form-control" value="${Utils.escapeHtml(p.Nama_Lengkap)}"></div>
+            <div class="form-group"><label>Username *</label><input id="e-username" class="form-control" value="${Utils.escapeHtml(p.Username)}"></div>
+            <div class="form-group"><label>Password baru (kosongkan jika tidak ganti)</label><input id="e-password" class="form-control" type="text" value="" placeholder="••••"></div>
+            <div class="form-group"><label>WhatsApp *</label><input id="e-wa" class="form-control" value="${Utils.escapeHtml(p.Nomor_Whatsapp)}"></div>
+            <div class="form-group"><label>Jenis Kelamin</label><select id="e-jk" class="form-control"><option value="">-</option>${jkOpts}</select></div>
+            <div class="form-group"><label>Tempat Lahir</label><input id="e-tempat" class="form-control" value="${Utils.escapeHtml(p.Tempat_Lahir || '')}"></div>
+            <div class="form-group"><label>Tanggal Lahir</label><input id="e-tgllahir" class="form-control" type="date" value="${Utils.formatDateInput(p.Tanggal_Lahir)}"></div>
+            <div class="form-group"><label>NISNAS</label><input id="e-nisnas" class="form-control" value="${Utils.escapeHtml(p.NISNAS || '')}"></div>
+            <div class="form-group"><label>Asal Sekolah</label><input id="e-sekolah" class="form-control" value="${Utils.escapeHtml(p.Asal_Sekolah || '')}"></div>
+            <div class="form-group"><label>Kelas Sekolah</label><input id="e-kelassekolah" class="form-control" value="${Utils.escapeHtml(p.Kelas_Sekolah || '')}"></div>
+            <div class="form-group"><label>Wali Kelas</label><input id="e-wali" class="form-control" value="${Utils.escapeHtml(p.Wali_Kelas || '')}"></div>
+            <div class="form-group"><label>Kelas Renang *</label><select id="e-kelas" class="form-control">${kelasOpts}</select></div>
+            <div class="form-group"><label>Mulai</label><input id="e-mulai" class="form-control" type="date" value="${Utils.formatDateInput(p.Tanggal_Mulai)}"></div>
+            <div class="form-group"><label>Berakhir</label><input id="e-akhir" class="form-control" type="date" value="${Utils.formatDateInput(p.Tanggal_Akhir)}"></div>
+            <div class="form-group"><label>Status Pembayaran</label><select id="e-bayar" class="form-control"><option value="false" ${!isPaid ? 'selected' : ''}>Belum Lunas</option><option value="true" ${isPaid ? 'selected' : ''}>Lunas</option></select></div>
+          </div>
+          <div class="info-banner">${Icons.info()}<p>Mengubah ke <strong>Lunas</strong> akan auto-generate jadwal kelas otomatis</p></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="document.getElementById('peserta-edit-modal').remove()">Batal</button>
+          <button class="btn btn-primary" onclick="savePeserta('${id}')">Simpan Perubahan</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+  ModalHelper.focusFirst(document.getElementById('peserta-edit-modal'));
 }
 
 async function savePeserta(id) {
-  const data = {
-    id,
-    nama_lengkap: document.getElementById('ep-nama').value.trim(),
-    username: document.getElementById('ep-username').value.trim(),
-    password: document.getElementById('ep-password').value,
-    nomor_whatsapp: document.getElementById('ep-wa').value.trim(),
-    usia: document.getElementById('ep-usia').value,
-    kelas: document.getElementById('ep-kelas').value,
-    tanggal_mulai: document.getElementById('ep-mulai').value,
-    tanggal_akhir: document.getElementById('ep-akhir').value,
-    status_pembayaran: document.getElementById('ep-paid').checked
+  const payload = {
+    id: id,
+    nama_lengkap: document.getElementById('e-nama').value.trim(),
+    username: document.getElementById('e-username').value.trim(),
+    nomor_whatsapp: document.getElementById('e-wa').value.trim(),
+    jenis_kelamin: document.getElementById('e-jk').value,
+    tempat_lahir: document.getElementById('e-tempat').value.trim(),
+    tanggal_lahir: document.getElementById('e-tgllahir').value,
+    nisnas: document.getElementById('e-nisnas').value.trim(),
+    asal_sekolah: document.getElementById('e-sekolah').value.trim(),
+    kelas_sekolah: document.getElementById('e-kelassekolah').value.trim(),
+    wali_kelas: document.getElementById('e-wali').value.trim(),
+    kelas: document.getElementById('e-kelas').value,
+    tanggal_mulai: document.getElementById('e-mulai').value,
+    tanggal_akhir: document.getElementById('e-akhir').value,
+    status_pembayaran: document.getElementById('e-bayar').value === 'true'
   };
-  const res = await API.call('updatePeserta', data);
+  const password = document.getElementById('e-password').value;
+  if (password) payload.password = password;
+
+  Utils.showLoader(true);
+  const res = await API.call('updatePeserta', payload);
+  Utils.showLoader(false);
   if (res.success) {
     Utils.notify(res.message, 'success', 5000);
-    closeModal('m-peserta');
-    await loadAll();
-  } else {
-    Utils.notify(res.message, 'error');
-  }
+    document.getElementById('peserta-edit-modal').remove();
+    await loadPeserta();
+    await loadJadwal();
+    updateStats();
+  } else Utils.notify(res.message, 'error');
 }
 
-async function deletePeserta(id) {
-  const ok = await Utils.confirm('Yakin ingin menghapus peserta ini?');
+async function deletePesertaConfirm(id, nama) {
+  const ok = await Utils.confirm(`Hapus peserta <strong>${nama}</strong>?<br>Data akan hilang permanen.`);
   if (!ok) return;
+  Utils.showLoader(true);
   const res = await API.call('deletePeserta', { id });
-  if (res.success) { Utils.notify(res.message, 'success'); await loadAll(); }
+  Utils.showLoader(false);
+  if (res.success) { Utils.notify(res.message, 'success'); await loadPeserta(); updateStats(); }
   else Utils.notify(res.message, 'error');
 }
 
-/* ============================================================
-   RAPOR — Admin manage rapor per peserta
-   ============================================================ */
-async function openRaporAdminModal(idPeserta, nama) {
-  const res = await API.call('getRaporPeserta', { id_peserta: idPeserta });
-  const r = res.data || { Nilai: '', Predikat: '', Catatan: '' };
-
-  const html = `
-    <div class="modal-backdrop active" id="m-rapor-admin">
-      <div class="modal" style="max-width:520px;">
-        <div class="modal-header">
-          <h3>📋 Rapor: ${Utils.escapeHtml(nama)}</h3>
-          <button class="modal-close" onclick="closeModal('m-rapor-admin')">×</button>
-        </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label>Nilai <small>(angka 0-100)</small></label>
-            <input type="number" min="0" max="100" class="form-control" id="rp-nilai" value="${Utils.escapeHtml(r.Nilai || '')}">
-          </div>
-          <div class="form-group">
-            <label>Predikat</label>
-            <select class="form-control" id="rp-predikat">
-              <option value="">- Pilih -</option>
-              <option value="A - Sangat Baik"  ${r.Predikat === 'A - Sangat Baik' ? 'selected' : ''}>A - Sangat Baik</option>
-              <option value="B - Baik"         ${r.Predikat === 'B - Baik' ? 'selected' : ''}>B - Baik</option>
-              <option value="C - Cukup"        ${r.Predikat === 'C - Cukup' ? 'selected' : ''}>C - Cukup</option>
-              <option value="D - Perlu Latihan" ${r.Predikat === 'D - Perlu Latihan' ? 'selected' : ''}>D - Perlu Latihan</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Catatan Pelatih</label>
-            <textarea class="form-control" id="rp-catatan" rows="5" placeholder="Tulis evaluasi, kemajuan, dan saran untuk peserta...">${Utils.escapeHtml(r.Catatan || '')}</textarea>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" onclick="closeModal('m-rapor-admin')">Batal</button>
-          <button class="btn btn-primary" onclick="saveRapor('${idPeserta}')">Simpan Rapor</button>
-        </div>
-      </div>
-    </div>`;
-  document.body.insertAdjacentHTML('beforeend', html);
-}
-
-async function saveRapor(idPeserta) {
-  const data = {
-    id_peserta: idPeserta,
-    nilai: document.getElementById('rp-nilai').value,
-    predikat: document.getElementById('rp-predikat').value,
-    catatan: document.getElementById('rp-catatan').value
-  };
-  const res = await API.call('upsertRapor', data);
-  if (res.success) { Utils.notify(res.message, 'success'); closeModal('m-rapor-admin'); }
-  else Utils.notify(res.message, 'error');
-}
-
-/* ============================================================
-   JADWAL — Filter kompleks + click row → attendees modal
-   ============================================================ */
+// =============================================================
+// JADWAL
+// =============================================================
 async function loadJadwal() {
   const res = await API.call('getAllJadwal');
-  if (res.success) { cacheJadwal = res.data; applyJadwalFilters(); }
-  else Utils.notify(res.message, 'error');
+  if (!res.success) { Utils.notify(res.message, 'error'); return; }
+  jadwalCache = res.data || [];
+  applyJadwalFilters();
 }
 
 function applyJadwalFilters() {
-  const q = document.getElementById('search-jadwal').value.toLowerCase();
-  const kelasF = document.getElementById('filter-jadwal-kelas').value;
-  const statusF = document.getElementById('filter-jadwal-status').value;
-  const sort = document.getElementById('sort-jadwal').value;
-
-  let list = cacheJadwal.filter(j => {
-    const matchSearch = (j.Kelas || '').toLowerCase().includes(q) ||
-                        (j.Lokasi || '').toLowerCase().includes(q) ||
-                        String(j.Tanggal || '').toLowerCase().includes(q) ||
-                        (j.Pukul || '').toLowerCase().includes(q);
-    const matchKelas = !kelasF || j.Kelas === kelasF;
-    const matchStatus = !statusF || j.Status === statusF;
-    return matchSearch && matchKelas && matchStatus;
-  });
-
-  list.sort((a, b) => {
-    const da = new Date(a.Tanggal); const db = new Date(b.Tanggal);
-    if (sort === 'tanggal-desc') return db - da;
-    if (sort === 'tanggal-asc') return da - db;
-    if (sort === 'kelas') return (a.Kelas || '').localeCompare(b.Kelas || '');
-    return 0;
-  });
-
-  renderJadwal(list);
+  const search = (document.getElementById('search-jadwal')?.value || '').toLowerCase();
+  const fKelas = document.getElementById('filter-kelas-jadwal')?.value || 'all';
+  const fStatus = document.getElementById('filter-status-jadwal')?.value || 'all';
+  const fTipe = document.getElementById('filter-tipe-jadwal')?.value || 'all';
+  let filtered = [...jadwalCache];
+  if (search) filtered = filtered.filter(j =>
+    String(j.Tanggal).toLowerCase().includes(search) ||
+    String(j.Lokasi).toLowerCase().includes(search) ||
+    String(j.Pukul).toLowerCase().includes(search) ||
+    String(j.nama_peserta_personal || '').toLowerCase().includes(search)
+  );
+  if (fKelas !== 'all') filtered = filtered.filter(j => j.Kelas === fKelas);
+  if (fStatus !== 'all') filtered = filtered.filter(j => j.Status === fStatus);
+  if (fTipe === 'kelas') filtered = filtered.filter(j => !j.is_personal);
+  if (fTipe === 'personal') filtered = filtered.filter(j => j.is_personal);
+  filtered.sort((a, b) => new Date(b.Tanggal) - new Date(a.Tanggal));
+  renderJadwal(filtered);
 }
 
-function renderJadwal(list) {
+function renderJadwal(data) {
   const tbody = document.getElementById('tbody-jadwal');
-  if (!list || list.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px;">Tidak ada jadwal sesuai filter</td></tr>`;
-    return;
-  }
-  tbody.innerHTML = list.map(j => {
-    const status = String(j.Status).toLowerCase();
-    const badgeClass = status === 'aktif' ? 'badge-success' : status === 'pending' ? 'badge-warning' : 'badge-danger';
-    return `
-      <tr class="clickable-row" onclick="openAttendeesModal('${j.Id_Jadwal}')">
-        <td>${Utils.escapeHtml(Utils.formatDate(j.Tanggal))}</td>
-        <td>${Utils.escapeHtml(j.Pukul)}</td>
-        <td>${Utils.escapeHtml(j.Kelas)}</td>
-        <td>${Utils.escapeHtml(j.Lokasi)}</td>
-        <td><span class="badge ${badgeClass}">${Utils.escapeHtml(j.Status)}</span></td>
-        <td onclick="event.stopPropagation()">
-          <div class="action-btns">
-            <button class="icon-btn view" onclick="openAttendeesModal('${j.Id_Jadwal}')" title="Lihat Peserta">👁️</button>
-            <button class="icon-btn edit" onclick="openJadwalModal('${j.Id_Jadwal}')" title="Edit">✏️</button>
-            <button class="icon-btn delete" onclick="deleteJadwal('${j.Id_Jadwal}')" title="Hapus">🗑️</button>
-          </div>
-        </td>
-      </tr>`;
-  }).join('');
+  if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="8" class="empty-cell">Tidak ada jadwal</td></tr>`; return; }
+  tbody.innerHTML = data.map(j => `
+    <tr>
+      <td>${Utils.formatDate(j.Tanggal)}</td>
+      <td>${Utils.escapeHtml(j.Pukul)}</td>
+      <td><span class="kelas-tag">${Utils.escapeHtml(j.Kelas) || '-'}</span></td>
+      <td>${j.is_personal ? `<span class="status-badge personal">${Icons.star()} Personal</span>` : `<span class="status-badge info">${Icons.user()} Kelas</span>`}</td>
+      <td>${j.is_personal ? Utils.escapeHtml(j.nama_peserta_personal) : '<em class="text-muted">—</em>'}</td>
+      <td>${Utils.escapeHtml(j.Lokasi)}</td>
+      <td><span class="status-badge ${String(j.Status).toLowerCase()}">${j.Status}</span></td>
+      <td>
+        <div class="action-btns">
+          <button class="icon-btn view" title="Lihat peserta absen" aria-label="Lihat peserta" onclick="openAttendeesModal('${j.Id_Jadwal}')">${Icons.eye()}</button>
+          <button class="icon-btn edit" title="Edit jadwal" aria-label="Edit jadwal" onclick="openJadwalEditModal('${j.Id_Jadwal}')">${Icons.pencil()}</button>
+          <button class="icon-btn delete" title="Hapus jadwal" aria-label="Hapus jadwal" onclick="deleteJadwalConfirm('${j.Id_Jadwal}')">${Icons.trash()}</button>
+        </div>
+      </td>
+    </tr>`).join('');
 }
 
-function openJadwalModal(id) {
-  const isEdit = !!id;
-  const j = isEdit ? cacheJadwal.find(x => x.Id_Jadwal === id) : {};
+function openJadwalModal() {
+  const pesertaOpts = pesertaListLunas.map(p => `<option value="${p.Id_Peserta}">${Utils.escapeHtml(p.Nama_Lengkap)} • ${p.Kelas}</option>`).join('');
+  const statusOpts = CONFIG.STATUS_JADWAL.map(s => `<option value="${s}">${s}</option>`).join('');
+  const locs = CONFIG.LOCATIONS.map(l => `<option value="${l.name}">${l.name}</option>`).join('');
   const html = `
-    <div class="modal-backdrop active" id="m-jadwal">
-      <div class="modal">
+    <div class="modal-backdrop active" id="jadwal-modal">
+      <div class="modal modal-md">
         <div class="modal-header">
-          <h3>${isEdit ? 'Edit' : 'Tambah'} Jadwal</h3>
-          <button class="modal-close" onclick="closeModal('m-jadwal')">×</button>
+          <h3>${Icons.plus()} Tambah Jadwal Personal</h3>
+          <button class="modal-close" aria-label="Tutup" onclick="document.getElementById('jadwal-modal').remove()">${Icons.x()}</button>
         </div>
         <div class="modal-body">
-          <div class="form-group"><label>Tanggal *</label>
-            <input type="date" class="form-control" id="ej-tanggal" value="${isEdit ? Utils.formatDateInput(j.Tanggal) : ''}"></div>
-          <div class="form-group"><label>Pukul *</label>
-            <input class="form-control" id="ej-pukul" placeholder="16:00 - 17:45" value="${isEdit ? Utils.escapeHtml(j.Pukul) : ''}"></div>
-          <div class="form-group"><label>Lokasi *</label>
-            <input class="form-control" id="ej-lokasi" placeholder="Kenari Waterpark Bontang" value="${isEdit ? Utils.escapeHtml(j.Lokasi) : ''}"></div>
-          <div class="form-group"><label>Kelas *</label>
-            <select class="form-control" id="ej-kelas">
-              ${CONFIG.KELAS_OPTIONS.map(k => `<option value="${k}" ${isEdit && j.Kelas === k ? 'selected' : ''}>${k}</option>`).join('')}
-            </select>
+          <div class="info-banner">${Icons.info()}
+            <p><strong>Jadwal Personal:</strong> Khusus untuk 1 peserta saja (misalnya latihan lomba/tambahan). Untuk jadwal kelas reguler, gunakan auto-generate dengan mengaktifkan pembayaran peserta.</p>
           </div>
-          <div class="form-group"><label>Status *</label>
-            <select class="form-control" id="ej-status">
-              ${CONFIG.STATUS_JADWAL.map(s => `<option value="${s}" ${(isEdit && j.Status === s) || (!isEdit && s === 'Pending') ? 'selected' : ''}>${s}</option>`).join('')}
-            </select>
+          <div class="form-group"><label>Peserta *</label><select id="j-peserta" class="form-control"><option value="">- Pilih peserta -</option>${pesertaOpts}</select></div>
+          <div class="form-grid-2">
+            <div class="form-group"><label>Tanggal *</label><input id="j-tanggal" class="form-control" type="date"></div>
+            <div class="form-group"><label>Pukul *</label><input id="j-pukul" class="form-control" placeholder="contoh: 16:00 - 18:00"></div>
+            <div class="form-group"><label>Lokasi *</label><select id="j-lokasi" class="form-control">${locs}</select></div>
+            <div class="form-group"><label>Status *</label><select id="j-status" class="form-control">${statusOpts}</select></div>
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" onclick="closeModal('m-jadwal')">Batal</button>
-          <button class="btn btn-primary" onclick="saveJadwal('${id || ''}')">Simpan</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('jadwal-modal').remove()">Batal</button>
+          <button class="btn btn-primary" onclick="saveJadwalNew()">Simpan</button>
         </div>
       </div>
     </div>`;
   document.body.insertAdjacentHTML('beforeend', html);
+  ModalHelper.focusFirst(document.getElementById('jadwal-modal'));
 }
 
-async function saveJadwal(id) {
-  const data = {
-    tanggal: document.getElementById('ej-tanggal').value,
-    pukul: document.getElementById('ej-pukul').value.trim(),
-    lokasi: document.getElementById('ej-lokasi').value.trim(),
-    kelas: document.getElementById('ej-kelas').value,
-    status: document.getElementById('ej-status').value
-  };
-  if (!data.tanggal || !data.pukul || !data.lokasi) {
-    Utils.notify('Tanggal, pukul, dan lokasi wajib diisi', 'warning');
-    return;
-  }
-  const res = id
-    ? await API.call('updateJadwal', { id, ...data })
-    : await API.call('createJadwal', { id_pelatih: Auth.getUser().id, ...data });
-  if (res.success) { Utils.notify(res.message, 'success'); closeModal('m-jadwal'); await loadAll(); }
-  else Utils.notify(res.message, 'error');
-}
+async function saveJadwalNew() {
+  const session = Auth.getSession();
+  const idPeserta = document.getElementById('j-peserta').value;
+  const tanggal = document.getElementById('j-tanggal').value;
+  const pukul = document.getElementById('j-pukul').value.trim();
+  const lokasi = document.getElementById('j-lokasi').value;
+  const status = document.getElementById('j-status').value;
+  if (!idPeserta || !tanggal || !pukul || !lokasi) { Utils.notify('Mohon lengkapi semua field', 'warning'); return; }
 
-async function deleteJadwal(id) {
-  const ok = await Utils.confirm('Yakin ingin menghapus jadwal ini?');
-  if (!ok) return;
-  const res = await API.call('deleteJadwal', { id });
-  if (res.success) { Utils.notify(res.message, 'success'); await loadAll(); }
-  else Utils.notify(res.message, 'error');
-}
-
-/* ATTENDEES — Modal saat jadwal di-klik (request 18) */
-async function openAttendeesModal(idJadwal) {
-  const res = await API.call('getJadwalAttendees', { id_jadwal: idJadwal });
-  if (!res.success) { Utils.notify(res.message, 'error'); return; }
-  const j = res.jadwal;
-  const list = res.data || [];
-
-  const stats = {
-    hadir: list.filter(p => p.status === 'hadir').length,
-    izin: list.filter(p => p.status === 'izin').length,
-    belum: list.filter(p => p.status === 'belum').length
-  };
-
-  const rowsHtml = list.length === 0
-    ? `<div class="empty-state"><p>Belum ada peserta di kelas ini</p></div>`
-    : `<div class="attendees-list">
-        ${list.map(p => {
-          const badge = p.status === 'hadir' ? '<span class="badge badge-success">✓ HADIR</span>'
-                      : p.status === 'izin' ? '<span class="badge badge-warning">📝 IZIN</span>'
-                      : '<span class="badge badge-danger">✗ BELUM</span>';
-          return `
-            <div class="attendee-item">
-              <div>
-                <strong>${Utils.escapeHtml(p.nama)}</strong>
-                ${p.catatan ? `<div class="attendee-note">📝 ${Utils.escapeHtml(p.catatan)}</div>` : ''}
-              </div>
-              ${badge}
-            </div>`;
-        }).join('')}
-      </div>`;
-
-  const html = `
-    <div class="modal-backdrop active" id="m-attendees">
-      <div class="modal" style="max-width:600px;">
-        <div class="modal-header">
-          <h3>👥 Peserta Jadwal</h3>
-          <button class="modal-close" onclick="closeModal('m-attendees')">×</button>
-        </div>
-        <div class="modal-body">
-          <div class="attendees-summary">
-            <div><strong>${Utils.escapeHtml(j.Kelas)}</strong> • ${Utils.escapeHtml(j.Tanggal)} • ${Utils.escapeHtml(j.Pukul)}</div>
-            <div class="text-muted" style="font-size:13px;">📍 ${Utils.escapeHtml(j.Lokasi)}</div>
-          </div>
-          <div class="attendees-stats">
-            <div class="stat-pill stat-hadir">✓ Hadir: <strong>${stats.hadir}</strong></div>
-            <div class="stat-pill stat-izin">📝 Izin: <strong>${stats.izin}</strong></div>
-            <div class="stat-pill stat-belum">✗ Belum: <strong>${stats.belum}</strong></div>
-          </div>
-          ${rowsHtml}
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" onclick="closeModal('m-attendees')">Tutup</button>
-        </div>
-      </div>
-    </div>`;
-  document.body.insertAdjacentHTML('beforeend', html);
-}
-
-/* ============================================================
-   KEHADIRAN — Filter kompleks
-   ============================================================ */
-async function loadKehadiran() {
-  const periode = document.getElementById('filter-periode').value;
-  const res = await API.call('getAllKehadiran', { periode });
+  Utils.showLoader(true);
+  const res = await API.call('createJadwal', {
+    id_pelatih: session.data.id, id_peserta: idPeserta,
+    tanggal, pukul, lokasi, status
+  });
+  Utils.showLoader(false);
   if (res.success) {
-    cacheKehadiran = res.data;
-    applyKehadiranFilters();
-    updateStats();
-  } else { Utils.notify(res.message, 'error'); }
+    Utils.notify(res.message, 'success');
+    document.getElementById('jadwal-modal').remove();
+    await loadJadwal(); updateStats();
+  } else Utils.notify(res.message, 'error');
+}
+
+function openJadwalEditModal(id) {
+  const j = jadwalCache.find(x => x.Id_Jadwal === id);
+  if (!j) return;
+  const statusOpts = CONFIG.STATUS_JADWAL.map(s => `<option value="${s}" ${j.Status === s ? 'selected' : ''}>${s}</option>`).join('');
+  const html = `
+    <div class="modal-backdrop active" id="jadwal-edit-modal">
+      <div class="modal modal-sm">
+        <div class="modal-header">
+          <h3>${Icons.pencil()} Edit Jadwal ${j.is_personal ? '(Personal)' : '(Kelas)'}</h3>
+          <button class="modal-close" aria-label="Tutup" onclick="document.getElementById('jadwal-edit-modal').remove()">${Icons.x()}</button>
+        </div>
+        <div class="modal-body">
+          ${j.is_personal ? `<div class="info-banner">${Icons.star()}<p>Jadwal personal untuk: <strong>${Utils.escapeHtml(j.nama_peserta_personal)}</strong></p></div>` : ''}
+          <div class="form-grid-2">
+            <div class="form-group"><label>Tanggal</label><input id="je-tanggal" class="form-control" type="date" value="${Utils.formatDateInput(j.Tanggal)}"></div>
+            <div class="form-group"><label>Pukul</label><input id="je-pukul" class="form-control" value="${Utils.escapeHtml(j.Pukul)}"></div>
+            <div class="form-group"><label>Lokasi</label><input id="je-lokasi" class="form-control" value="${Utils.escapeHtml(j.Lokasi)}"></div>
+            <div class="form-group"><label>Status</label><select id="je-status" class="form-control">${statusOpts}</select></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="document.getElementById('jadwal-edit-modal').remove()">Batal</button>
+          <button class="btn btn-primary" onclick="saveJadwalEdit('${id}')">Simpan</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+  ModalHelper.focusFirst(document.getElementById('jadwal-edit-modal'));
+}
+
+async function saveJadwalEdit(id) {
+  const payload = {
+    id,
+    tanggal: document.getElementById('je-tanggal').value,
+    pukul: document.getElementById('je-pukul').value.trim(),
+    lokasi: document.getElementById('je-lokasi').value.trim(),
+    status: document.getElementById('je-status').value
+  };
+  Utils.showLoader(true);
+  const res = await API.call('updateJadwal', payload);
+  Utils.showLoader(false);
+  if (res.success) {
+    Utils.notify(res.message, 'success');
+    document.getElementById('jadwal-edit-modal').remove();
+    await loadJadwal();
+  } else Utils.notify(res.message, 'error');
+}
+
+async function deleteJadwalConfirm(id) {
+  const ok = await Utils.confirm('Hapus jadwal ini?');
+  if (!ok) return;
+  Utils.showLoader(true);
+  const res = await API.call('deleteJadwal', { id });
+  Utils.showLoader(false);
+  if (res.success) { Utils.notify(res.message, 'success'); await loadJadwal(); updateStats(); }
+  else Utils.notify(res.message, 'error');
+}
+
+async function openAttendeesModal(idJadwal) {
+  Utils.showLoader(true);
+  const res = await API.call('getJadwalAttendees', { id_jadwal: idJadwal });
+  Utils.showLoader(false);
+  if (!res.success) { Utils.notify(res.message, 'error'); return; }
+  const { data, jadwal } = res;
+  const stats = {
+    hadir: data.filter(d => d.status === 'hadir').length,
+    izin: data.filter(d => d.status === 'izin').length,
+    belum: data.filter(d => d.status === 'belum').length
+  };
+  const html = `
+    <div class="modal-backdrop active" id="attendees-modal">
+      <div class="modal modal-md">
+        <div class="modal-header">
+          <h3>${Icons.eye()} Peserta Jadwal ${jadwal.is_personal ? '(Personal)' : ''}</h3>
+          <button class="modal-close" aria-label="Tutup" onclick="document.getElementById('attendees-modal').remove()">${Icons.x()}</button>
+        </div>
+        <div class="modal-body">
+          <div class="attendees-info">${Utils.formatDate(jadwal.Tanggal)} • ${Utils.escapeHtml(jadwal.Pukul)} • ${Utils.escapeHtml(jadwal.Lokasi)} • <span class="kelas-tag">${Utils.escapeHtml(jadwal.Kelas)}</span></div>
+          <div class="attendees-stats">
+            <div class="attendees-stat success"><span>${stats.hadir}</span><label>Hadir</label></div>
+            <div class="attendees-stat warning"><span>${stats.izin}</span><label>Izin</label></div>
+            <div class="attendees-stat muted"><span>${stats.belum}</span><label>Belum</label></div>
+          </div>
+          <ul class="attendees-list">
+            ${data.map(d => `<li class="attendees-item status-${d.status}"><div><strong>${Utils.escapeHtml(d.nama)}</strong>${d.catatan ? `<small>${Utils.escapeHtml(d.catatan)}</small>` : ''}</div><span class="status-badge ${d.status}">${d.status === 'hadir' ? Icons.check() + ' Hadir' : d.status === 'izin' ? Icons.mail() + ' Izin' : Icons.clock() + ' Belum'}</span></li>`).join('')}
+          </ul>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="document.getElementById('attendees-modal').remove()">Tutup</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+// =============================================================
+// BERITA
+// =============================================================
+async function loadBerita() {
+  const res = await API.call('getAllBerita');
+  if (!res.success) { Utils.notify(res.message, 'error'); return; }
+  beritaCache = res.data || [];
+  applyBeritaFilters();
+}
+
+function applyBeritaFilters() {
+  const search = (document.getElementById('search-berita')?.value || '').toLowerCase();
+  let filtered = [...beritaCache];
+  if (search) filtered = filtered.filter(b =>
+    String(b.Judul).toLowerCase().includes(search) ||
+    String(b.Deskripsi || '').toLowerCase().includes(search)
+  );
+  renderBerita(filtered);
+}
+
+function renderBerita(data) {
+  const tbody = document.getElementById('tbody-berita');
+  if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="empty-cell">Belum ada berita</td></tr>`; return; }
+  tbody.innerHTML = data.map(b => `
+    <tr>
+      <td>${Utils.formatDate(b.Tanggal)}</td>
+      <td>${Utils.escapeHtml(b.Judul)}</td>
+      <td class="truncate-cell">${Utils.escapeHtml((b.Deskripsi || '').substring(0, 80))}${(b.Deskripsi || '').length > 80 ? '…' : ''}</td>
+      <td>${b.Link ? `<a href="${Utils.escapeHtml(b.Link)}" target="_blank" rel="noopener">${Icons.link()} Buka</a>` : '<em class="text-muted">-</em>'}</td>
+      <td>
+        <div class="action-btns">
+          <button class="icon-btn edit" title="Edit berita" aria-label="Edit berita" onclick="openBeritaModal('${b.Id_Berita}')">${Icons.pencil()}</button>
+          <button class="icon-btn delete" title="Hapus berita" aria-label="Hapus berita" onclick="deleteBeritaConfirm('${b.Id_Berita}','${Utils.escapeHtml(b.Judul)}')">${Icons.trash()}</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function openBeritaModal(id) {
+  const b = id ? beritaCache.find(x => x.Id_Berita === id) : null;
+  const html = `
+    <div class="modal-backdrop active" id="berita-modal">
+      <div class="modal modal-md">
+        <div class="modal-header">
+          <h3>${b ? Icons.pencil() + ' Edit Berita' : Icons.plus() + ' Tambah Berita'}</h3>
+          <button class="modal-close" aria-label="Tutup" onclick="document.getElementById('berita-modal').remove()">${Icons.x()}</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group"><label>Judul *</label><input id="b-judul" class="form-control" value="${b ? Utils.escapeHtml(b.Judul) : ''}" placeholder="Contoh: Lomba Renang Kaltim 2025"></div>
+          <div class="form-group"><label>Tanggal *</label><input id="b-tanggal" class="form-control" type="date" value="${b ? Utils.formatDateInput(b.Tanggal) : Utils.formatDateInput(new Date())}"></div>
+          <div class="form-group"><label>Deskripsi *</label><textarea id="b-desc" class="form-control" rows="4" placeholder="Ringkasan berita atau informasi penting...">${b ? Utils.escapeHtml(b.Deskripsi || '') : ''}</textarea></div>
+          <div class="form-group"><label>Link (URL Sumber)</label><input id="b-link" class="form-control" type="url" value="${b ? Utils.escapeHtml(b.Link || '') : ''}" placeholder="https://..."></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="document.getElementById('berita-modal').remove()">Batal</button>
+          <button class="btn btn-primary" onclick="saveBerita('${id || ''}')">${b ? 'Simpan Perubahan' : 'Buat Berita'}</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+  ModalHelper.focusFirst(document.getElementById('berita-modal'));
+}
+
+async function saveBerita(id) {
+  const judul = document.getElementById('b-judul').value.trim();
+  const tanggal = document.getElementById('b-tanggal').value;
+  const deskripsi = document.getElementById('b-desc').value.trim();
+  const link = document.getElementById('b-link').value.trim();
+  if (!judul || !tanggal || !deskripsi) { Utils.notify('Judul, tanggal, dan deskripsi wajib diisi', 'warning'); return; }
+  Utils.showLoader(true);
+  const action = id ? 'updateBerita' : 'createBerita';
+  const payload = { judul, tanggal, deskripsi, link };
+  if (id) payload.id = id;
+  const res = await API.call(action, payload);
+  Utils.showLoader(false);
+  if (res.success) {
+    Utils.notify(res.message, 'success');
+    document.getElementById('berita-modal').remove();
+    await loadBerita();
+  } else Utils.notify(res.message, 'error');
+}
+
+async function deleteBeritaConfirm(id, judul) {
+  const ok = await Utils.confirm(`Hapus berita <strong>"${judul}"</strong>?`);
+  if (!ok) return;
+  Utils.showLoader(true);
+  const res = await API.call('deleteBerita', { id });
+  Utils.showLoader(false);
+  if (res.success) { Utils.notify(res.message, 'success'); await loadBerita(); }
+  else Utils.notify(res.message, 'error');
+}
+
+// =============================================================
+// KEHADIRAN + EXPORT EXCEL
+// =============================================================
+async function loadKehadiran() {
+  const periode = document.getElementById('filter-periode')?.value || 'all';
+  const res = await API.call('getAllKehadiran', { periode });
+  if (!res.success) { Utils.notify(res.message, 'error'); return; }
+  kehadiranCache = res.data || [];
+  applyKehadiranFilters();
+  updateStats();
 }
 
 function applyKehadiranFilters() {
-  const q = document.getElementById('search-kehadiran').value.toLowerCase();
-  const kelasF = document.getElementById('filter-kehadiran-kelas').value;
-  const statusF = document.getElementById('filter-kehadiran-status').value;
-  const sort = document.getElementById('sort-kehadiran').value;
-
-  let list = cacheKehadiran.filter(k => {
-    const matchSearch = (k.nama_peserta || '').toLowerCase().includes(q) ||
-                        (k.kelas || '').toLowerCase().includes(q) ||
-                        (k.lokasi || '').toLowerCase().includes(q);
-    const matchKelas = !kelasF || k.kelas === kelasF;
-    const matchStatus = !statusF || k.status_label === statusF;
-    return matchSearch && matchKelas && matchStatus;
-  });
-
-  list.sort((a, b) => {
-    const da = new Date(a.tanggal_raw); const db = new Date(b.tanggal_raw);
-    if (sort === 'tanggal-desc') return db - da;
-    if (sort === 'tanggal-asc') return da - db;
-    if (sort === 'nama') return (a.nama_peserta || '').localeCompare(b.nama_peserta || '');
-    return 0;
-  });
-
-  renderKehadiran(list);
+  const search = (document.getElementById('search-kehadiran')?.value || '').toLowerCase();
+  const fKelas = document.getElementById('filter-kelas-kehadiran')?.value || 'all';
+  const fStatus = document.getElementById('filter-status-kehadiran')?.value || 'all';
+  let filtered = [...kehadiranCache];
+  if (search) filtered = filtered.filter(k => String(k.nama_peserta).toLowerCase().includes(search));
+  if (fKelas !== 'all') filtered = filtered.filter(k => k.kelas === fKelas);
+  if (fStatus !== 'all') filtered = filtered.filter(k => k.status_label === fStatus);
+  filtered.sort((a, b) => new Date(b.tanggal_raw) - new Date(a.tanggal_raw));
+  renderKehadiran(filtered);
 }
 
-function renderKehadiran(list) {
+function renderKehadiran(data) {
   const tbody = document.getElementById('tbody-kehadiran');
-  if (!list || list.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:30px;">Tidak ada data sesuai filter</td></tr>`;
-    return;
-  }
-  tbody.innerHTML = list.map(k => {
-    const isHadir = k.status_label === 'hadir';
-    return `
-      <tr>
-        <td>${Utils.escapeHtml(k.tanggal)}</td>
-        <td>${Utils.escapeHtml(k.pukul)}</td>
-        <td>${Utils.escapeHtml(k.nama_peserta)}</td>
-        <td>${Utils.escapeHtml(k.kelas)}</td>
-        <td>${Utils.escapeHtml(k.lokasi)}</td>
-        <td><span class="badge ${isHadir ? 'badge-success' : 'badge-warning'}">${isHadir ? '✓ HADIR' : '📝 IZIN'}</span></td>
-        <td>${Utils.escapeHtml(k.Catatan || '-')}</td>
-        <td>
-          <div class="action-btns">
-            <button class="icon-btn delete" onclick="deleteKehadiran('${k.Id_Kehadiran}')" title="Hapus">🗑️</button>
-          </div>
-        </td>
-      </tr>`;
-  }).join('');
+  if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">Tidak ada data kehadiran</td></tr>`; return; }
+  tbody.innerHTML = data.map(k => `
+    <tr>
+      <td>${k.tanggal}</td>
+      <td>${Utils.escapeHtml(k.nama_peserta)}</td>
+      <td><span class="kelas-tag">${Utils.escapeHtml(k.kelas)}</span></td>
+      <td>${Utils.escapeHtml(k.pukul)}</td>
+      <td><span class="status-badge ${k.status_label}">${k.status_label === 'hadir' ? Icons.check() + ' Hadir' : Icons.mail() + ' Izin'}</span></td>
+      <td>${Utils.escapeHtml(k.Catatan || '-')}</td>
+      <td>
+        <div class="action-btns">
+          <button class="icon-btn delete" title="Hapus kehadiran" aria-label="Hapus kehadiran" onclick="deleteKehadiranConfirm('${k.Id_Kehadiran}')">${Icons.trash()}</button>
+        </div>
+      </td>
+    </tr>`).join('');
 }
 
-async function deleteKehadiran(id) {
-  const ok = await Utils.confirm('Yakin ingin menghapus data kehadiran ini?');
+async function deleteKehadiranConfirm(id) {
+  const ok = await Utils.confirm('Hapus record kehadiran ini?');
   if (!ok) return;
+  Utils.showLoader(true);
   const res = await API.call('deleteKehadiran', { id });
+  Utils.showLoader(false);
   if (res.success) { Utils.notify(res.message, 'success'); await loadKehadiran(); }
   else Utils.notify(res.message, 'error');
 }
 
-function closeModal(id) { const el = document.getElementById(id); if (el) el.remove(); }
+function openExportExcelModal() {
+  const kelasOpts = CONFIG.KELAS_OPTIONS.map(k => `<option value="${k}">${k}</option>`).join('');
+  const todayStr = Utils.formatDateInput(new Date());
+  const lastMonth = new Date(); lastMonth.setMonth(lastMonth.getMonth() - 1);
+  const html = `
+    <div class="modal-backdrop active" id="export-excel-modal">
+      <div class="modal modal-sm">
+        <div class="modal-header">
+          <h3>${Icons.download()} Export Kehadiran ke Excel</h3>
+          <button class="modal-close" aria-label="Tutup" onclick="document.getElementById('export-excel-modal').remove()">${Icons.x()}</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group"><label>Pilih Kelas *</label><select id="ex-kelas" class="form-control"><option value="">- Pilih kelas -</option>${kelasOpts}</select></div>
+          <div class="form-grid-2">
+            <div class="form-group"><label>Tanggal Dari *</label><input id="ex-dari" class="form-control" type="date" value="${Utils.formatDateInput(lastMonth)}"></div>
+            <div class="form-group"><label>Tanggal Sampai *</label><input id="ex-sampai" class="form-control" type="date" value="${todayStr}"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="document.getElementById('export-excel-modal').remove()">Batal</button>
+          <button class="btn btn-primary btn-icon" onclick="doExportExcel()">${Icons.download()} <span>Download Excel</span></button>
+        </div>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+  ModalHelper.focusFirst(document.getElementById('export-excel-modal'));
+}
+
+async function doExportExcel() {
+  const kelas = document.getElementById('ex-kelas').value;
+  const dari = document.getElementById('ex-dari').value;
+  const sampai = document.getElementById('ex-sampai').value;
+  if (!kelas || !dari || !sampai) { Utils.notify('Mohon lengkapi semua field', 'warning'); return; }
+  if (new Date(dari) > new Date(sampai)) { Utils.notify('Tanggal dari harus sebelum tanggal sampai', 'warning'); return; }
+
+  Utils.showLoader(true);
+  const res = await API.call('getKehadiranForExport', { kelas, tanggal_dari: dari, tanggal_sampai: sampai });
+  Utils.showLoader(false);
+  if (!res.success) { Utils.notify(res.message, 'error'); return; }
+
+  ExcelExport.kehadiran(res.data);
+  document.getElementById('export-excel-modal').remove();
+}
+
+// =============================================================
+// RAPOR
+// =============================================================
+async function loadRapor() {
+  const res = await API.call('getAllRapor');
+  if (!res.success) { Utils.notify(res.message, 'error'); return; }
+  raporCache = res.data || [];
+  applyRaporFilters();
+}
+
+function applyRaporFilters() {
+  const search = (document.getElementById('search-rapor')?.value || '').toLowerCase();
+  let filtered = [...raporCache];
+  if (search) filtered = filtered.filter(r => String(r.nama_peserta).toLowerCase().includes(search));
+  filtered.sort((a, b) => new Date(b.Tanggal_Rapor) - new Date(a.Tanggal_Rapor));
+  renderRapor(filtered);
+}
+
+function renderRapor(data) {
+  const tbody = document.getElementById('tbody-rapor');
+  if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="empty-cell">Belum ada rapor</td></tr>`; return; }
+  tbody.innerHTML = data.map(r => `
+    <tr>
+      <td>${Utils.escapeHtml(r.nama_peserta)}</td>
+      <td><span class="status-badge info">${Utils.escapeHtml(r.Predikat) || '-'}</span></td>
+      <td class="truncate-cell">${Utils.escapeHtml((r.Catatan || '').substring(0, 60))}${(r.Catatan || '').length > 60 ? '…' : ''}</td>
+      <td>${Utils.formatDate(r.Tanggal_Rapor)}</td>
+      <td>
+        <div class="action-btns">
+          <button class="icon-btn edit" title="Edit rapor" aria-label="Edit rapor" onclick="openRaporAdminModal('${r.Id_Peserta}')">${Icons.pencil()}</button>
+          <button class="icon-btn delete" title="Hapus rapor" aria-label="Hapus rapor" onclick="deleteRaporConfirm('${r.Id_Rapor}')">${Icons.trash()}</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function openRaporAdminModal(idPeserta) {
+  const existing = idPeserta ? raporCache.find(r => r.Id_Peserta === idPeserta) : null;
+  const pesertaOpts = pesertaListLunas.map(p => `<option value="${p.Id_Peserta}" ${idPeserta === p.Id_Peserta ? 'selected' : ''}>${Utils.escapeHtml(p.Nama_Lengkap)} • ${p.Kelas}</option>`).join('');
+  const predikatOpts = CONFIG.PREDIKAT_OPTIONS.map(pr => `<option value="${pr}" ${existing && existing.Predikat === pr ? 'selected' : ''}>${pr}</option>`).join('');
+
+  let waktuRows = '';
+  CONFIG.GAYA_RENANG.forEach((gaya, idx) => {
+    const key25 = `Waktu_25_${gaya.key}`;
+    const key50 = `Waktu_50_${gaya.key}`;
+    const v25 = existing ? (existing[key25] || '') : '';
+    const v50 = existing ? (existing[key50] || '') : '';
+    waktuRows += `
+      <tr>
+        <td>${idx + 1}</td>
+        <td><strong>${gaya.label}</strong></td>
+        <td><input class="form-control rapor-input" id="rp-25-${gaya.key.toLowerCase()}" value="${Utils.escapeHtml(v25)}" placeholder="mm.ss.ms"></td>
+        <td><input class="form-control rapor-input" id="rp-50-${gaya.key.toLowerCase()}" value="${Utils.escapeHtml(v50)}" placeholder="mm.ss.ms"></td>
+      </tr>`;
+  });
+
+  const html = `
+    <div class="modal-backdrop active" id="rapor-admin-modal">
+      <div class="modal modal-md">
+        <div class="modal-header">
+          <h3>${existing ? Icons.pencil() + ' Edit Rapor' : Icons.plus() + ' Buat Rapor'}</h3>
+          <button class="modal-close" aria-label="Tutup" onclick="document.getElementById('rapor-admin-modal').remove()">${Icons.x()}</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group"><label>Peserta *</label><select id="rp-peserta" class="form-control" ${existing ? 'disabled' : ''}><option value="">- Pilih peserta -</option>${pesertaOpts}</select></div>
+
+          <h4 class="form-section-title">Capaian Waktu Latihan</h4>
+          <p class="form-helper">Format waktu: <code>mm.ss.ms</code> (contoh: <code>01.08.12</code>). Kosongkan jika belum ada data.</p>
+          <table class="rapor-input-table">
+            <thead><tr><th>No.</th><th>Gaya Renang</th><th>25 Meter</th><th>50 Meter</th></tr></thead>
+            <tbody>${waktuRows}</tbody>
+          </table>
+
+          <h4 class="form-section-title">Penilaian</h4>
+          <div class="form-group"><label>Predikat *</label><select id="rp-predikat" class="form-control"><option value="">- Pilih predikat -</option>${predikatOpts}</select></div>
+          <div class="form-group"><label>Deskripsi / Catatan</label><textarea id="rp-catatan" class="form-control" rows="3" placeholder="Contoh: Mampu berenang 50m gaya bebas, gaya dada & gaya kupu">${existing ? Utils.escapeHtml(existing.Catatan || '') : ''}</textarea></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="document.getElementById('rapor-admin-modal').remove()">Batal</button>
+          <button class="btn btn-primary" onclick="saveRapor()">${existing ? 'Simpan Perubahan' : 'Buat Rapor'}</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+  ModalHelper.focusFirst(document.getElementById('rapor-admin-modal'));
+}
+
+async function saveRapor() {
+  const session = Auth.getSession();
+  const idPeserta = document.getElementById('rp-peserta').value;
+  if (!idPeserta) { Utils.notify('Mohon pilih peserta', 'warning'); return; }
+  const predikat = document.getElementById('rp-predikat').value;
+  if (!predikat) { Utils.notify('Mohon pilih predikat', 'warning'); return; }
+
+  const payload = {
+    id_peserta: idPeserta,
+    predikat,
+    catatan: document.getElementById('rp-catatan').value.trim(),
+    id_pelatih: session.data.id,
+    waktu_25_bebas: Utils.normalizeWaktu(document.getElementById('rp-25-bebas').value),
+    waktu_25_dada: Utils.normalizeWaktu(document.getElementById('rp-25-dada').value),
+    waktu_25_kupu: Utils.normalizeWaktu(document.getElementById('rp-25-kupu').value),
+    waktu_25_punggung: Utils.normalizeWaktu(document.getElementById('rp-25-punggung').value),
+    waktu_50_bebas: Utils.normalizeWaktu(document.getElementById('rp-50-bebas').value),
+    waktu_50_dada: Utils.normalizeWaktu(document.getElementById('rp-50-dada').value),
+    waktu_50_kupu: Utils.normalizeWaktu(document.getElementById('rp-50-kupu').value),
+    waktu_50_punggung: Utils.normalizeWaktu(document.getElementById('rp-50-punggung').value)
+  };
+
+  Utils.showLoader(true);
+  const res = await API.call('upsertRapor', payload);
+  Utils.showLoader(false);
+  if (res.success) {
+    Utils.notify(res.message, 'success');
+    document.getElementById('rapor-admin-modal').remove();
+    await loadRapor();
+  } else Utils.notify(res.message, 'error');
+}
+
+async function deleteRaporConfirm(id) {
+  const ok = await Utils.confirm('Hapus rapor ini?');
+  if (!ok) return;
+  Utils.showLoader(true);
+  const res = await API.call('deleteRapor', { id });
+  Utils.showLoader(false);
+  if (res.success) { Utils.notify(res.message, 'success'); await loadRapor(); }
+  else Utils.notify(res.message, 'error');
+}
