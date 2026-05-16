@@ -18,7 +18,7 @@ const PRECACHE_URLS = [
   './home.css',
   './pwa.css',
   './pwa.js',
-  '.assets/js/manifest.json'
+  './manifest.json'
 ];
 
 /* ============== INSTALL ============== */
