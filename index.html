@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="assets/js/manifest.json">
   <meta name="theme-color" content="#169AC4">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -36,7 +36,7 @@
   <meta name="twitter:image" content="assets/images/logo.webp">
 
   <!-- PWA -->
-  <link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="assets/js/manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Bontang Aquatik">
@@ -72,8 +72,23 @@
   <link rel="stylesheet" href="assets/css/home.css">
   <link rel="stylesheet" href="assets/css/pwa.css">
 
+  <link rel="manifest" href="assets/js/manifest.json">
+  <meta name="theme-color" content="#169AC4">
+  
+  <!-- Stylesheet PWA (WAJIB agar modal & banner terlihat) -->
+  <link rel="stylesheet" href="assets/css/pwa.css">
+  
+  <!-- iOS-specific (agar terbuka tanpa Safari UI saat dipasang) -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Bontang Aquatik">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/icon-180.png">
+
 </head>
-<script src="pwa.js" defer></script>
+<script src="assets/js/pwa.js" defer></script>
+<!-- <script src="pwa.js" defer></script> -->
 <body>
 
   <!-- HERO -->
@@ -156,8 +171,8 @@
   <div class="container">
     <div class="section-header">
       <span class="label">Aplikasi Mobile</span>
-      <h2 id="install-app-title">Pasang Bontang Aquatik di Ponsel Anda</h2>
-      <p>Pengalaman seperti aplikasi native — terbuka tanpa address bar, tab, atau elemen browser lainnya. Cukup satu ketukan dari beranda.</p>
+      <h2 id="install-app-title">Download Aplikasi Bontang Aquatik di Perangkat Anda</h2>
+      <p>Pengalaman lebih mudah dan sederhana dengan sistem aplikasi digital.</p>
     </div>
 
     <div class="pwa-section-grid">
@@ -172,28 +187,28 @@
 
         <ul class="pwa-features" role="list">
           <li class="pwa-feature">
-            <span class="pwa-feature-icon" aria-hidden="true">⚡</span>
+            <!-- <span class="pwa-feature-icon" aria-hidden="true">⚡</span> -->
             <div>
               <h4>Loading Instan</h4>
               <p>Aset di-cache otomatis sehingga aplikasi terbuka dalam hitungan detik.</p>
             </div>
           </li>
           <li class="pwa-feature">
-            <span class="pwa-feature-icon" aria-hidden="true">📱</span>
+            <!-- <span class="pwa-feature-icon" aria-hidden="true">📱</span> -->
             <div>
               <h4>Tampilan Fullscreen</h4>
               <p>Berjalan tanpa address bar dan tab browser — terasa seperti aplikasi native.</p>
             </div>
           </li>
           <li class="pwa-feature">
-            <span class="pwa-feature-icon" aria-hidden="true">📶</span>
+            <!-- <span class="pwa-feature-icon" aria-hidden="true">📶</span> -->
             <div>
               <h4>Mode Offline</h4>
               <p>Tetap dapat dibuka untuk melihat jadwal & informasi saat tidak ada koneksi.</p>
             </div>
           </li>
           <li class="pwa-feature">
-            <span class="pwa-feature-icon" aria-hidden="true">🪶</span>
+            <!-- <span class="pwa-feature-icon" aria-hidden="true">🪶</span> -->
             <div>
               <h4>Hemat Memori</h4>
               <p>Ukuran kurang dari 1 MB. Tanpa Play Store, tanpa proses pemasangan rumit.</p>
@@ -204,16 +219,16 @@
         <div class="pwa-cta">
           <button id="pwa-install-btn" class="btn btn-accent btn-lg pwa-install-btn" type="button"
                   aria-describedby="pwa-install-status">
-            <span class="pwa-btn-icon" aria-hidden="true">⬇</span>
+            <!-- <span class="pwa-btn-icon" aria-hidden="true">⬇</span> -->
             <span class="pwa-btn-label">Download Aplikasi</span>
           </button>
-          <span class="pwa-install-status" id="pwa-install-status">Gratis · Tanpa Play Store · &lt; 1 MB</span>
+          <span class="pwa-install-status" id="pwa-install-status">Gratis dan Mudah</span>
         </div>
 
         <div class="pwa-badges" aria-label="Kompatibilitas">
-          <span class="pwa-badge"><span aria-hidden="true">🤖</span> Android</span>
+          <span class="pwa-badge"><span aria-hidden="true"></span> Android</span>
           <span class="pwa-badge"><span aria-hidden="true"></span> iOS</span>
-          <span class="pwa-badge"><span aria-hidden="true">💻</span> Desktop</span>
+          <span class="pwa-badge"><span aria-hidden="true"></span> Desktop</span>
         </div>
       </div>
 
@@ -266,7 +281,9 @@
         </div>
 
         <div class="pwa-badge-float">
-          <span class="pwa-badge-float-icon">✓</span>
+          <div class="pwa-badge-float-icon">
+              <img src="assets/images/logo.webp">
+            </div>
           <div>
             <strong>Terpasang</strong>
             <span>Di beranda Anda</span>
@@ -353,6 +370,8 @@
     </div>
   </section>
 
+  <script src="assets/js/manifest.json"></script>
+  <script src="manifest.json"></script>
   <script src="assets/js/config.js"></script>
   <script src="assets/js/utils.js"></script>
   <script src="assets/js/auth.js"></script>
