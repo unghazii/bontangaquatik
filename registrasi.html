@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#169AC4">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Bontang Aquatik">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/icon-180.png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Daftar Kelas Renang - Bontang Aquatik</title>
@@ -9,12 +17,15 @@
   <meta name="robots" content="index, follow">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#169AC4">
-  <link rel="icon" type="image/jpeg" href="assets/images/logo.jpeg">
-  <link rel="apple-touch-icon" href="assets/images/logo.jpeg">
+  <link rel="icon" type="image/jpeg" href="assets/images/logo.webp">
+  <link rel="apple-touch-icon" href="assets/images/logo.webp">
   <link rel="stylesheet" href="assets/css/global.css">
   <link rel="stylesheet" href="assets/css/navbar.css">
   <link rel="stylesheet" href="assets/css/auth.css">
+  <link rel="stylesheet" href="assets/css/pwa.css">
+
 </head>
+<script src="pwa.js" defer></script>
 <body>
   <div class="auth-page">
     <div class="auth-container" style="max-width: 760px;">
@@ -61,7 +72,8 @@
                   <label>Password *</label>
                   <div class="password-wrap">
                     <input type="password" name="password" id="password" class="form-control" required minlength="6" placeholder="Minimal 6 karakter">
-                    <button type="button" class="password-toggle" id="toggle-password">👁️</button>
+                    <button id="togglePassword" class="password-toggle" type="button"></button>
+                    <!-- <button type="button" class="password-toggle" id="toggle-password">👁️</button> -->
                   </div>
                 </div>
                 <div class="form-group">
@@ -84,7 +96,7 @@
                   </select>
                 </div>
                 <div class="form-group">
-                  <label>NISNAS *</label>
+                  <label>NISN *</label>
                   <input type="text" name="nisnas" class="form-control" required pattern="[0-9]*" inputmode="numeric" placeholder="Nomor Induk Siswa">
                 </div>
               </div>

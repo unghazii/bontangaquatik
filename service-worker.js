@@ -1,56 +1,94 @@
-// Service Worker Bontang Aquatik - minimal cache-first
-const CACHE_NAME = 'bontang-aquatik-v3';
-const STATIC_ASSETS = [
+/* ================================================================
+   SERVICE WORKER — Bontang Aquatik
+   Strategi cache:
+   - Aset statis (HTML/CSS/JS/icons) → Cache First + revalidate
+   - Request lain (HTML pages)      → Network First, fallback cache
+   - Offline fallback ke index.html
+   ================================================================ */
+
+const VERSION       = 'v1.0.0';
+const STATIC_CACHE  = `aquatik-static-${VERSION}`;
+const RUNTIME_CACHE = `aquatik-runtime-${VERSION}`;
+
+/* Daftar aset yang dipra-cache saat install. Sesuaikan dengan struktur file Anda. */
+const PRECACHE_URLS = [
   './',
   './index.html',
-  './login.html',
-  './registrasi.html',
-  './peserta.html',
-  './admin.html',
-  './assets/css/global.css',
-  './assets/css/navbar.css',
-  './assets/css/home.css',
-  './assets/css/auth.css',
-  './assets/css/peserta.css',
-  './assets/css/admin.css',
-  './assets/images/logo.jpeg',
+  './global.css',
+  './home.css',
+  './pwa.css',
+  './pwa.js',
   './manifest.json'
 ];
 
-self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(STATIC_ASSETS).catch(() => {})));
-  self.skipWaiting();
+/* ============== INSTALL ============== */
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(STATIC_CACHE)
+      .then((cache) => cache.addAll(PRECACHE_URLS))
+      .then(() => self.skipWaiting())
+      .catch((err) => console.warn('[SW] Precache failed:', err))
+  );
 });
 
-self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys =>
-    Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-  ));
-  self.clients.claim();
+/* ============== ACTIVATE ============== */
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys
+          .filter((k) => k !== STATIC_CACHE && k !== RUNTIME_CACHE)
+          .map((k) => caches.delete(k))
+      )
+    ).then(() => self.clients.claim())
+  );
 });
 
-self.addEventListener('fetch', e => {
-  // Hanya cache GET request untuk static assets, biarkan API request lewat
-  if (e.request.method !== 'GET') return;
-  const url = new URL(e.request.url);
-  // Skip Apps Script API & external CDN — biar selalu fresh
-  if (url.hostname.includes('googleusercontent.com') ||
-      url.hostname.includes('cdnjs.cloudflare.com') ||
-      url.hostname.includes('googleapis.com') ||
-      url.hostname.includes('google.com') ||
-      url.hostname.includes('whatsapp.com')) return;
+/* ============== MESSAGE (skip waiting trigger dari pwa.js) ============== */
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
 
-  e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
-      return fetch(e.request).then(res => {
-        // Cache hanya same-origin responses
-        if (res && res.status === 200 && url.origin === self.location.origin) {
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
-        }
-        return res;
-      }).catch(() => caches.match('./index.html'));
+/* ============== FETCH ============== */
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+
+  // Skip non-GET dan request lintas-origin yang tidak perlu di-cache
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return;
+
+  // Navigasi (HTML pages) → Network First
+  if (req.mode === 'navigate') {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(RUNTIME_CACHE).then((c) => c.put(req, copy));
+          return res;
+        })
+        .catch(() =>
+          caches.match(req).then((cached) => cached || caches.match('./index.html'))
+        )
+    );
+    return;
+  }
+
+  // Aset statis → Cache First + background revalidate
+  event.respondWith(
+    caches.match(req).then((cached) => {
+      const fetchPromise = fetch(req)
+        .then((res) => {
+          if (res && res.status === 200 && res.type === 'basic') {
+            const copy = res.clone();
+            caches.open(RUNTIME_CACHE).then((c) => c.put(req, copy));
+          }
+          return res;
+        })
+        .catch(() => cached);
+      return cached || fetchPromise;
     })
   );
 });

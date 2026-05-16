@@ -1,27 +1,42 @@
 {
-  "name": "Bontang Aquatik - Toya Bening Swimming Club",
+  "name": "Bontang Aquatik — Sekolah Renang Profesional",
   "short_name": "Bontang Aquatik",
-  "description": "Klub Pelatihan Renang Profesional Bontang Aquatik",
+  "description": "Pelatihan renang profesional di Bontang. Akses jadwal, daftar kelas, dan pantau progres latihan dari beranda ponsel Anda.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["fullscreen", "standalone", "minimal-ui"],
   "orientation": "portrait-primary",
-  "background_color": "#169AC4",
+  "background_color": "#FFFFFF",
   "theme_color": "#169AC4",
-  "lang": "id",
-  "categories": ["sports", "education", "lifestyle"],
+  "lang": "id-ID",
+  "dir": "ltr",
+  "categories": ["sports", "education", "fitness"],
   "icons": [
+    { "src": "assets/icon-72.png",   "sizes": "72x72",   "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-96.png",   "sizes": "96x96",   "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-128.png",  "sizes": "128x128", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-144.png",  "sizes": "144x144", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-152.png",  "sizes": "152x152", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-192.png",  "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "assets/icon-384.png",  "sizes": "384x384", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-512.png",  "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
     {
-      "src": "assets/images/logo.jpeg",
-      "sizes": "192x192",
-      "type": "image/jpeg",
-      "purpose": "any maskable"
+      "name": "Jadwal Latihan",
+      "short_name": "Jadwal",
+      "description": "Lihat jadwal latihan terbaru",
+      "url": "./index.html#kelas",
+      "icons": [{ "src": "assets/icon-96.png", "sizes": "96x96" }]
     },
     {
-      "src": "assets/images/logo.jpeg",
-      "sizes": "512x512",
-      "type": "image/jpeg",
-      "purpose": "any maskable"
+      "name": "Daftar Sekarang",
+      "short_name": "Daftar",
+      "description": "Pendaftaran kelas renang",
+      "url": "./index.html#install-app",
+      "icons": [{ "src": "assets/icon-96.png", "sizes": "96x96" }]
     }
-  ]
+  ],
+  "prefer_related_applications": false
 }

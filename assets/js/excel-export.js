@@ -38,7 +38,7 @@ const ExcelExport = {
     // Title row
     aoa.push([`DAFTAR HADIR PELATIHAN RENANG - ${data.kelas}`]);
     aoa.push([`Periode: ${this.formatTglID(data.periode.dari)} s.d ${this.formatTglID(data.periode.sampai)}`]);
-    aoa.push([`Bontang Aquatik - Toya Bening Swimming Club`]);
+    aoa.push([`Bontang Aquatik Swimming Club`]);
     aoa.push([]); // empty row
 
     // Header Row 1: Bulan (merged per month)

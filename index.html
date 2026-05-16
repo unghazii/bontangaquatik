@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#169AC4">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Bontang Aquatik">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/icon-180.png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -62,7 +70,10 @@
   <link rel="stylesheet" href="assets/css/global.css">
   <link rel="stylesheet" href="assets/css/navbar.css">
   <link rel="stylesheet" href="assets/css/home.css">
+  <link rel="stylesheet" href="assets/css/pwa.css">
+
 </head>
+<script src="pwa.js" defer></script>
 <body>
 
   <!-- HERO -->
@@ -73,7 +84,8 @@
         <p>Klub pelatihan renang terbaik di Bontang dengan pelatih profesional. Tingkatkan kemampuan renangmu dengan kelas pelatihan terstruktur dan menyenangkan.</p>
         <div class="hero-buttons">
           <a href="registrasi.html" class="btn btn-primary">Daftar Sekarang →</a>
-          <a href="#kelas" class="btn btn-secondary">Lihat Kelas Tersedia</a>
+          <!-- <a href="#kelas" class="btn btn-secondary">Lihat Kelas Tersedia</a> -->
+          <a href="login.html" class="btn btn-secondary">Masuk Pelatihan</a>
         </div>
       </div>
       <div class="hero-image">
@@ -119,25 +131,151 @@
         <h2>Kelas Pelatihan yang Tersedia</h2>
         <p>Pilih grup yang paling cocok dengan kebutuhan dan jadwal Anda. Semua kelas didampingi pelatih profesional Bontang Aquatik.</p>
       </div>
-      <div class="classes-grid" id="classes-grid">
+      <div class="schedule-grid" id="schedule-grid">
         <!-- Auto-rendered by home.js -->
       </div>
     </div>
   </section>
 
   <!-- ===== JADWAL LATIHAN (Request 7 - Kids Friendly) ===== -->
-  <section class="section schedule-section" id="jadwal">
+  <!-- <section class="section schedule-section" id="jadwal">
     <div class="container">
       <div class="section-header">
         <span class="label">Jadwal Latihan</span>
         <h2>Yuk Cek Jadwal Renang Kamu!</h2>
         <p>Pilih tim sesuai jadwal yang kamu suka.</p>
       </div>
-      <div class="schedule-grid" id="schedule-grid">
+      <div class="schedule-grid" id="schedule-grid"> -->
         <!-- Auto-rendered by home.js -->
+      <!-- </div>
+    </div>
+  </section> -->
+
+  <!-- PWA -->
+  <section class="section" id="install-app" aria-labelledby="install-app-title">
+  <div class="container">
+    <div class="section-header">
+      <span class="label">Aplikasi Mobile</span>
+      <h2 id="install-app-title">Pasang Bontang Aquatik di Ponsel Anda</h2>
+      <p>Pengalaman seperti aplikasi native — terbuka tanpa address bar, tab, atau elemen browser lainnya. Cukup satu ketukan dari beranda.</p>
+    </div>
+
+    <div class="pwa-section-grid">
+      <!-- KIRI: konten + CTA -->
+      <div class="pwa-content">
+        <span class="pwa-eyebrow">Progressive Web App</span>
+        <h3>Akses Cepat,<br><span class="pwa-highlight">Tanpa Buka Browser</span></h3>
+        <p class="pwa-lead">
+          Pasang situs Bontang Aquatik sebagai aplikasi langsung dari beranda ponsel Anda.
+          Tampilan fullscreen, loading instan, dan tetap bisa dibuka saat sinyal lemah.
+        </p>
+
+        <ul class="pwa-features" role="list">
+          <li class="pwa-feature">
+            <span class="pwa-feature-icon" aria-hidden="true">⚡</span>
+            <div>
+              <h4>Loading Instan</h4>
+              <p>Aset di-cache otomatis sehingga aplikasi terbuka dalam hitungan detik.</p>
+            </div>
+          </li>
+          <li class="pwa-feature">
+            <span class="pwa-feature-icon" aria-hidden="true">📱</span>
+            <div>
+              <h4>Tampilan Fullscreen</h4>
+              <p>Berjalan tanpa address bar dan tab browser — terasa seperti aplikasi native.</p>
+            </div>
+          </li>
+          <li class="pwa-feature">
+            <span class="pwa-feature-icon" aria-hidden="true">📶</span>
+            <div>
+              <h4>Mode Offline</h4>
+              <p>Tetap dapat dibuka untuk melihat jadwal & informasi saat tidak ada koneksi.</p>
+            </div>
+          </li>
+          <li class="pwa-feature">
+            <span class="pwa-feature-icon" aria-hidden="true">🪶</span>
+            <div>
+              <h4>Hemat Memori</h4>
+              <p>Ukuran kurang dari 1 MB. Tanpa Play Store, tanpa proses pemasangan rumit.</p>
+            </div>
+          </li>
+        </ul>
+
+        <div class="pwa-cta">
+          <button id="pwa-install-btn" class="btn btn-accent btn-lg pwa-install-btn" type="button"
+                  aria-describedby="pwa-install-status">
+            <span class="pwa-btn-icon" aria-hidden="true">⬇</span>
+            <span class="pwa-btn-label">Download Aplikasi</span>
+          </button>
+          <span class="pwa-install-status" id="pwa-install-status">Gratis · Tanpa Play Store · &lt; 1 MB</span>
+        </div>
+
+        <div class="pwa-badges" aria-label="Kompatibilitas">
+          <span class="pwa-badge"><span aria-hidden="true">🤖</span> Android</span>
+          <span class="pwa-badge"><span aria-hidden="true"></span> iOS</span>
+          <span class="pwa-badge"><span aria-hidden="true">💻</span> Desktop</span>
+        </div>
+      </div>
+
+      <!-- KANAN: visual asset (phone mockup SVG) -->
+      <div class="pwa-visual" aria-hidden="true">
+        <div class="pwa-visual-blob pwa-visual-blob-1"></div>
+        <div class="pwa-visual-blob pwa-visual-blob-2"></div>
+
+        <div class="pwa-bubble pwa-bubble-1"></div>
+        <div class="pwa-bubble pwa-bubble-2"></div>
+        <div class="pwa-bubble pwa-bubble-3"></div>
+
+        <div class="pwa-phone">
+          <div class="pwa-phone-notch"></div>
+          <div class="pwa-phone-screen">
+            <div class="pwa-phone-status">
+              <span>9:41</span>
+              <span class="pwa-phone-status-icons">
+                <span></span><span></span><span></span>
+              </span>
+            </div>
+            <div class="pwa-phone-hero">
+              <div class="pwa-phone-logo">🏊</div>
+              <div class="pwa-phone-title">Bontang Aquatik</div>
+              <div class="pwa-phone-sub">Sekolah Renang Profesional</div>
+              <div class="pwa-phone-cta">Daftar Sekarang</div>
+            </div>
+            <div class="pwa-phone-cards">
+              <div class="pwa-phone-card">
+                <div class="pwa-phone-card-icon">🐠</div>
+                <div class="pwa-phone-card-lines">
+                  <span></span><span></span>
+                </div>
+              </div>
+              <div class="pwa-phone-card">
+                <div class="pwa-phone-card-icon">🐬</div>
+                <div class="pwa-phone-card-lines">
+                  <span></span><span></span>
+                </div>
+              </div>
+              <div class="pwa-phone-card">
+                <div class="pwa-phone-card-icon">🦈</div>
+                <div class="pwa-phone-card-lines">
+                  <span></span><span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="pwa-phone-home"></div>
+        </div>
+
+        <div class="pwa-badge-float">
+          <span class="pwa-badge-float-icon">✓</span>
+          <div>
+            <strong>Terpasang</strong>
+            <span>Di beranda Anda</span>
+          </div>
+        </div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
   <!-- GALLERY -->
   <section class="section section-alt" id="galeri">

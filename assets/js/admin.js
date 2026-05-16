@@ -243,7 +243,7 @@ function openPesertaDetailModal(id) {
               <div class="detail-row"><span>Tanggal Lahir</span><strong>${Utils.formatDate(p.Tanggal_Lahir)}</strong></div>
               <div class="detail-row"><span>Usia</span><strong>${p.Usia || '-'} tahun</strong></div>
               <div class="detail-row"><span>Kelompok Umur</span><strong>${Utils.escapeHtml(p.Kelompok_Umur) || '-'}</strong></div>
-              <div class="detail-row"><span>NISNAS</span><strong>${Utils.escapeHtml(p.NISNAS) || '-'}</strong></div>
+              <div class="detail-row"><span>NISN</span><strong>${Utils.escapeHtml(p.NISNAS) || '-'}</strong></div>
               <div class="detail-row"><span>WhatsApp</span><strong>${Utils.escapeHtml(p.Nomor_Whatsapp)}</strong></div>
             </div>
             <div class="detail-section">
@@ -296,7 +296,7 @@ function openPesertaEditModal(id) {
             <div class="form-group"><label>Jenis Kelamin</label><select id="e-jk" class="form-control"><option value="">-</option>${jkOpts}</select></div>
             <div class="form-group"><label>Tempat Lahir</label><input id="e-tempat" class="form-control" value="${Utils.escapeHtml(p.Tempat_Lahir || '')}"></div>
             <div class="form-group"><label>Tanggal Lahir</label><input id="e-tgllahir" class="form-control" type="date" value="${Utils.formatDateInput(p.Tanggal_Lahir)}"></div>
-            <div class="form-group"><label>NISNAS</label><input id="e-nisnas" class="form-control" value="${Utils.escapeHtml(p.NISNAS || '')}"></div>
+            <div class="form-group"><label>NISN</label><input id="e-nisnas" class="form-control" value="${Utils.escapeHtml(p.NISNAS || '')}"></div>
             <div class="form-group"><label>Asal Sekolah</label><input id="e-sekolah" class="form-control" value="${Utils.escapeHtml(p.Asal_Sekolah || '')}"></div>
             <div class="form-group"><label>Kelas Sekolah</label><input id="e-kelassekolah" class="form-control" value="${Utils.escapeHtml(p.Kelas_Sekolah || '')}"></div>
             <div class="form-group"><label>Wali Kelas</label><input id="e-wali" class="form-control" value="${Utils.escapeHtml(p.Wali_Kelas || '')}"></div>
@@ -399,7 +399,6 @@ function renderJadwal(data) {
       <td>${Utils.escapeHtml(j.Pukul)}</td>
       <td><span class="kelas-tag">${Utils.escapeHtml(j.Kelas) || '-'}</span></td>
       <td>${j.is_personal ? `<span class="status-badge personal">${Icons.star()} Personal</span>` : `<span class="status-badge info">${Icons.user()} Kelas</span>`}</td>
-      <td>${j.is_personal ? Utils.escapeHtml(j.nama_peserta_personal) : '<em class="text-muted">—</em>'}</td>
       <td>${Utils.escapeHtml(j.Lokasi)}</td>
       <td><span class="status-badge ${String(j.Status).toLowerCase()}">${j.Status}</span></td>
       <td>

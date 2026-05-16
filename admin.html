@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#169AC4">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Bontang Aquatik">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/icon-180.png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Panel - Bontang Aquatik</title>
@@ -11,13 +19,15 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#169AC4">
 
-  <link rel="icon" type="image/jpeg" href="assets/images/logo.jpeg">
-  <link rel="apple-touch-icon" href="assets/images/logo.jpeg">
+  <link rel="icon" type="image/jpeg" href="assets/images/logo.webp">
+  <link rel="apple-touch-icon" href="assets/images/logo.webp">
 
   <link rel="stylesheet" href="assets/css/global.css">
   <link rel="stylesheet" href="assets/css/navbar.css">
   <link rel="stylesheet" href="assets/css/admin.css">
+  <link rel="stylesheet" href="assets/css/pwa.css">
 </head>
+<script src="pwa.js" defer></script>
 <body>
 
   <!-- SVG Sprite (Cupertino-style icons, defined once, reused via <use>) -->
@@ -223,7 +233,15 @@
         <div class="table-wrap">
           <table class="data-table">
             <thead>
-              <tr><th>Tanggal</th><th>Pukul</th><th>Kelas</th><th>Tipe</th><th>Peserta</th><th>Lokasi</th><th>Status</th><th class="th-actions">Aksi</th></tr>
+              <tr>
+                <th>Tanggal</th>
+                <th>Pukul</th>
+                <th>Kelas</th>
+                <th>Tipe</th>
+                <!-- <th>Nama Peserta</th> -->
+                <th>Lokasi</th>
+                <th>Status</th>
+                <th class="th-actions">Aksi</th></tr>
             </thead>
             <tbody id="tbody-jadwal"></tbody>
           </table>

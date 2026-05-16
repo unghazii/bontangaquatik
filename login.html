@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#169AC4">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Bontang Aquatik">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/icon-180.png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login - Bontang Aquatik</title>
@@ -13,7 +21,10 @@
   <link rel="stylesheet" href="assets/css/global.css">
   <link rel="stylesheet" href="assets/css/navbar.css">
   <link rel="stylesheet" href="assets/css/auth.css">
+  <link rel="stylesheet" href="assets/css/pwa.css">
+
 </head>
+<script src="pwa.js" defer></script>
 <body>
 
   <div class="auth-page">
@@ -34,7 +45,8 @@
               <label>Password</label>
               <div class="password-wrap">
                 <input type="password" name="password" id="password" class="form-control" required placeholder="Password Anda" autocomplete="current-password">
-                <button type="button" class="password-toggle" id="toggle-password">👁️</button>
+                <button id="togglePassword" class="password-toggle" type="button"></button>
+                <!-- <button type="button" class="password-toggle" id="toggle-password">👁️</button> -->
               </div>
             </div>
             <button type="submit" class="btn btn-primary btn-block">Masuk</button>

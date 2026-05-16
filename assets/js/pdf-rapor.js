@@ -228,7 +228,7 @@ const PDFRapor = {
       ['Jenis Kelamin', ':', peserta.Jenis_Kelamin || '-'],
       ['Tempat, Tanggal Lahir', ':', this.fmtTTL(peserta.Tempat_Lahir, peserta.Tanggal_Lahir)],
       ['Kelompok Umur', ':', peserta.Kelompok_Umur || '-'],
-      ['NISNAS', ':', peserta.NISNAS || '-'],
+      ['NISN', ':', peserta.NISNAS || '-'],
       ['Asal Sekolah', ':', peserta.Asal_Sekolah || '-'],
       ['Kelas, (Wali Kelas)', ':', `${peserta.Kelas_Sekolah || '-'} (${peserta.Wali_Kelas || '-'})`]
     ];
@@ -337,5 +337,42 @@ const PDFRapor = {
     const filename = `Rapor_${(peserta.Nama_Lengkap || 'Peserta').replace(/\s+/g, '_')}_${Utils.formatDateInput(new Date())}.pdf`;
     doc.save(filename);
     Utils.notify('Rapor PDF berhasil diunduh 📄', 'success');
+  
+      // ============ CATATAN KELOMPOK UMUR ============
+    const noteX = marginX;
+    const noteY = cursorY;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+
+    doc.text('Catatan :', noteX, noteY);
+
+    const kelompokList = [
+      ['Senior', '> 19 tahun'],
+      ['Group 1', '16-18 tahun'],
+      ['Group 2', '14-15 tahun'],
+      ['Group 3', '12-13 tahun'],
+      ['Group 4', '10-11 tahun'],
+      ['Group 5', '8-9 tahun'],
+      ['Group 6', '≤ 7 tahun']
+    ];
+
+    let lineY = noteY + 6;
+
+    kelompokList.forEach((item, index) => {
+      const no = `${index + 1})`;
+      const text = `${item[0]} : ${item[1]}`;
+
+      doc.text(no, noteX + 2, lineY);
+      doc.text(text, noteX + 10, lineY);
+
+      lineY += 5;
+    });
+
+    // Box seperti contoh gambar
+    const boxHeight = 40;
+    doc.rect(noteX, noteY + 2, 70, boxHeight);
+
+    cursorY = lineY + 5;
   }
 };
