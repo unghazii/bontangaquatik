@@ -86,7 +86,7 @@ const PWA = {
     console.log(`ℹ️  Platform                   : ${this.platform()}`);
     console.log(`ℹ️  Standalone (running as app): ${this.isStandalone()}`);
     if (!isSecure)    console.warn('[PWA] beforeinstallprompt TIDAK akan fire tanpa HTTPS atau localhost.');
-    if (!hasManifest) console.warn('[PWA] Manifest tidak ter-link. Tambahkan <link rel="manifest" href="assets/js/manifest.json"> di <head>.');
+    if (!hasManifest) console.warn('[PWA] Manifest tidak ter-link. Tambahkan <link rel="manifest" href="manifest.json"> di <head>.');
     if (!btnFound)    console.warn('[PWA] Button #pwa-install-btn tidak ditemukan saat init. Event delegation tetap aktif.');
     console.groupEnd();
   },
