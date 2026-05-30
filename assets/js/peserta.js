@@ -402,8 +402,11 @@ async function openRaporModal() {
   } else {
     const r = raporRes.data;
     const fmt = v => (v && String(v).trim() !== '' && String(v).trim() !== '-') ? String(v).trim() : '-';
-    const periodeStart = pesertaRes.data?.Tanggal_Mulai;
-    const periodeEnd   = pesertaRes.data?.Tanggal_Akhir;
+    const _periode = (typeof getSemesterPeriode === 'function')
+      ? getSemesterPeriode(pesertaRes.data?.Tanggal_Mulai)
+      : { start: pesertaRes.data?.Tanggal_Mulai, end: pesertaRes.data?.Tanggal_Akhir };
+    const periodeStart = _periode.start;
+    const periodeEnd   = _periode.end;
 
     modalBody = `
       <div class="rapor-display">
@@ -412,17 +415,24 @@ async function openRaporModal() {
           <p class="rapor-periode">Periode:
             <em>${Utils.formatDateLong(periodeStart)} s.d ${Utils.formatDateLong(periodeEnd)}</em>
           </p>
+          <div class="rapor-table-scroll">
           <table class="rapor-table">
             <thead>
-              <tr><th>NO.</th><th>GAYA RENANG</th><th>25 METER</th><th>50 METER</th></tr>
+              <tr>
+                <th>NO.</th><th>GAYA RENANG</th>
+                <th>25 M<br><small>(Dengan Pelampung)</small></th>
+                <th>25 M<br><small>(Tanpa Pelampung)</small></th>
+                <th>50 M</th>
+              </tr>
             </thead>
             <tbody>
-              <tr><td>1</td><td>Gaya Bebas</td>    <td>${fmt(r.Waktu_25_Bebas)}</td>    <td>${fmt(r.Waktu_50_Bebas)}</td></tr>
-              <tr><td>2</td><td>Gaya Dada</td>     <td>${fmt(r.Waktu_25_Dada)}</td>     <td>${fmt(r.Waktu_50_Dada)}</td></tr>
-              <tr><td>3</td><td>Gaya Kupu</td>     <td>${fmt(r.Waktu_25_Kupu)}</td>     <td>${fmt(r.Waktu_50_Kupu)}</td></tr>
-              <tr><td>4</td><td>Gaya Punggung</td> <td>${fmt(r.Waktu_25_Punggung)}</td> <td>${fmt(r.Waktu_50_Punggung)}</td></tr>
+              <tr><td>1</td><td>Gaya Bebas</td>    <td>${fmt(r.Waktu_25_Bebas_Pelampung)}</td>    <td>${fmt(r.Waktu_25_Bebas)}</td>    <td>${fmt(r.Waktu_50_Bebas)}</td></tr>
+              <tr><td>2</td><td>Gaya Dada</td>     <td>${fmt(r.Waktu_25_Dada_Pelampung)}</td>     <td>${fmt(r.Waktu_25_Dada)}</td>     <td>${fmt(r.Waktu_50_Dada)}</td></tr>
+              <tr><td>3</td><td>Gaya Kupu</td>     <td>${fmt(r.Waktu_25_Kupu_Pelampung)}</td>     <td>${fmt(r.Waktu_25_Kupu)}</td>     <td>${fmt(r.Waktu_50_Kupu)}</td></tr>
+              <tr><td>4</td><td>Gaya Punggung</td> <td>${fmt(r.Waktu_25_Punggung_Pelampung)}</td> <td>${fmt(r.Waktu_25_Punggung)}</td> <td>${fmt(r.Waktu_50_Punggung)}</td></tr>
             </tbody>
           </table>
+          </div>
         </div>
 
         <div class="rapor-section">

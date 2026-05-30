@@ -144,9 +144,36 @@ const CONFIG = {
     ]
   },
 
+  // Rekomendasi pertanyaan keamanan (lupa password) — user boleh buat sendiri
+  SECURITY_QUESTIONS: [
+    'Nama guru favorit?',
+    'Nama film favorit?',
+    'Nama musisi favorit?',
+    'Nama hewan peliharaan pertama?',
+    'Kota tempat lahir ibu?',
+    'Makanan favorit masa kecil?',
+    'Nama sahabat masa kecil?'
+  ],
+
   // Usia minimum
   MIN_AGE: 5
 };
+
+/**
+ * Periode rapor berbasis semester (mengikuti pola sekolah formal).
+ * Semester 1: 01 Jan – 30 Jun ; Semester 2: 01 Jul – 31 Des.
+ * Tahun diambil dari tanggal mulai pelatihan (fallback: tahun berjalan).
+ * @returns {{start:Date, end:Date, label:string}}
+ */
+function getSemesterPeriode(tanggalMulai) {
+  const ref = tanggalMulai ? new Date(tanggalMulai) : new Date();
+  const year = isNaN(ref.getTime()) ? new Date().getFullYear() : ref.getFullYear();
+  const month = isNaN(ref.getTime()) ? new Date().getMonth() : ref.getMonth(); // 0-11
+  const isSemester1 = month <= 5; // Jan(0)..Jun(5)
+  const start = isSemester1 ? new Date(year, 0, 1)  : new Date(year, 6, 1);
+  const end   = isSemester1 ? new Date(year, 5, 30) : new Date(year, 11, 31);
+  return { start, end, label: isSemester1 ? 'Semester 1' : 'Semester 2' };
+}
 
 /**
  * Helper format Rupiah.

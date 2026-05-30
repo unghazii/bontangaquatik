@@ -185,7 +185,7 @@ const Utils = {
     let userBlock = '';
     if (session && session.role === 'peserta') {
       userBlock = `
-        <div class="user-info"><span>👤 ${this.escapeHtml(session.data.nama || session.data.username)}</span></div>
+        <a href="profile.html" class="user-info user-info-link ${activeRoute === 'profile' ? 'active' : ''}" title="Lihat & ubah profil"><span>👤 ${this.escapeHtml(session.data.nama || session.data.username)}</span></a>
         <button class="btn btn-sm btn-secondary" onclick="Auth.logout()">Logout</button>`;
     } else if (session && session.role === 'admin') {
       userBlock = `

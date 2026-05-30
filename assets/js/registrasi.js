@@ -1,6 +1,6 @@
 // Registrasi multi-step dengan validasi & UX premium
 let currentStep = 1;
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 5;
 const input = document.querySelector('#password');
 const toggle = document.querySelector('#togglePassword');
 const eyeOpenIcon = `
@@ -68,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   renderClassInfo();
+  renderSecurityQuestions();
 
   // Auto-calc end date
   const durasiInput = document.getElementById('durasi');
@@ -100,6 +101,31 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+function renderSecurityQuestions() {
+  const opts = (CONFIG.SECURITY_QUESTIONS || []).map(q => `<option value="${q}">${q}</option>`).join('')
+    + '<option value="__custom__">✏️ Lainnya (buat sendiri)…</option>';
+  ['sec-q1-select', 'sec-q2-select'].forEach((id, i) => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.innerHTML = '<option value="">- Pilih pertanyaan -</option>' + opts;
+    const customId = i === 0 ? 'sec-q1-custom' : 'sec-q2-custom';
+    sel.addEventListener('change', () => {
+      const custom = document.getElementById(customId);
+      const isCustom = sel.value === '__custom__';
+      custom.classList.toggle('hidden', !isCustom);
+      if (isCustom) custom.focus();
+    });
+  });
+}
+
+/** Ambil teks pertanyaan terpilih (dropdown atau custom). */
+function getSecurityQuestionValue(selectId, customId) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return '';
+  if (sel.value === '__custom__') return (document.getElementById(customId)?.value || '').trim();
+  return sel.value;
+}
+
 function validateStep(step) {
   const stepEl = document.querySelector(`.form-step[data-step="${step}"]`);
   const inputs = stepEl.querySelectorAll('input[required], select[required]');
@@ -123,6 +149,17 @@ function validateStep(step) {
     if (usia < CONFIG.MIN_AGE) { Utils.notify(`Usia minimal ${CONFIG.MIN_AGE} tahun`, 'warning'); return false; }
     const nisnas = stepEl.querySelector('[name="nisnas"]').value;
     if (!/^[0-9]+$/.test(nisnas)) { Utils.notify('NISN harus berupa angka', 'warning'); return false; }
+  }
+  if (step === 5) {
+    const q1 = getSecurityQuestionValue('sec-q1-select', 'sec-q1-custom');
+    const a1 = (document.getElementById('sec-a1').value || '').trim();
+    const q2 = getSecurityQuestionValue('sec-q2-select', 'sec-q2-custom');
+    const a2 = (document.getElementById('sec-a2').value || '').trim();
+    if (!q1) { Utils.notify('Pilih atau tulis pertanyaan keamanan #1', 'warning'); return false; }
+    if (!a1) { Utils.notify('Isi jawaban pertanyaan keamanan #1', 'warning'); return false; }
+    if (!q2) { Utils.notify('Pilih atau tulis pertanyaan keamanan #2', 'warning'); return false; }
+    if (!a2) { Utils.notify('Isi jawaban pertanyaan keamanan #2', 'warning'); return false; }
+    if (q1.toLowerCase() === q2.toLowerCase()) { Utils.notify('Kedua pertanyaan keamanan harus berbeda', 'warning'); return false; }
   }
   return true;
 }
@@ -176,7 +213,11 @@ async function submitForm(e) {
     wali_kelas: fd.get('wali_kelas').trim(),
     kelas: fd.get('kelas'),
     tanggal_mulai: fd.get('tanggal_mulai'),
-    tanggal_akhir: document.getElementById('tanggal_akhir_display').dataset.iso || ''
+    tanggal_akhir: document.getElementById('tanggal_akhir_display').dataset.iso || '',
+    pertanyaan_unik_1: getSecurityQuestionValue('sec-q1-select', 'sec-q1-custom'),
+    jawaban_unik_1: (document.getElementById('sec-a1').value || '').trim(),
+    pertanyaan_unik_2: getSecurityQuestionValue('sec-q2-select', 'sec-q2-custom'),
+    jawaban_unik_2: (document.getElementById('sec-a2').value || '').trim()
   };
 
   const res = await API.call('register', data);

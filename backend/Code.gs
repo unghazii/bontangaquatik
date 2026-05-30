@@ -1,27 +1,71 @@
 /**
- * BACKEND API v3 - Bontang Aquatik Swimming Club
+ * ===================================================================
+ * BACKEND API v4 — Bontang Aquatik Swimming Club
+ * Monolithic codebase (Google Apps Script + Google Spreadsheet)
+ * ===================================================================
  *
- * SHEET STRUCTURE:
- * Peserta: Id_Peserta | Nama_Lengkap | Username | Password | Nomor_Whatsapp |
- *   Jenis_Kelamin | Tempat_Lahir | Tanggal_Lahir | NISNAS | Asal_Sekolah |
- *   Kelas_Sekolah | Wali_Kelas | Kelompok_Umur | Kelas | Tanggal_Mulai | Tanggal_Akhir | Status_Pembayaran
+ * SHEET STRUCTURE (kolom baru DITAMBAHKAN DI AKHIR agar data &
+ * index lama tetap valid — aman untuk migrasi):
+ *
+ * Peserta (22 kolom):
+ *   1  Id_Peserta        2  Nama_Lengkap      3  Username
+ *   4  Password          5  Nomor_Whatsapp    6  Jenis_Kelamin
+ *   7  Tempat_Lahir      8  Tanggal_Lahir     9  NISNAS
+ *   10 Asal_Sekolah      11 Kelas_Sekolah     12 Wali_Kelas
+ *   13 Kelompok_Umur     14 Kelas             15 Tanggal_Mulai
+ *   16 Tanggal_Akhir     17 Status_Pembayaran
+ *   18 Nomor_Peserta  (BARU — nomor punggung; wajib sebelum LUNAS)
+ *   19 Pertanyaan_Unik_1 20 Jawaban_Unik_1
+ *   21 Pertanyaan_Unik_2 22 Jawaban_Unik_2
  *
  * Pelatih: Id_Pelatih | Nama | Username | Password
  *
  * Jadwal: Id_Jadwal | Id_Pelatih | Id_Peserta | Tanggal | Pukul | Lokasi | Kelas | Status
- * Id_Peserta kosong = jadwal kelas; berisi ID = jadwal personal
  *
  * Kehadiran: Id_Kehadiran | Id_Jadwal | Id_Peserta | Status | Catatan
  *
- * Rapor: Id_Rapor | Id_Peserta | Predikat | Catatan |
- *   Waktu_25_Bebas | Waktu_25_Dada | Waktu_25_Kupu | Waktu_25_Punggung |
- *   Waktu_50_Bebas | Waktu_50_Dada | Waktu_50_Kupu | Waktu_50_Punggung |
- *   Tanggal_Rapor | Id_Pelatih
+ * Rapor (18 kolom):
+ *   1  Id_Rapor          2  Id_Peserta        3  Predikat
+ *   4  Catatan
+ *   5  Waktu_25_Bebas    6  Waktu_25_Dada     7  Waktu_25_Kupu     8  Waktu_25_Punggung   (TANPA pelampung)
+ *   9  Waktu_50_Bebas    10 Waktu_50_Dada     11 Waktu_50_Kupu     12 Waktu_50_Punggung
+ *   13 Tanggal_Rapor     14 Id_Pelatih
+ *   15 Waktu_25_Bebas_Pelampung   16 Waktu_25_Dada_Pelampung   (BARU)
+ *   17 Waktu_25_Kupu_Pelampung    18 Waktu_25_Punggung_Pelampung
  *
  * Berita: Id_Berita | Judul | Tanggal | Deskripsi | Link
  */
 
 const SPREADSHEET_ID = '1Jvndc1jgdlx4iSw2nNp9ezAM-MbU12Y8o1R_nrmLmQw';
+
+/** Header lengkap tiap sheet — dipakai oleh migrateSheets() untuk menambah kolom baru. */
+const SHEET_HEADERS = {
+  Peserta: [
+    'Id_Peserta','Nama_Lengkap','Username','Password','Nomor_Whatsapp','Jenis_Kelamin',
+    'Tempat_Lahir','Tanggal_Lahir','NISNAS','Asal_Sekolah','Kelas_Sekolah','Wali_Kelas',
+    'Kelompok_Umur','Kelas','Tanggal_Mulai','Tanggal_Akhir','Status_Pembayaran',
+    'Nomor_Peserta','Pertanyaan_Unik_1','Jawaban_Unik_1','Pertanyaan_Unik_2','Jawaban_Unik_2'
+  ],
+  Rapor: [
+    'Id_Rapor','Id_Peserta','Predikat','Catatan',
+    'Waktu_25_Bebas','Waktu_25_Dada','Waktu_25_Kupu','Waktu_25_Punggung',
+    'Waktu_50_Bebas','Waktu_50_Dada','Waktu_50_Kupu','Waktu_50_Punggung',
+    'Tanggal_Rapor','Id_Pelatih',
+    'Waktu_25_Bebas_Pelampung','Waktu_25_Dada_Pelampung','Waktu_25_Kupu_Pelampung','Waktu_25_Punggung_Pelampung'
+  ]
+};
+
+/** Index kolom (1-based) — single source of truth, hindari "magic number". */
+const PESERTA_COL = {
+  Id:1, Nama:2, Username:3, Password:4, Wa:5, Jk:6, TempatLahir:7, TanggalLahir:8,
+  Nisnas:9, Sekolah:10, KelasSekolah:11, Wali:12, KelompokUmur:13, Kelas:14,
+  Mulai:15, Akhir:16, Status:17, NomorPeserta:18, Q1:19, A1:20, Q2:21, A2:22
+};
+const RAPOR_COL = {
+  Id:1, IdPeserta:2, Predikat:3, Catatan:4,
+  B25:5, D25:6, K25:7, P25:8, B50:9, D50:10, K50:11, P50:12,
+  Tanggal:13, IdPelatih:14, B25P:15, D25P:16, K25P:17, P25P:18
+};
 
 const SCHEDULE_RULES = {
   'Grup A': { location: 'Kenari Waterpark Bontang', sessions: [
@@ -53,18 +97,22 @@ function handleRequest(e) {
     switch (action) {
       case 'register':              result = registerPeserta(params); break;
       case 'login':                 result = login(params); break;
+      case 'getResetQuestions':     result = getResetQuestions(params); break;
+      case 'resetPassword':         result = resetPassword(params); break;
       case 'getJadwalPeserta':      result = getJadwalPeserta(params); break;
       case 'absen':                 result = absen(params); break;
       case 'izin':                  result = izin(params); break;
       case 'getKehadiranPeserta':   result = getKehadiranPeserta(params); break;
       case 'getRaporPeserta':       result = getRaporPeserta(params); break;
       case 'getDataLengkapPeserta': result = getDataLengkapPeserta(params); break;
+      case 'updateProfilePeserta':  result = updateProfilePeserta(params); break;
       case 'getAllPeserta':         result = getAllPeserta(); break;
       case 'getPesertaById':        result = getDataLengkapPeserta({ id_peserta: params.id }); break;
       case 'updatePeserta':         result = updatePeserta(params); break;
       case 'deletePeserta':         result = deletePeserta(params); break;
       case 'getAllJadwal':          result = getAllJadwal(); break;
       case 'createJadwal':          result = createJadwal(params); break;
+      case 'createJadwalBatch':     result = createJadwalBatch(params); break;
       case 'updateJadwal':          result = updateJadwal(params); break;
       case 'deleteJadwal':          result = deleteJadwal(params); break;
       case 'getJadwalAttendees':    result = getJadwalAttendees(params); break;
@@ -81,6 +129,7 @@ function handleRequest(e) {
       case 'updateBerita':          result = updateBerita(params); break;
       case 'deleteBerita':          result = deleteBerita(params); break;
       case 'getPelatihList':        result = getPelatihList(); break;
+      case 'migrate':               result = migrateSheets(); break;
       default: result = { success: false, message: 'Action tidak dikenal: ' + action };
     }
     return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
@@ -111,6 +160,31 @@ function formatDate(d) {
   return String(d);
 }
 function isTrue(v) { return v === true || String(v).toUpperCase() === 'TRUE'; }
+function norm(v) { return String(v == null ? '' : v).trim().toLowerCase(); }
+
+/**
+ * Migrasi sekali-jalan: pastikan header kolom baru ada di sheet Peserta & Rapor.
+ * Aman dijalankan berkali-kali (idempotent). Jalankan dari editor atau action=migrate.
+ */
+function migrateSheets() {
+  const report = [];
+  Object.keys(SHEET_HEADERS).forEach(name => {
+    const sheet = getSheet(name);
+    if (!sheet) { report.push(name + ': sheet tidak ada'); return; }
+    const wanted = SHEET_HEADERS[name];
+    const lastCol = Math.max(sheet.getLastColumn(), 1);
+    const current = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
+    let added = 0;
+    wanted.forEach((h, i) => {
+      if (norm(current[i]) !== norm(h)) {
+        sheet.getRange(1, i + 1).setValue(h);
+        if (i + 1 > lastCol) added++;
+      }
+    });
+    report.push(name + ': header disinkronkan (' + added + ' kolom baru)');
+  });
+  return { success: true, message: report.join(' • ') };
+}
 
 /** Hitung kelompok umur per 1 Januari tahun ini */
 function calculateKelompokUmur(tanggalLahir) {
@@ -140,7 +214,10 @@ function registerPeserta(p) {
     id, p.nama_lengkap, p.username, p.password, p.nomor_whatsapp,
     p.jenis_kelamin || '', p.tempat_lahir || '', p.tanggal_lahir || '',
     p.nisnas || '', p.asal_sekolah || '', p.kelas_sekolah || '', p.wali_kelas || '',
-    kelompokUmur, p.kelas || '', p.tanggal_mulai || '', p.tanggal_akhir || '', false
+    kelompokUmur, p.kelas || '', p.tanggal_mulai || '', p.tanggal_akhir || '', false,
+    '', // Nomor_Peserta (diisi admin sebelum LUNAS)
+    p.pertanyaan_unik_1 || '', p.jawaban_unik_1 || '',
+    p.pertanyaan_unik_2 || '', p.jawaban_unik_2 || ''
   ]);
   return { success: true, message: 'Registrasi berhasil. Lanjutkan via WhatsApp untuk pembayaran.', id: id };
 }
@@ -154,9 +231,45 @@ function login(p) {
   const peserta = pesertas.find(x => x.Username === p.username && String(x.Password) === String(p.password));
   if (peserta) {
     if (!isTrue(peserta.Status_Pembayaran)) return { success: false, message: 'Pembayaran belum dikonfirmasi admin. Hubungi admin via WhatsApp.' };
-    return { success: true, role: 'peserta', data: { id: peserta.Id_Peserta, nama: peserta.Nama_Lengkap, username: peserta.Username, kelas: peserta.Kelas, tanggal_mulai: formatDate(peserta.Tanggal_Mulai), tanggal_akhir: formatDate(peserta.Tanggal_Akhir) } };
+    return { success: true, role: 'peserta', data: {
+      id: peserta.Id_Peserta, nama: peserta.Nama_Lengkap, username: peserta.Username,
+      kelas: peserta.Kelas, nomor_peserta: peserta.Nomor_Peserta || '',
+      tanggal_mulai: formatDate(peserta.Tanggal_Mulai), tanggal_akhir: formatDate(peserta.Tanggal_Akhir)
+    } };
   }
   return { success: false, message: 'Username atau password salah' };
+}
+
+/** Lupa password — langkah 1: verifikasi username + WA, kembalikan daftar pertanyaan unik. */
+function getResetQuestions(p) {
+  const peserta = sheetToObjects(getSheet('Peserta')).find(x =>
+    norm(x.Username) === norm(p.username) &&
+    String(x.Nomor_Whatsapp).replace(/[^0-9]/g, '') === String(p.nomor_whatsapp).replace(/[^0-9]/g, '')
+  );
+  if (!peserta) return { success: false, message: 'Username atau nomor WhatsApp tidak cocok' };
+  const questions = [];
+  if (peserta.Pertanyaan_Unik_1) questions.push({ index: 1, text: peserta.Pertanyaan_Unik_1 });
+  if (peserta.Pertanyaan_Unik_2) questions.push({ index: 2, text: peserta.Pertanyaan_Unik_2 });
+  if (questions.length === 0) return { success: false, message: 'Akun ini belum memiliki pertanyaan keamanan. Hubungi admin via WhatsApp.' };
+  return { success: true, data: { id_peserta: peserta.Id_Peserta, questions: questions } };
+}
+
+/** Lupa password — langkah 2: verifikasi jawaban + simpan password baru. */
+function resetPassword(p) {
+  const sheet = getSheet('Peserta');
+  const peserta = sheetToObjects(sheet).find(x =>
+    norm(x.Username) === norm(p.username) &&
+    String(x.Nomor_Whatsapp).replace(/[^0-9]/g, '') === String(p.nomor_whatsapp).replace(/[^0-9]/g, '')
+  );
+  if (!peserta) return { success: false, message: 'Data tidak cocok' };
+  const idx = Number(p.question_index) === 2 ? 2 : 1;
+  const stored = idx === 2 ? peserta.Jawaban_Unik_2 : peserta.Jawaban_Unik_1;
+  if (!stored || norm(stored) !== norm(p.answer)) return { success: false, message: 'Jawaban pertanyaan keamanan salah' };
+  if (!p.new_password || String(p.new_password).length < 6) return { success: false, message: 'Password baru minimal 6 karakter' };
+  const row = findRowIndex(sheet, 0, peserta.Id_Peserta);
+  if (row === -1) return { success: false, message: 'Peserta tidak ditemukan' };
+  sheet.getRange(row, PESERTA_COL.Password).setValue(p.new_password);
+  return { success: true, message: 'Password berhasil diperbarui. Silakan login.' };
 }
 
 // ====================== PESERTA - DASHBOARD ======================
@@ -180,7 +293,7 @@ function absen(p) {
   const sheet = getSheet('Kehadiran');
   if (sheetToObjects(sheet).find(k => k.Id_Jadwal === p.id_jadwal && k.Id_Peserta === p.id_peserta)) return { success: false, message: 'Anda sudah memberikan respons untuk jadwal ini' };
   sheet.appendRow([generateId('KHD'), p.id_jadwal, p.id_peserta, true, '']);
-  return { success: true, message: 'Absensi berhasil dicatat ✅' };
+  return { success: true, message: 'Absensi berhasil dicatat' };
 }
 
 function izin(p) {
@@ -189,7 +302,7 @@ function izin(p) {
   const sheet = getSheet('Kehadiran');
   if (sheetToObjects(sheet).find(k => k.Id_Jadwal === p.id_jadwal && k.Id_Peserta === p.id_peserta)) return { success: false, message: 'Anda sudah memberikan respons untuk jadwal ini' };
   sheet.appendRow([generateId('KHD'), p.id_jadwal, p.id_peserta, false, p.catatan || 'Tidak ada keterangan']);
-  return { success: true, message: 'Izin berhasil dikirim ke pelatih 📨' };
+  return { success: true, message: 'Izin berhasil dikirim ke pelatih' };
 }
 
 function getKehadiranPeserta(p) {
@@ -207,6 +320,31 @@ function getDataLengkapPeserta(p) {
   const peserta = sheetToObjects(getSheet('Peserta')).find(x => x.Id_Peserta === p.id_peserta);
   if (!peserta) return { success: false, message: 'Peserta tidak ditemukan' };
   return { success: true, data: { ...peserta, Tanggal_Mulai: formatDate(peserta.Tanggal_Mulai), Tanggal_Akhir: formatDate(peserta.Tanggal_Akhir), Tanggal_Lahir: formatDate(peserta.Tanggal_Lahir) } };
+}
+
+/** Peserta memperbarui data dirinya sendiri (subset field yang aman). */
+function updateProfilePeserta(p) {
+  const sheet = getSheet('Peserta');
+  const row = findRowIndex(sheet, 0, p.id_peserta);
+  if (row === -1) return { success: false, message: 'Peserta tidak ditemukan' };
+  if (p.nama_lengkap   !== undefined) sheet.getRange(row, PESERTA_COL.Nama).setValue(p.nama_lengkap);
+  if (p.nomor_whatsapp !== undefined) sheet.getRange(row, PESERTA_COL.Wa).setValue(p.nomor_whatsapp);
+  if (p.jenis_kelamin  !== undefined) sheet.getRange(row, PESERTA_COL.Jk).setValue(p.jenis_kelamin);
+  if (p.tempat_lahir   !== undefined) sheet.getRange(row, PESERTA_COL.TempatLahir).setValue(p.tempat_lahir);
+  if (p.tanggal_lahir  !== undefined && p.tanggal_lahir !== '') {
+    sheet.getRange(row, PESERTA_COL.TanggalLahir).setValue(p.tanggal_lahir);
+    sheet.getRange(row, PESERTA_COL.KelompokUmur).setValue(calculateKelompokUmur(p.tanggal_lahir));
+  }
+  if (p.nisnas        !== undefined) sheet.getRange(row, PESERTA_COL.Nisnas).setValue(p.nisnas);
+  if (p.asal_sekolah  !== undefined) sheet.getRange(row, PESERTA_COL.Sekolah).setValue(p.asal_sekolah);
+  if (p.kelas_sekolah !== undefined) sheet.getRange(row, PESERTA_COL.KelasSekolah).setValue(p.kelas_sekolah);
+  if (p.wali_kelas    !== undefined) sheet.getRange(row, PESERTA_COL.Wali).setValue(p.wali_kelas);
+  if (p.password      !== undefined && p.password !== '') sheet.getRange(row, PESERTA_COL.Password).setValue(p.password);
+  if (p.pertanyaan_unik_1 !== undefined) sheet.getRange(row, PESERTA_COL.Q1).setValue(p.pertanyaan_unik_1);
+  if (p.jawaban_unik_1    !== undefined && p.jawaban_unik_1 !== '') sheet.getRange(row, PESERTA_COL.A1).setValue(p.jawaban_unik_1);
+  if (p.pertanyaan_unik_2 !== undefined) sheet.getRange(row, PESERTA_COL.Q2).setValue(p.pertanyaan_unik_2);
+  if (p.jawaban_unik_2    !== undefined && p.jawaban_unik_2 !== '') sheet.getRange(row, PESERTA_COL.A2).setValue(p.jawaban_unik_2);
+  return { success: true, message: 'Profil berhasil diperbarui' };
 }
 
 function getRaporPeserta(p) {
@@ -247,28 +385,39 @@ function updatePeserta(p) {
   const sheet = getSheet('Peserta');
   const row = findRowIndex(sheet, 0, p.id);
   if (row === -1) return { success: false, message: 'Peserta tidak ditemukan' };
-  const prevData = sheet.getRange(row, 1, 1, 17).getValues()[0];
-  const prevPaid = isTrue(prevData[16]);
+  const prevData = sheet.getRange(row, 1, 1, PESERTA_COL.NomorPeserta).getValues()[0];
+  const prevPaid = isTrue(prevData[PESERTA_COL.Status - 1]);
   const newPaid = (p.status_pembayaran === true || p.status_pembayaran === 'true');
 
-  if (p.nama_lengkap !== undefined) sheet.getRange(row, 2).setValue(p.nama_lengkap);
-  if (p.username !== undefined) sheet.getRange(row, 3).setValue(p.username);
-  if (p.password !== undefined && p.password !== '') sheet.getRange(row, 4).setValue(p.password);
-  if (p.nomor_whatsapp !== undefined) sheet.getRange(row, 5).setValue(p.nomor_whatsapp);
-  if (p.jenis_kelamin !== undefined) sheet.getRange(row, 6).setValue(p.jenis_kelamin);
-  if (p.tempat_lahir !== undefined) sheet.getRange(row, 7).setValue(p.tempat_lahir);
-  if (p.tanggal_lahir !== undefined) {
-    sheet.getRange(row, 8).setValue(p.tanggal_lahir);
-    sheet.getRange(row, 13).setValue(calculateKelompokUmur(p.tanggal_lahir));
+  // Nomor peserta final (payload jika ada, jika tidak pakai existing)
+  const nomorPeserta = (p.nomor_peserta !== undefined)
+    ? String(p.nomor_peserta).trim()
+    : String(prevData[PESERTA_COL.NomorPeserta - 1] || '').trim();
+
+  // GUARD: tidak boleh LUNAS tanpa Nomor_Peserta
+  if (newPaid && !nomorPeserta) {
+    return { success: false, code: 'NOMOR_PESERTA_REQUIRED', message: 'Nomor Peserta (nomor punggung) wajib diisi sebelum status diubah menjadi LUNAS.' };
   }
-  if (p.nisnas !== undefined) sheet.getRange(row, 9).setValue(p.nisnas);
-  if (p.asal_sekolah !== undefined) sheet.getRange(row, 10).setValue(p.asal_sekolah);
-  if (p.kelas_sekolah !== undefined) sheet.getRange(row, 11).setValue(p.kelas_sekolah);
-  if (p.wali_kelas !== undefined) sheet.getRange(row, 12).setValue(p.wali_kelas);
-  if (p.kelas !== undefined) sheet.getRange(row, 14).setValue(p.kelas);
-  if (p.tanggal_mulai !== undefined) sheet.getRange(row, 15).setValue(p.tanggal_mulai);
-  if (p.tanggal_akhir !== undefined) sheet.getRange(row, 16).setValue(p.tanggal_akhir);
-  if (p.status_pembayaran !== undefined) sheet.getRange(row, 17).setValue(newPaid);
+
+  if (p.nama_lengkap !== undefined) sheet.getRange(row, PESERTA_COL.Nama).setValue(p.nama_lengkap);
+  if (p.username !== undefined) sheet.getRange(row, PESERTA_COL.Username).setValue(p.username);
+  if (p.password !== undefined && p.password !== '') sheet.getRange(row, PESERTA_COL.Password).setValue(p.password);
+  if (p.nomor_whatsapp !== undefined) sheet.getRange(row, PESERTA_COL.Wa).setValue(p.nomor_whatsapp);
+  if (p.jenis_kelamin !== undefined) sheet.getRange(row, PESERTA_COL.Jk).setValue(p.jenis_kelamin);
+  if (p.tempat_lahir !== undefined) sheet.getRange(row, PESERTA_COL.TempatLahir).setValue(p.tempat_lahir);
+  if (p.tanggal_lahir !== undefined) {
+    sheet.getRange(row, PESERTA_COL.TanggalLahir).setValue(p.tanggal_lahir);
+    sheet.getRange(row, PESERTA_COL.KelompokUmur).setValue(calculateKelompokUmur(p.tanggal_lahir));
+  }
+  if (p.nisnas !== undefined) sheet.getRange(row, PESERTA_COL.Nisnas).setValue(p.nisnas);
+  if (p.asal_sekolah !== undefined) sheet.getRange(row, PESERTA_COL.Sekolah).setValue(p.asal_sekolah);
+  if (p.kelas_sekolah !== undefined) sheet.getRange(row, PESERTA_COL.KelasSekolah).setValue(p.kelas_sekolah);
+  if (p.wali_kelas !== undefined) sheet.getRange(row, PESERTA_COL.Wali).setValue(p.wali_kelas);
+  if (p.kelas !== undefined) sheet.getRange(row, PESERTA_COL.Kelas).setValue(p.kelas);
+  if (p.tanggal_mulai !== undefined) sheet.getRange(row, PESERTA_COL.Mulai).setValue(p.tanggal_mulai);
+  if (p.tanggal_akhir !== undefined) sheet.getRange(row, PESERTA_COL.Akhir).setValue(p.tanggal_akhir);
+  if (p.nomor_peserta !== undefined) sheet.getRange(row, PESERTA_COL.NomorPeserta).setValue(nomorPeserta);
+  if (p.status_pembayaran !== undefined) sheet.getRange(row, PESERTA_COL.Status).setValue(newPaid);
 
   let extra = '';
   if (newPaid && !prevPaid) {
@@ -344,6 +493,29 @@ function createJadwal(p) {
   const id = generateId('JDW');
   sheet.appendRow([id, p.id_pelatih, p.id_peserta || '', p.tanggal, p.pukul, p.lokasi, kelas, p.status || 'Pending']);
   return { success: true, message: 'Jadwal dibuat', id: id };
+}
+
+/**
+ * Buat jadwal personal untuk BANYAK peserta sekaligus dalam 1 panggilan.
+ * Efisien: 1x baca Peserta, 1x setValues batch (tidak appendRow per baris).
+ * payload: { id_pelatih, tanggal, pukul, lokasi, status, peserta:[id,...] }
+ */
+function createJadwalBatch(p) {
+  const peserta = Array.isArray(p.peserta) ? p.peserta.filter(Boolean) : [];
+  if (peserta.length === 0) return { success: false, message: 'Minimal pilih 1 peserta' };
+  if (!p.tanggal || !p.pukul || !p.lokasi) return { success: false, message: 'Tanggal, pukul, dan lokasi wajib diisi' };
+
+  const sheet = getSheet('Jadwal');
+  const pesertaMap = {};
+  sheetToObjects(getSheet('Peserta')).forEach(x => pesertaMap[x.Id_Peserta] = x);
+
+  const rows = peserta.map((idPeserta, i) => {
+    const ps = pesertaMap[idPeserta];
+    const kelas = ps ? ps.Kelas : (p.kelas || '');
+    return [generateId('JDW') + '-' + i, p.id_pelatih, idPeserta, p.tanggal, p.pukul, p.lokasi, kelas, p.status || 'Pending'];
+  });
+  sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 8).setValues(rows);
+  return { success: true, message: rows.length + ' jadwal personal berhasil dibuat', count: rows.length };
 }
 
 function updateJadwal(p) {
@@ -425,7 +597,6 @@ function deleteKehadiran(p) {
   return { success: true, message: 'Kehadiran dihapus' };
 }
 
-/** Data terstruktur untuk export Excel buku absensi */
 function getKehadiranForExport(p) {
   if (!p.kelas || !p.tanggal_dari || !p.tanggal_sampai) return { success: false, message: 'Kelas dan periode wajib diisi' };
   const dari = new Date(p.tanggal_dari); dari.setHours(0, 0, 0, 0);
@@ -433,7 +604,7 @@ function getKehadiranForExport(p) {
 
   const allPeserta = sheetToObjects(getSheet('Peserta')).filter(x => x.Kelas === p.kelas);
   const allJadwal = sheetToObjects(getSheet('Jadwal')).filter(j => {
-    if (j.Id_Peserta) return false; // hanya jadwal kelas
+    if (j.Id_Peserta) return false;
     if (j.Kelas !== p.kelas) return false;
     const tgl = new Date(j.Tanggal);
     return tgl >= dari && tgl <= sampai;
@@ -475,24 +646,30 @@ function upsertRapor(p) {
   const sheet = getSheet('Rapor');
   const existing = findRowIndex(sheet, 1, p.id_peserta);
   if (existing !== -1) {
-    if (p.predikat !== undefined) sheet.getRange(existing, 3).setValue(p.predikat);
-    if (p.catatan !== undefined) sheet.getRange(existing, 4).setValue(p.catatan);
-    if (p.waktu_25_bebas !== undefined) sheet.getRange(existing, 5).setValue(p.waktu_25_bebas);
-    if (p.waktu_25_dada !== undefined) sheet.getRange(existing, 6).setValue(p.waktu_25_dada);
-    if (p.waktu_25_kupu !== undefined) sheet.getRange(existing, 7).setValue(p.waktu_25_kupu);
-    if (p.waktu_25_punggung !== undefined) sheet.getRange(existing, 8).setValue(p.waktu_25_punggung);
-    if (p.waktu_50_bebas !== undefined) sheet.getRange(existing, 9).setValue(p.waktu_50_bebas);
-    if (p.waktu_50_dada !== undefined) sheet.getRange(existing, 10).setValue(p.waktu_50_dada);
-    if (p.waktu_50_kupu !== undefined) sheet.getRange(existing, 11).setValue(p.waktu_50_kupu);
-    if (p.waktu_50_punggung !== undefined) sheet.getRange(existing, 12).setValue(p.waktu_50_punggung);
-    sheet.getRange(existing, 13).setValue(new Date());
-    if (p.id_pelatih) sheet.getRange(existing, 14).setValue(p.id_pelatih);
+    if (p.predikat !== undefined) sheet.getRange(existing, RAPOR_COL.Predikat).setValue(p.predikat);
+    if (p.catatan !== undefined) sheet.getRange(existing, RAPOR_COL.Catatan).setValue(p.catatan);
+    if (p.waktu_25_bebas !== undefined) sheet.getRange(existing, RAPOR_COL.B25).setValue(p.waktu_25_bebas);
+    if (p.waktu_25_dada !== undefined) sheet.getRange(existing, RAPOR_COL.D25).setValue(p.waktu_25_dada);
+    if (p.waktu_25_kupu !== undefined) sheet.getRange(existing, RAPOR_COL.K25).setValue(p.waktu_25_kupu);
+    if (p.waktu_25_punggung !== undefined) sheet.getRange(existing, RAPOR_COL.P25).setValue(p.waktu_25_punggung);
+    if (p.waktu_50_bebas !== undefined) sheet.getRange(existing, RAPOR_COL.B50).setValue(p.waktu_50_bebas);
+    if (p.waktu_50_dada !== undefined) sheet.getRange(existing, RAPOR_COL.D50).setValue(p.waktu_50_dada);
+    if (p.waktu_50_kupu !== undefined) sheet.getRange(existing, RAPOR_COL.K50).setValue(p.waktu_50_kupu);
+    if (p.waktu_50_punggung !== undefined) sheet.getRange(existing, RAPOR_COL.P50).setValue(p.waktu_50_punggung);
+    if (p.waktu_25_bebas_pelampung !== undefined) sheet.getRange(existing, RAPOR_COL.B25P).setValue(p.waktu_25_bebas_pelampung);
+    if (p.waktu_25_dada_pelampung !== undefined) sheet.getRange(existing, RAPOR_COL.D25P).setValue(p.waktu_25_dada_pelampung);
+    if (p.waktu_25_kupu_pelampung !== undefined) sheet.getRange(existing, RAPOR_COL.K25P).setValue(p.waktu_25_kupu_pelampung);
+    if (p.waktu_25_punggung_pelampung !== undefined) sheet.getRange(existing, RAPOR_COL.P25P).setValue(p.waktu_25_punggung_pelampung);
+    sheet.getRange(existing, RAPOR_COL.Tanggal).setValue(new Date());
+    if (p.id_pelatih) sheet.getRange(existing, RAPOR_COL.IdPelatih).setValue(p.id_pelatih);
     return { success: true, message: 'Rapor diperbarui' };
   }
   sheet.appendRow([generateId('RPR'), p.id_peserta, p.predikat || '', p.catatan || '',
     p.waktu_25_bebas || '', p.waktu_25_dada || '', p.waktu_25_kupu || '', p.waktu_25_punggung || '',
     p.waktu_50_bebas || '', p.waktu_50_dada || '', p.waktu_50_kupu || '', p.waktu_50_punggung || '',
-    new Date(), p.id_pelatih || '']);
+    new Date(), p.id_pelatih || '',
+    p.waktu_25_bebas_pelampung || '', p.waktu_25_dada_pelampung || '',
+    p.waktu_25_kupu_pelampung || '', p.waktu_25_punggung_pelampung || '']);
   return { success: true, message: 'Rapor dibuat' };
 }
 

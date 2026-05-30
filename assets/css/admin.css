@@ -346,7 +346,11 @@ svg {
   background: var(--color-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  /* FIX: izinkan geser horizontal di layar kecil agar admin bisa
+     mengakses kolom Aksi (CRUD) pada perangkat handphone. */
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
   box-shadow: 0 4px 14px -6px rgba(0, 0, 0, 0.08);
   position: relative;
 }
@@ -358,10 +362,14 @@ svg {
 .table-scroll {
   width: 100%;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .data-table {
   width: 100%;
+  /* Pastikan tabel cukup lebar agar kolom tidak gepeng & memicu
+     scroll horizontal pada layar sempit alih-alih terpotong. */
+  min-width: 720px;
   border-collapse: separate;
   border-spacing: 0;
   font-size: 13.5px;
@@ -1032,4 +1040,69 @@ select.form-control { cursor: pointer; }
   .admin-stat .stat-value { font-size: 22px; }
   .admin-stat .icon-bg { width: 42px; height: 42px; }
   .table-wrap { border-radius: 12px; }
+}
+/* ============================================================
+   Tambahan UI: multi-peserta jadwal, validasi, loading tombol
+   ============================================================ */
+
+/* Baris pilih peserta (Tambah Jadwal Personal — banyak peserta) */
+.peserta-select-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.peserta-select-row .form-control { flex: 1 1 auto; min-width: 0; }
+.peserta-select-row .icon-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease, border-color .2s ease;
+}
+.peserta-select-row .icon-btn.delete:hover {
+  background: var(--color-danger-bg, rgba(255,59,48,.12));
+  border-color: var(--color-danger, #FF3B30);
+  color: var(--color-danger, #FF3B30);
+}
+.peserta-select-row .icon-btn .ic { width: 16px; height: 16px; }
+
+/* Highlight input yang gagal validasi */
+.input-error {
+  border-color: var(--color-danger, #FF3B30) !important;
+  box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.15) !important;
+}
+
+/* Tombol dalam keadaan loading (spinner kecil + nonaktif) */
+.is-loading {
+  position: relative;
+  pointer-events: none;
+  opacity: 0.75;
+  color: transparent !important;
+}
+.is-loading::after {
+  content: "";
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 16px; height: 16px;
+  margin: -8px 0 0 -8px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  color: #fff;
+  animation: btn-spin .6s linear infinite;
+}
+@keyframes btn-spin { to { transform: rotate(360deg); } }
+
+/* Scroll horizontal untuk tabel rapor di dashboard peserta */
+.rapor-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }

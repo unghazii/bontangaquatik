@@ -238,6 +238,7 @@ function openPesertaDetailModal(id) {
               <h4>${Icons.user()} Identitas</h4>
               <div class="detail-row"><span>Nama Lengkap</span><strong>${Utils.escapeHtml(p.Nama_Lengkap)}</strong></div>
               <div class="detail-row"><span>Username</span><strong>${Utils.escapeHtml(p.Username)}</strong></div>
+              <div class="detail-row"><span>Nomor Peserta</span><strong>${Utils.escapeHtml(p.Nomor_Peserta) || '<em class="text-muted">belum diisi</em>'}</strong></div>
               <div class="detail-row"><span>Jenis Kelamin</span><strong>${Utils.escapeHtml(p.Jenis_Kelamin) || '-'}</strong></div>
               <div class="detail-row"><span>Tempat Lahir</span><strong>${Utils.escapeHtml(p.Tempat_Lahir) || '-'}</strong></div>
               <div class="detail-row"><span>Tanggal Lahir</span><strong>${Utils.formatDate(p.Tanggal_Lahir)}</strong></div>
@@ -303,9 +304,10 @@ function openPesertaEditModal(id) {
             <div class="form-group"><label>Kelas Renang *</label><select id="e-kelas" class="form-control">${kelasOpts}</select></div>
             <div class="form-group"><label>Mulai</label><input id="e-mulai" class="form-control" type="date" value="${Utils.formatDateInput(p.Tanggal_Mulai)}"></div>
             <div class="form-group"><label>Berakhir</label><input id="e-akhir" class="form-control" type="date" value="${Utils.formatDateInput(p.Tanggal_Akhir)}"></div>
+            <div class="form-group"><label>Nomor Peserta (nomor punggung) ${isPaid ? '*' : ''}</label><input id="e-nomor" class="form-control" value="${Utils.escapeHtml(p.Nomor_Peserta || '')}" placeholder="Contoh: 001 / A12" inputmode="numeric"></div>
             <div class="form-group"><label>Status Pembayaran</label><select id="e-bayar" class="form-control"><option value="false" ${!isPaid ? 'selected' : ''}>Belum Lunas</option><option value="true" ${isPaid ? 'selected' : ''}>Lunas</option></select></div>
           </div>
-          <div class="info-banner">${Icons.info()}<p>Mengubah ke <strong>Lunas</strong> akan auto-generate jadwal kelas otomatis</p></div>
+          <div class="info-banner">${Icons.info()}<p><strong>Nomor Peserta wajib diisi</strong> sebelum mengubah status ke <strong>Lunas</strong>. Mengubah ke Lunas akan auto-generate jadwal kelas otomatis.</p></div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" onclick="document.getElementById('peserta-edit-modal').remove()">Batal</button>
@@ -318,6 +320,20 @@ function openPesertaEditModal(id) {
 }
 
 async function savePeserta(id) {
+  const wantLunas = document.getElementById('e-bayar').value === 'true';
+  const nomorPeserta = document.getElementById('e-nomor').value.trim();
+
+  // GUARD (client): tidak boleh LUNAS tanpa Nomor Peserta → tampilkan modal peringatan
+  if (wantLunas && !nomorPeserta) {
+    showAlertModal(
+      'Nomor Peserta Wajib Diisi',
+      'Anda tidak dapat menyimpan status pembayaran <strong>LUNAS</strong> tanpa mengisi <strong>Nomor Peserta</strong> (nomor punggung) terlebih dahulu. Mohon lengkapi kolom Nomor Peserta.'
+    );
+    const el = document.getElementById('e-nomor');
+    if (el) { el.focus(); el.classList.add('input-error'); }
+    return;
+  }
+
   const payload = {
     id: id,
     nama_lengkap: document.getElementById('e-nama').value.trim(),
@@ -333,7 +349,8 @@ async function savePeserta(id) {
     kelas: document.getElementById('e-kelas').value,
     tanggal_mulai: document.getElementById('e-mulai').value,
     tanggal_akhir: document.getElementById('e-akhir').value,
-    status_pembayaran: document.getElementById('e-bayar').value === 'true'
+    nomor_peserta: nomorPeserta,
+    status_pembayaran: wantLunas
   };
   const password = document.getElementById('e-password').value;
   if (password) payload.password = password;
@@ -347,7 +364,29 @@ async function savePeserta(id) {
     await loadPeserta();
     await loadJadwal();
     updateStats();
+  } else if (res.code === 'NOMOR_PESERTA_REQUIRED') {
+    showAlertModal('Nomor Peserta Wajib Diisi', Utils.escapeHtml(res.message));
   } else Utils.notify(res.message, 'error');
+}
+
+/** Modal peringatan/alert sederhana (UX lebih baik daripada alert() bawaan). */
+function showAlertModal(title, htmlMessage) {
+  const existing = document.getElementById('alert-modal');
+  if (existing) existing.remove();
+  const html = `
+    <div class="modal-backdrop active" id="alert-modal">
+      <div class="modal modal-sm">
+        <div class="modal-header">
+          <h3>${Icons.info()} ${Utils.escapeHtml(title)}</h3>
+          <button class="modal-close" aria-label="Tutup" onclick="document.getElementById('alert-modal').remove()">${Icons.x()}</button>
+        </div>
+        <div class="modal-body"><p style="font-size:15px;line-height:1.55;">${htmlMessage}</p></div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" onclick="document.getElementById('alert-modal').remove()">Mengerti</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
 }
 
 async function deletePesertaConfirm(id, nama) {
@@ -412,7 +451,6 @@ function renderJadwal(data) {
 }
 
 function openJadwalModal() {
-  const pesertaOpts = pesertaListLunas.map(p => `<option value="${p.Id_Peserta}">${Utils.escapeHtml(p.Nama_Lengkap)} • ${p.Kelas}</option>`).join('');
   const statusOpts = CONFIG.STATUS_JADWAL.map(s => `<option value="${s}">${s}</option>`).join('');
   const locs = CONFIG.LOCATIONS.map(l => `<option value="${l.name}">${l.name}</option>`).join('');
   const html = `
@@ -424,9 +462,13 @@ function openJadwalModal() {
         </div>
         <div class="modal-body">
           <div class="info-banner">${Icons.info()}
-            <p><strong>Jadwal Personal:</strong> Khusus untuk 1 peserta saja (misalnya latihan lomba/tambahan). Untuk jadwal kelas reguler, gunakan auto-generate dengan mengaktifkan pembayaran peserta.</p>
+            <p><strong>Jadwal Personal:</strong> bisa untuk <strong>beberapa peserta sekaligus</strong> dengan tanggal, jam, dan lokasi yang sama. Tekan <em>Tambah peserta</em> untuk menambah baris.</p>
           </div>
-          <div class="form-group"><label>Peserta *</label><select id="j-peserta" class="form-control"><option value="">- Pilih peserta -</option>${pesertaOpts}</select></div>
+          <div class="form-group">
+            <label>Peserta * <span class="text-muted" id="j-peserta-count">(1 dipilih)</span></label>
+            <div id="j-peserta-rows"></div>
+            <button type="button" class="btn btn-secondary btn-sm btn-icon" style="margin-top:8px;" onclick="addPesertaRow()">${Icons.plus()} <span>Tambah peserta</span></button>
+          </div>
           <div class="form-grid-2">
             <div class="form-group"><label>Tanggal *</label><input id="j-tanggal" class="form-control" type="date"></div>
             <div class="form-group"><label>Pukul *</label><input id="j-pukul" class="form-control" placeholder="contoh: 16:00 - 18:00"></div>
@@ -441,22 +483,58 @@ function openJadwalModal() {
       </div>
     </div>`;
   document.body.insertAdjacentHTML('beforeend', html);
+  addPesertaRow(); // baris pertama
   ModalHelper.focusFirst(document.getElementById('jadwal-modal'));
+}
+
+/** HTML <option> daftar peserta lunas — dipakai tiap baris select. */
+function pesertaOptionsHtml() {
+  return '<option value="">- Pilih peserta -</option>' +
+    pesertaListLunas.map(p => `<option value="${p.Id_Peserta}">${Utils.escapeHtml(p.Nama_Lengkap)} • ${p.Kelas}</option>`).join('');
+}
+
+/** Tambah satu baris select peserta (multi-peserta). */
+function addPesertaRow() {
+  const wrap = document.getElementById('j-peserta-rows');
+  if (!wrap) return;
+  const row = document.createElement('div');
+  row.className = 'peserta-select-row';
+  row.innerHTML = `
+    <select class="form-control j-peserta">${pesertaOptionsHtml()}</select>
+    <button type="button" class="icon-btn delete" title="Hapus baris" aria-label="Hapus baris" onclick="removePesertaRow(this)">${Icons.x()}</button>`;
+  wrap.appendChild(row);
+  updatePesertaCount();
+}
+
+function removePesertaRow(btn) {
+  const wrap = document.getElementById('j-peserta-rows');
+  const rows = wrap.querySelectorAll('.peserta-select-row');
+  if (rows.length <= 1) { Utils.notify('Minimal 1 peserta', 'warning'); return; }
+  btn.closest('.peserta-select-row').remove();
+  updatePesertaCount();
+}
+
+function updatePesertaCount() {
+  const n = document.querySelectorAll('#j-peserta-rows .peserta-select-row').length;
+  const el = document.getElementById('j-peserta-count');
+  if (el) el.textContent = `(${n} baris)`;
 }
 
 async function saveJadwalNew() {
   const session = Auth.getSession();
-  const idPeserta = document.getElementById('j-peserta').value;
+  const selects = Array.from(document.querySelectorAll('#j-peserta-rows .j-peserta'));
+  const ids = [...new Set(selects.map(s => s.value).filter(Boolean))]; // unik & non-kosong
   const tanggal = document.getElementById('j-tanggal').value;
   const pukul = document.getElementById('j-pukul').value.trim();
   const lokasi = document.getElementById('j-lokasi').value;
   const status = document.getElementById('j-status').value;
-  if (!idPeserta || !tanggal || !pukul || !lokasi) { Utils.notify('Mohon lengkapi semua field', 'warning'); return; }
+
+  if (ids.length === 0) { Utils.notify('Mohon pilih minimal 1 peserta', 'warning'); return; }
+  if (!tanggal || !pukul || !lokasi) { Utils.notify('Mohon lengkapi tanggal, pukul, dan lokasi', 'warning'); return; }
 
   Utils.showLoader(true);
-  const res = await API.call('createJadwal', {
-    id_pelatih: session.data.id, id_peserta: idPeserta,
-    tanggal, pukul, lokasi, status
+  const res = await API.call('createJadwalBatch', {
+    id_pelatih: session.data.id, peserta: ids, tanggal, pukul, lokasi, status
   });
   Utils.showLoader(false);
   if (res.success) {
@@ -779,6 +857,7 @@ function renderRapor(data) {
       <td>${Utils.formatDate(r.Tanggal_Rapor)}</td>
       <td>
         <div class="action-btns">
+          <button class="icon-btn view" title="Unduh PDF rapor" aria-label="Unduh PDF rapor" onclick="downloadAdminRaporPDF('${r.Id_Peserta}', this)">${Icons.download()}</button>
           <button class="icon-btn edit" title="Edit rapor" aria-label="Edit rapor" onclick="openRaporAdminModal('${r.Id_Peserta}')">${Icons.pencil()}</button>
           <button class="icon-btn delete" title="Hapus rapor" aria-label="Hapus rapor" onclick="deleteRaporConfirm('${r.Id_Rapor}')">${Icons.trash()}</button>
         </div>
@@ -793,16 +872,17 @@ function openRaporAdminModal(idPeserta) {
 
   let waktuRows = '';
   CONFIG.GAYA_RENANG.forEach((gaya, idx) => {
-    const key25 = `Waktu_25_${gaya.key}`;
-    const key50 = `Waktu_50_${gaya.key}`;
-    const v25 = existing ? (existing[key25] || '') : '';
-    const v50 = existing ? (existing[key50] || '') : '';
+    const k = gaya.key.toLowerCase();
+    const v25p = existing ? (existing['Waktu_25_' + gaya.key + '_Pelampung'] || '') : '';
+    const v25  = existing ? (existing['Waktu_25_' + gaya.key] || '') : '';
+    const v50  = existing ? (existing['Waktu_50_' + gaya.key] || '') : '';
     waktuRows += `
       <tr>
         <td>${idx + 1}</td>
         <td><strong>${gaya.label}</strong></td>
-        <td><input class="form-control rapor-input" id="rp-25-${gaya.key.toLowerCase()}" value="${Utils.escapeHtml(v25)}" placeholder="mm.ss.ms"></td>
-        <td><input class="form-control rapor-input" id="rp-50-${gaya.key.toLowerCase()}" value="${Utils.escapeHtml(v50)}" placeholder="mm.ss.ms"></td>
+        <td><input class="form-control rapor-input" id="rp-25p-${k}" value="${Utils.escapeHtml(v25p)}" placeholder="mm.ss.ms"></td>
+        <td><input class="form-control rapor-input" id="rp-25-${k}" value="${Utils.escapeHtml(v25)}" placeholder="mm.ss.ms"></td>
+        <td><input class="form-control rapor-input" id="rp-50-${k}" value="${Utils.escapeHtml(v50)}" placeholder="mm.ss.ms"></td>
       </tr>`;
   });
 
@@ -819,7 +899,7 @@ function openRaporAdminModal(idPeserta) {
           <h4 class="form-section-title">Capaian Waktu Latihan</h4>
           <p class="form-helper">Format waktu: <code>mm.ss.ms</code> (contoh: <code>01.08.12</code>). Kosongkan jika belum ada data.</p>
           <table class="rapor-input-table">
-            <thead><tr><th>No.</th><th>Gaya Renang</th><th>25 Meter</th><th>50 Meter</th></tr></thead>
+            <thead><tr><th>No.</th><th>Gaya Renang</th><th>25 M<br><small>(Pelampung)</small></th><th>25 M<br><small>(non-Pelampung)</small></th><th>50 M</th></tr></thead>
             <tbody>${waktuRows}</tbody>
           </table>
 
@@ -853,6 +933,10 @@ async function saveRapor() {
     waktu_25_dada: Utils.normalizeWaktu(document.getElementById('rp-25-dada').value),
     waktu_25_kupu: Utils.normalizeWaktu(document.getElementById('rp-25-kupu').value),
     waktu_25_punggung: Utils.normalizeWaktu(document.getElementById('rp-25-punggung').value),
+    waktu_25_bebas_pelampung: Utils.normalizeWaktu(document.getElementById('rp-25p-bebas').value),
+    waktu_25_dada_pelampung: Utils.normalizeWaktu(document.getElementById('rp-25p-dada').value),
+    waktu_25_kupu_pelampung: Utils.normalizeWaktu(document.getElementById('rp-25p-kupu').value),
+    waktu_25_punggung_pelampung: Utils.normalizeWaktu(document.getElementById('rp-25p-punggung').value),
     waktu_50_bebas: Utils.normalizeWaktu(document.getElementById('rp-50-bebas').value),
     waktu_50_dada: Utils.normalizeWaktu(document.getElementById('rp-50-dada').value),
     waktu_50_kupu: Utils.normalizeWaktu(document.getElementById('rp-50-kupu').value),
@@ -877,4 +961,32 @@ async function deleteRaporConfirm(id) {
   Utils.showLoader(false);
   if (res.success) { Utils.notify(res.message, 'success'); await loadRapor(); }
   else Utils.notify(res.message, 'error');
+}
+
+/**
+ * Admin mengunduh PDF rapor peserta — memakai generator yang SAMA dengan peserta
+ * (PDFRapor.generate) agar format identik. Mengambil data lengkap + rapor by id_peserta.
+ */
+async function downloadAdminRaporPDF(idPeserta, btn) {
+  if (typeof PDFRapor === 'undefined') {
+    Utils.notify('Modul PDF belum termuat. Mohon refresh halaman.', 'error');
+    return;
+  }
+  if (btn) btn.classList.add('is-loading');
+  Utils.showLoader(true);
+  try {
+    const [pesertaRes, raporRes] = await Promise.all([
+      API.call('getDataLengkapPeserta', { id_peserta: idPeserta }),
+      API.call('getRaporPeserta', { id_peserta: idPeserta })
+    ]);
+    if (!pesertaRes.success) { Utils.notify('Gagal memuat data peserta', 'error'); return; }
+    if (!raporRes.success || !raporRes.data) { Utils.notify('Rapor peserta belum tersedia', 'warning'); return; }
+    await PDFRapor.generate(pesertaRes.data, raporRes.data, raporRes.data.Nama_Pelatih);
+  } catch (err) {
+    console.error(err);
+    Utils.notify('Gagal membuat PDF: ' + err.message, 'error');
+  } finally {
+    Utils.showLoader(false);
+    if (btn) btn.classList.remove('is-loading');
+  }
 }
