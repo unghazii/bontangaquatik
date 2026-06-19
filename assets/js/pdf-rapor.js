@@ -232,7 +232,8 @@ const PDFRapor = {
     doc.text('BONTANG AQUATIK SWIMMING CLUB', footerCenterX, clubY, { align: 'center' });
 
     // Baris nama pelatih (di bawah, beri ruang untuk stempel di tengah)
-    const pelatih = (namaPelatih || r.Nama_Pelatih || 'Pelatih').toUpperCase();
+    // const pelatih = (namaPelatih || r.Nama_Pelatih || 'Muhtar Efendi').toUpperCase();
+    const pelatih = ('Muhtar Efendi').toUpperCase();
     const gap = 24; // ruang kosong untuk stempel & tanda tangan
     const pelatihY = clubY + gap;
     doc.setFont('helvetica', 'bold');
@@ -241,7 +242,7 @@ const PDFRapor = {
     doc.setLineWidth(0.3);
     doc.line(footerCenterX - textWidth / 2, pelatihY + 1, footerCenterX + textWidth / 2, pelatihY + 1);
     doc.setFont('helvetica', 'normal');
-    doc.text('Pelatih', footerCenterX, pelatihY + 5, { align: 'center' });
+    doc.text('Koordinator Pelatih', footerCenterX, pelatihY + 5, { align: 'center' });
 
     // STEMPEL — di-overlay TERAKHIR (di depan teks), di area tengah antara klub & pelatih
     try {
@@ -262,7 +263,7 @@ const PDFRapor = {
     const noteY = cursorY;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.text('Catatan :', noteX, noteY);
+    doc.text('Catatan Kelompok Umur :', noteX, noteY);
     const kelompokList = [
       ['Senior', '> 19 tahun'], ['Group 1', '16-18 tahun'], ['Group 2', '14-15 tahun'],
       ['Group 3', '12-13 tahun'], ['Group 4', '10-11 tahun'], ['Group 5', '8-9 tahun'], ['Group 6', '≤ 7 tahun']

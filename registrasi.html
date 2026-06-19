@@ -42,7 +42,7 @@
             <div class="step active" data-step="1"><span class="step-num">1</span><span class="step-label">Akun</span></div>
             <div class="step" data-step="2"><span class="step-num">2</span><span class="step-label">Data Pribadi</span></div>
             <div class="step" data-step="3"><span class="step-num">3</span><span class="step-label">Sekolah</span></div>
-            <div class="step" data-step="4"><span class="step-num">4</span><span class="step-label">Kelas</span></div>
+            <div class="step" data-step="4"><span class="step-num">4</span><span class="step-label">Grup</span></div>
             <div class="step" data-step="5"><span class="step-num">5</span><span class="step-label">Keamanan</span></div>
           </div>
 
@@ -65,7 +65,7 @@
                 </div>
                 <div class="form-group">
                   <label>Nama Panggilan *</label>
-                  <input type="text" name="username" class="form-control" required placeholder="Untuk login" autocomplete="username">
+                  <input type="text" name="username" class="form-control" required placeholder="Username" autocomplete="username">
                 </div>
               </div>
               <div class="form-grid-2">
@@ -86,7 +86,7 @@
 
             <!-- STEP 2: Data Pribadi -->
             <div class="form-step" data-step="2">
-              <h4 class="form-section-title">👤 Data Pribadi</h4>
+              <h4 class="form-section-title">Data Pribadi</h4>
               <div class="form-grid-2">
                 <div class="form-group">
                   <label>Jenis Kelamin *</label>
@@ -119,8 +119,8 @@
               <h4 class="form-section-title">🏫 Data Sekolah</h4>
               <div class="form-group">
                 <label>Asal Sekolah *</label>
-                <input type="text" name="asal_sekolah" class="form-control" required placeholder="Contoh: TK Ihyausunah / SD Negeri 001">
-                <p class="form-helper">⚠️ Harap gunakan format penulisan yang benar karena akan ditampilkan dalam rapor kemajuan peserta.</p>
+                <input type="text" name="asal_sekolah" class="form-control" required placeholder="Contoh: TK Amanah / SD Negeri 001">
+                <!-- <p class="form-helper">⚠️ Harap gunakan format penulisan yang benar karena akan ditampilkan dalam rapor kemajuan peserta.</p> -->
               </div>
               <div class="form-grid-2">
                 <div class="form-group">
@@ -160,29 +160,29 @@
 
             <!-- STEP 5: Pertanyaan Keamanan -->
             <div class="form-step" data-step="5">
-              <h4 class="form-section-title">🔒 Pertanyaan Keamanan</h4>
-              <p class="form-helper" style="margin-bottom:14px;">Digunakan untuk memulihkan akun jika Anda lupa password. Pilih dari rekomendasi atau buat pertanyaan sendiri, lalu isi jawabannya. Wajib mengisi <strong>2 pertanyaan</strong> yang berbeda.</p>
+              <h4 class="form-section-title">Pertanyaan Keamanan</h4>
+              <p class="form-helper" style="margin-bottom:14px;">Digunakan untuk memulihkan akun jika Anda lupa password.</p>
 
               <div class="form-group">
-                <label>Pertanyaan Keamanan #1 *</label>
+                <label>Pertanyaan Pertama *</label>
                 <select id="sec-q1-select" class="form-control"></select>
                 <input type="text" id="sec-q1-custom" class="form-control hidden" style="margin-top:8px;" placeholder="Tulis pertanyaan Anda sendiri">
               </div>
               <div class="form-group">
-                <label>Jawaban #1 *</label>
+                <label>Jawaban *</label>
                 <input type="text" id="sec-a1" name="jawaban_unik_1" class="form-control" placeholder="Jawaban yang mudah Anda ingat">
               </div>
 
               <div class="form-group" style="margin-top:18px;">
-                <label>Pertanyaan Keamanan #2 *</label>
+                <label>Pertanyaan Kedua *</label>
                 <select id="sec-q2-select" class="form-control"></select>
                 <input type="text" id="sec-q2-custom" class="form-control hidden" style="margin-top:8px;" placeholder="Tulis pertanyaan Anda sendiri">
               </div>
               <div class="form-group">
-                <label>Jawaban #2 *</label>
+                <label>Jawaban *</label>
                 <input type="text" id="sec-a2" name="jawaban_unik_2" class="form-control" placeholder="Jawaban yang mudah Anda ingat">
               </div>
-              <p class="form-helper">💡 Jawaban tidak peka huruf besar/kecil. Simpan baik-baik karena dibutuhkan saat reset password.</p>
+              <!-- <p class="form-helper">💡 Jawaban tidak peka huruf besar/kecil. Simpan baik-baik karena dibutuhkan saat reset password.</p> -->
             </div>
 
             <!-- Navigation buttons -->

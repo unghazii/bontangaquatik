@@ -262,7 +262,7 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--color-pr
 @keyframes fadeOut { to { transform: translateX(120%); opacity: 0; } }
 
 /* ============== LOADER ============== */
-.loader-overlay {
+/* .loader-overlay {
   position: fixed; inset: 0; background: var(--overlay-bg); backdrop-filter: blur(4px);
   display: none; align-items: center; justify-content: center; z-index: 10000;
 }
@@ -273,7 +273,7 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--color-pr
   border-top-color: var(--color-primary); border-right-color: var(--color-accent);
   border-radius: 50%; animation: spin 0.8s linear infinite;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin { to { transform: rotate(360deg); } } */
 
 /* ============== MODAL ============== */
 .modal-backdrop {
