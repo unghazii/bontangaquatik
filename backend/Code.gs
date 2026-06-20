@@ -7,16 +7,23 @@
  * SHEET STRUCTURE (kolom baru DITAMBAHKAN DI AKHIR agar data &
  * index lama tetap valid — aman untuk migrasi):
  *
- * Peserta (22 kolom):
+ * Peserta (23 kolom):
  *   1  Id_Peserta        2  Nama_Lengkap      3  Username
  *   4  Password          5  Nomor_Whatsapp    6  Jenis_Kelamin
  *   7  Tempat_Lahir      8  Tanggal_Lahir     9  NISNAS
  *   10 Asal_Sekolah      11 Kelas_Sekolah     12 Wali_Kelas
  *   13 Kelompok_Umur     14 Kelas             15 Tanggal_Mulai
  *   16 Tanggal_Akhir     17 Status_Pembayaran
- *   18 Nomor_Peserta  (BARU — nomor punggung; wajib sebelum LUNAS)
- *   19 Pertanyaan_Unik_1 20 Jawaban_Unik_1
- *   21 Pertanyaan_Unik_2 22 Jawaban_Unik_2
+ *   18 Nomor_Peserta  (nomor punggung; wajib sebelum LUNAS)
+ *   19 (deprecated)      20 (deprecated)       <- bekas Pertanyaan/Jawaban Unik 1
+ *   21 (deprecated)      22 (deprecated)       <- bekas Pertanyaan/Jawaban Unik 2
+ *   23 Kode_Referral (BARU — 6 huruf, auto-generate jika kosong)
+ *
+ *   CATATAN: fitur "pertanyaan keamanan" SUDAH DIHAPUS dari aplikasi.
+ *   Kolom 19-22 dipertahankan secara fisik HANYA agar index data lama
+ *   tidak bergeser (migrasi aman & non-destruktif). Tidak ada kode yang
+ *   membaca/menulis kolom tersebut lagi. Verifikasi lupa-password kini
+ *   memakai: Nama_Lengkap + Tanggal_Lahir + Nomor_Whatsapp + NISNAS.
  *
  * Pelatih: Id_Pelatih | Nama | Username | Password
  *
@@ -44,7 +51,8 @@ const SHEET_HEADERS = {
     'Id_Peserta','Nama_Lengkap','Username','Password','Nomor_Whatsapp','Jenis_Kelamin',
     'Tempat_Lahir','Tanggal_Lahir','NISNAS','Asal_Sekolah','Kelas_Sekolah','Wali_Kelas',
     'Kelompok_Umur','Kelas','Tanggal_Mulai','Tanggal_Akhir','Status_Pembayaran',
-    'Nomor_Peserta','Pertanyaan_Unik_1','Jawaban_Unik_1','Pertanyaan_Unik_2','Jawaban_Unik_2'
+    'Nomor_Peserta','Pertanyaan_Unik_1','Jawaban_Unik_1','Pertanyaan_Unik_2','Jawaban_Unik_2',
+    'Kode_Referral'
   ],
   Rapor: [
     'Id_Rapor','Id_Peserta','Predikat','Catatan',
@@ -59,7 +67,9 @@ const SHEET_HEADERS = {
 const PESERTA_COL = {
   Id:1, Nama:2, Username:3, Password:4, Wa:5, Jk:6, TempatLahir:7, TanggalLahir:8,
   Nisnas:9, Sekolah:10, KelasSekolah:11, Wali:12, KelompokUmur:13, Kelas:14,
-  Mulai:15, Akhir:16, Status:17, NomorPeserta:18, Q1:19, A1:20, Q2:21, A2:22
+  Mulai:15, Akhir:16, Status:17, NomorPeserta:18,
+  // 19-22 = legacy (deprecated, tidak dipakai). 23 = Kode_Referral (BARU).
+  Referral:23
 };
 const RAPOR_COL = {
   Id:1, IdPeserta:2, Predikat:3, Catatan:4,
@@ -97,7 +107,7 @@ function handleRequest(e) {
     switch (action) {
       case 'register':              result = registerPeserta(params); break;
       case 'login':                 result = login(params); break;
-      case 'getResetQuestions':     result = getResetQuestions(params); break;
+      case 'verifyResetIdentity':   result = verifyResetIdentity(params); break;
       case 'resetPassword':         result = resetPassword(params); break;
       case 'getJadwalPeserta':      result = getJadwalPeserta(params); break;
       case 'absen':                 result = absen(params); break;
@@ -162,6 +172,32 @@ function formatDate(d) {
 function isTrue(v) { return v === true || String(v).toUpperCase() === 'TRUE'; }
 function norm(v) { return String(v == null ? '' : v).trim().toLowerCase(); }
 
+/** Generate kode referral: 6 huruf kapital acak (A-Z). */
+function generateReferral() {
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let code = '';
+  for (let i = 0; i < 6; i++) code += letters.charAt(Math.floor(Math.random() * letters.length));
+  return code;
+}
+
+/** Validasi format kode referral: tepat 6 huruf (case-insensitive). */
+function isValidReferralFormat(code) {
+  return /^[A-Za-z]{6}$/.test(String(code || '').trim());
+}
+
+/**
+ * Pastikan baris peserta punya Kode_Referral. Jika kosong, generate + simpan
+ * ke sheet (idempotent, dipanggil saat baca data). Mengembalikan kode final.
+ */
+function ensureReferral(sheet, pesertaObj, rowIndex) {
+  let code = String(pesertaObj.Kode_Referral || '').trim();
+  if (!code) {
+    code = generateReferral();
+    if (rowIndex && rowIndex > 0) sheet.getRange(rowIndex, PESERTA_COL.Referral).setValue(code);
+  }
+  return code;
+}
+
 /**
  * Migrasi sekali-jalan: pastikan header kolom baru ada di sheet Peserta & Rapor.
  * Aman dijalankan berkali-kali (idempotent). Jalankan dari editor atau action=migrate.
@@ -210,16 +246,21 @@ function registerPeserta(p) {
   if (sheetToObjects(sheet).some(x => x.Username === p.username)) return { success: false, message: 'Username sudah digunakan' };
   const id = generateId('PST');
   const kelompokUmur = calculateKelompokUmur(p.tanggal_lahir);
+
+  // Kode referral: pakai input jika valid (6 huruf), selain itu generate otomatis.
+  let referral = String(p.kode_referral || '').trim().toUpperCase();
+  if (!isValidReferralFormat(referral)) referral = generateReferral();
+
   sheet.appendRow([
     id, p.nama_lengkap, p.username, p.password, p.nomor_whatsapp,
     p.jenis_kelamin || '', p.tempat_lahir || '', p.tanggal_lahir || '',
     p.nisnas || '', p.asal_sekolah || '', p.kelas_sekolah || '', p.wali_kelas || '',
     kelompokUmur, p.kelas || '', p.tanggal_mulai || '', p.tanggal_akhir || '', false,
-    '', // Nomor_Peserta (diisi admin sebelum LUNAS)
-    p.pertanyaan_unik_1 || '', p.jawaban_unik_1 || '',
-    p.pertanyaan_unik_2 || '', p.jawaban_unik_2 || ''
+    '',                 // 18 Nomor_Peserta (diisi admin sebelum LUNAS)
+    '', '', '', '',     // 19-22 legacy (deprecated)
+    referral            // 23 Kode_Referral
   ]);
-  return { success: true, message: 'Registrasi berhasil. Lanjutkan via WhatsApp untuk pembayaran.', id: id };
+  return { success: true, message: 'Registrasi berhasil. Lanjutkan via WhatsApp untuk pembayaran.', id: id, kode_referral: referral };
 }
 
 function login(p) {
@@ -227,44 +268,57 @@ function login(p) {
   const admin = admins.find(a => a.Username === p.username && String(a.Password) === String(p.password));
   if (admin) return { success: true, role: 'admin', data: { id: admin.Id_Pelatih, nama: admin.Nama || admin.Username, username: admin.Username } };
 
-  const pesertas = sheetToObjects(getSheet('Peserta'));
+  const pesertaSheet = getSheet('Peserta');
+  const pesertas = sheetToObjects(pesertaSheet);
   const peserta = pesertas.find(x => x.Username === p.username && String(x.Password) === String(p.password));
   if (peserta) {
     if (!isTrue(peserta.Status_Pembayaran)) return { success: false, message: 'Pembayaran belum dikonfirmasi admin. Hubungi admin via WhatsApp.' };
+    const refRow = findRowIndex(pesertaSheet, 0, peserta.Id_Peserta);
+    const referral = ensureReferral(pesertaSheet, peserta, refRow);
     return { success: true, role: 'peserta', data: {
       id: peserta.Id_Peserta, nama: peserta.Nama_Lengkap, username: peserta.Username,
       kelas: peserta.Kelas, nomor_peserta: peserta.Nomor_Peserta || '',
+      kode_referral: referral,
       tanggal_mulai: formatDate(peserta.Tanggal_Mulai), tanggal_akhir: formatDate(peserta.Tanggal_Akhir)
     } };
   }
   return { success: false, message: 'Username atau password salah' };
 }
 
-/** Lupa password — langkah 1: verifikasi username + WA, kembalikan daftar pertanyaan unik. */
-function getResetQuestions(p) {
-  const peserta = sheetToObjects(getSheet('Peserta')).find(x =>
-    norm(x.Username) === norm(p.username) &&
-    String(x.Nomor_Whatsapp).replace(/[^0-9]/g, '') === String(p.nomor_whatsapp).replace(/[^0-9]/g, '')
+/**
+ * Lupa password — verifikasi identitas pemilik akun.
+ * Wajib cocok SEMUA: Nama_Lengkap + Tanggal_Lahir + Nomor_Whatsapp + NISNAS.
+ * Dipakai oleh:
+ *   - verifyResetIdentity : cek identitas saja (tanpa ubah password)
+ *   - resetPassword       : cek identitas + simpan password baru
+ */
+function findPesertaByIdentity(p) {
+  const waInput = String(p.nomor_whatsapp || '').replace(/[^0-9]/g, '');
+  const nisnInput = String(p.nisnas || '').replace(/[^0-9A-Za-z]/g, '');
+  return sheetToObjects(getSheet('Peserta')).find(x =>
+    norm(x.Nama_Lengkap) === norm(p.nama_lengkap) &&
+    formatDate(x.Tanggal_Lahir) === String(p.tanggal_lahir || '').trim() &&
+    String(x.Nomor_Whatsapp).replace(/[^0-9]/g, '') === waInput &&
+    String(x.NISNAS).replace(/[^0-9A-Za-z]/g, '') === nisnInput
   );
-  if (!peserta) return { success: false, message: 'Username atau nomor WhatsApp tidak cocok' };
-  const questions = [];
-  if (peserta.Pertanyaan_Unik_1) questions.push({ index: 1, text: peserta.Pertanyaan_Unik_1 });
-  if (peserta.Pertanyaan_Unik_2) questions.push({ index: 2, text: peserta.Pertanyaan_Unik_2 });
-  if (questions.length === 0) return { success: false, message: 'Akun ini belum memiliki pertanyaan keamanan. Hubungi admin via WhatsApp.' };
-  return { success: true, data: { id_peserta: peserta.Id_Peserta, questions: questions } };
 }
 
-/** Lupa password — langkah 2: verifikasi jawaban + simpan password baru. */
+function verifyResetIdentity(p) {
+  if (!p.nama_lengkap || !p.tanggal_lahir || !p.nomor_whatsapp || !p.nisnas) {
+    return { success: false, message: 'Nama lengkap, tanggal lahir, nomor WhatsApp, dan NISN wajib diisi.' };
+  }
+  const peserta = findPesertaByIdentity(p);
+  if (!peserta) return { success: false, message: 'Data tidak cocok. Pastikan semua data sesuai dengan saat pendaftaran.' };
+  return { success: true, message: 'Identitas terverifikasi.', data: { id_peserta: peserta.Id_Peserta, username: peserta.Username } };
+}
+
 function resetPassword(p) {
+  if (!p.nama_lengkap || !p.tanggal_lahir || !p.nomor_whatsapp || !p.nisnas) {
+    return { success: false, message: 'Semua data verifikasi wajib diisi.' };
+  }
   const sheet = getSheet('Peserta');
-  const peserta = sheetToObjects(sheet).find(x =>
-    norm(x.Username) === norm(p.username) &&
-    String(x.Nomor_Whatsapp).replace(/[^0-9]/g, '') === String(p.nomor_whatsapp).replace(/[^0-9]/g, '')
-  );
-  if (!peserta) return { success: false, message: 'Data tidak cocok' };
-  const idx = Number(p.question_index) === 2 ? 2 : 1;
-  const stored = idx === 2 ? peserta.Jawaban_Unik_2 : peserta.Jawaban_Unik_1;
-  if (!stored || norm(stored) !== norm(p.answer)) return { success: false, message: 'Jawaban pertanyaan keamanan salah' };
+  const peserta = findPesertaByIdentity(p);
+  if (!peserta) return { success: false, message: 'Data tidak cocok. Pastikan semua data sesuai dengan saat pendaftaran.' };
   if (!p.new_password || String(p.new_password).length < 6) return { success: false, message: 'Password baru minimal 6 karakter' };
   const row = findRowIndex(sheet, 0, peserta.Id_Peserta);
   if (row === -1) return { success: false, message: 'Peserta tidak ditemukan' };
@@ -317,9 +371,12 @@ function getKehadiranPeserta(p) {
 }
 
 function getDataLengkapPeserta(p) {
-  const peserta = sheetToObjects(getSheet('Peserta')).find(x => x.Id_Peserta === p.id_peserta);
+  const sheet = getSheet('Peserta');
+  const peserta = sheetToObjects(sheet).find(x => x.Id_Peserta === p.id_peserta);
   if (!peserta) return { success: false, message: 'Peserta tidak ditemukan' };
-  return { success: true, data: { ...peserta, Tanggal_Mulai: formatDate(peserta.Tanggal_Mulai), Tanggal_Akhir: formatDate(peserta.Tanggal_Akhir), Tanggal_Lahir: formatDate(peserta.Tanggal_Lahir) } };
+  const row = findRowIndex(sheet, 0, peserta.Id_Peserta);
+  const referral = ensureReferral(sheet, peserta, row);
+  return { success: true, data: { ...peserta, Kode_Referral: referral, Tanggal_Mulai: formatDate(peserta.Tanggal_Mulai), Tanggal_Akhir: formatDate(peserta.Tanggal_Akhir), Tanggal_Lahir: formatDate(peserta.Tanggal_Lahir) } };
 }
 
 /** Peserta memperbarui data dirinya sendiri (subset field yang aman). */
@@ -340,10 +397,6 @@ function updateProfilePeserta(p) {
   if (p.kelas_sekolah !== undefined) sheet.getRange(row, PESERTA_COL.KelasSekolah).setValue(p.kelas_sekolah);
   if (p.wali_kelas    !== undefined) sheet.getRange(row, PESERTA_COL.Wali).setValue(p.wali_kelas);
   if (p.password      !== undefined && p.password !== '') sheet.getRange(row, PESERTA_COL.Password).setValue(p.password);
-  if (p.pertanyaan_unik_1 !== undefined) sheet.getRange(row, PESERTA_COL.Q1).setValue(p.pertanyaan_unik_1);
-  if (p.jawaban_unik_1    !== undefined && p.jawaban_unik_1 !== '') sheet.getRange(row, PESERTA_COL.A1).setValue(p.jawaban_unik_1);
-  if (p.pertanyaan_unik_2 !== undefined) sheet.getRange(row, PESERTA_COL.Q2).setValue(p.pertanyaan_unik_2);
-  if (p.jawaban_unik_2    !== undefined && p.jawaban_unik_2 !== '') sheet.getRange(row, PESERTA_COL.A2).setValue(p.jawaban_unik_2);
   return { success: true, message: 'Profil berhasil diperbarui' };
 }
 
@@ -360,10 +413,12 @@ function getRaporPeserta(p) {
 
 // ====================== ADMIN - PESERTA ======================
 function getAllPeserta() {
-  const pesertas = sheetToObjects(getSheet('Peserta'));
+  const pesertaSheet = getSheet('Peserta');
+  const pesertas = sheetToObjects(pesertaSheet);
   const allJadwal = sheetToObjects(getSheet('Jadwal'));
   const allKehadiran = sheetToObjects(getSheet('Kehadiran'));
-  return { success: true, data: pesertas.map(p => {
+  return { success: true, data: pesertas.map((p, i) => {
+    const referral = ensureReferral(pesertaSheet, p, i + 2); // row = index + header(1) + 1-based(1)
     const totalJadwal = allJadwal.filter(j => j.Id_Peserta === p.Id_Peserta || (!j.Id_Peserta && j.Kelas === p.Kelas)).length;
     const totalHadir = allKehadiran.filter(k => k.Id_Peserta === p.Id_Peserta && isTrue(k.Status)).length;
     const persentase = totalJadwal > 0 ? Math.round((totalHadir / totalJadwal) * 100) : 0;
@@ -377,7 +432,7 @@ function getAllPeserta() {
         if (m < 0 || (m === 0 && now.getDate() < lahir.getDate())) usia--;
       }
     }
-    return { ...p, Tanggal_Mulai: formatDate(p.Tanggal_Mulai), Tanggal_Akhir: formatDate(p.Tanggal_Akhir), Tanggal_Lahir: formatDate(p.Tanggal_Lahir), Usia: usia, total_jadwal: totalJadwal, total_hadir: totalHadir, persentase: persentase };
+    return { ...p, Kode_Referral: referral, Tanggal_Mulai: formatDate(p.Tanggal_Mulai), Tanggal_Akhir: formatDate(p.Tanggal_Akhir), Tanggal_Lahir: formatDate(p.Tanggal_Lahir), Usia: usia, total_jadwal: totalJadwal, total_hadir: totalHadir, persentase: persentase };
   })};
 }
 

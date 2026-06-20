@@ -26,6 +26,7 @@
   <link rel="stylesheet" href="assets/css/navbar.css">
   <link rel="stylesheet" href="assets/css/admin.css">
   <link rel="stylesheet" href="assets/css/pwa.css">
+  <link rel="stylesheet" href="assets/css/components.css">
 </head>
 <script src="pwa.js" defer></script>
 <body>
@@ -128,6 +129,19 @@
           </div>
         </div>
       </div>
+
+      <!-- ============== SECTION TASK (req #14) — tampil hanya bila ada tugas ============== -->
+      <section class="task-section" id="task-section" hidden aria-label="Tugas yang perlu ditindaklanjuti">
+        <div class="task-section-head">
+          <h2 class="task-section-title">
+            <svg class="ic" aria-hidden="true"><use href="#ic-info"/></svg>
+            <span>Perlu Tindak Lanjut</span>
+            <span class="task-count-badge" id="task-count">0</span>
+          </h2>
+          <p class="task-section-sub">Geser untuk melihat semua tugas • ketuk kartu untuk menindaklanjuti</p>
+        </div>
+        <div class="task-scroller" id="task-scroller"></div>
+      </section>
 
       <!-- Tabs -->
       <div class="tabs" role="tablist" aria-label="Admin sections">
@@ -330,16 +344,34 @@
               <svg class="ic search-ic" aria-hidden="true"><use href="#ic-search"/></svg>
               <input type="text" id="search-rapor" class="search-input" placeholder="Cari peserta..." aria-label="Cari rapor">
             </div>
+            <div class="select-wrap">
+              <select id="filter-status-rapor" class="filter-select" aria-label="Filter status rapor">
+                <option value="all">Semua Status</option>
+                <option value="sudah">Sudah Ada Rapor</option>
+                <option value="belum">Belum Ada Rapor</option>
+              </select>
+              <svg class="ic select-caret" aria-hidden="true"><use href="#ic-chevron-down"/></svg>
+            </div>
+            <div class="select-wrap">
+              <select id="filter-predikat-rapor" class="filter-select" aria-label="Filter predikat">
+                <option value="all">Semua Predikat</option>
+              </select>
+              <svg class="ic select-caret" aria-hidden="true"><use href="#ic-chevron-down"/></svg>
+            </div>
+            <div class="select-wrap">
+              <select id="sort-rapor" class="filter-select" aria-label="Urutkan berdasarkan tanggal update">
+                <option value="update_desc">Update Terbaru</option>
+                <option value="update_asc">Update Terlama</option>
+                <option value="nama_asc">Nama A–Z</option>
+              </select>
+              <svg class="ic select-caret" aria-hidden="true"><use href="#ic-chevron-down"/></svg>
+            </div>
           </div>
-          <button class="btn btn-primary btn-icon" onclick="openRaporAdminModal()">
-            <svg class="ic" aria-hidden="true"><use href="#ic-plus"/></svg>
-            <span>Buat / Edit Rapor</span>
-          </button>
         </div>
         <div class="table-wrap">
           <table class="data-table">
             <thead>
-              <tr><th>Peserta</th><th>Predikat</th><th>Catatan</th><th>Tanggal Update</th><th class="th-actions">Aksi</th></tr>
+              <tr><th>Peserta</th><th>Predikat</th><th>Catatan</th><th>Tanggal Update</th><th>Status</th><th class="th-actions">Aksi</th></tr>
             </thead>
             <tbody id="tbody-rapor"></tbody>
           </table>
@@ -358,6 +390,7 @@
   <script src="assets/js/utils.js"></script>
   <script src="assets/js/auth.js"></script>
   <script src="assets/js/api.js"></script>
+  <script src="assets/js/components/ui.js"></script>
   <script src="assets/js/excel-export.js"></script>
   <script src="assets/js/pdf-rapor.js"></script>
   <script src="assets/js/admin.js"></script>

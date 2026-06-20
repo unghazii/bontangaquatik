@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="assets/css/peserta.css">
   <link rel="stylesheet" href="assets/css/profile.css">
   <link rel="stylesheet" href="assets/css/pwa.css">
+  <link rel="stylesheet" href="assets/css/components.css">
 </head>
 <script src="pwa.js" defer></script>
 <body>
@@ -36,7 +37,7 @@
           <p>Lihat dan perbarui data diri Anda</p>
         </div>
         <div class="dashboard-header-right">
-          <a href="peserta.html" class="btn btn-secondary btn-sm">← Dashboard</a>
+          <a href="peserta.html" class="btn btn-accent btn-sm">Dashboard</a>
           <div class="kelas-badge">No. Peserta: <span id="ph-nomor">-</span></div>
         </div>
       </div>
@@ -52,7 +53,7 @@
       <form id="profile-form" class="profile-wrap hidden" autocomplete="off">
 
         <section class="dashboard-section">
-          <div class="section-head"><h2>👤 Data Diri</h2></div>
+          <div class="section-head"><h2>Data Diri</h2></div>
           <div class="profile-grid">
             <div class="form-group">
               <label>Nama Lengkap</label>
@@ -85,7 +86,7 @@
         </section>
 
         <section class="dashboard-section">
-          <div class="section-head"><h2>🎓 Data Sekolah</h2></div>
+          <div class="section-head"><h2>Data Sekolah</h2></div>
           <div class="profile-grid">
             <div class="form-group">
               <label>NISN</label>
@@ -107,7 +108,7 @@
         </section>
 
         <section class="dashboard-section">
-          <div class="section-head"><h2>🏊 Data Pelatihan <small>(hanya admin yang dapat mengubah)</small></h2></div>
+          <div class="section-head"><h2>Data Pelatihan <small>(hanya admin yang dapat mengubah)</small></h2></div>
           <div class="profile-grid">
             <div class="form-group">
               <label>Kelas / Grup</label>
@@ -129,45 +130,29 @@
         </section>
 
         <section class="dashboard-section">
-          <div class="section-head"><h2>🔒 Keamanan</h2></div>
+          <div class="section-head"><h2>Keamanan</h2></div>
           <p class="profile-hint">Kosongkan kolom password bila tidak ingin mengubahnya.</p>
           <div class="profile-grid">
             <div class="form-group">
               <label>Password Baru</label>
               <div class="password-wrap">
                 <input type="password" id="pf-password" class="form-control" placeholder="Minimal 6 karakter" autocomplete="new-password">
-                <button type="button" class="password-toggle" data-target="pf-password">👁️</button>
+                <button type="button" class="password-toggle" data-password-toggle="pf-password"></button>
               </div>
             </div>
             <div class="form-group">
               <label>Konfirmasi Password Baru</label>
               <div class="password-wrap">
                 <input type="password" id="pf-password2" class="form-control" placeholder="Ulangi password baru" autocomplete="new-password">
-                <button type="button" class="password-toggle" data-target="pf-password2">👁️</button>
+                <button type="button" class="password-toggle" data-password-toggle="pf-password2"></button>
               </div>
-            </div>
-            <div class="form-group">
-              <label>Pertanyaan Pertama</label>
-              <input type="text" id="pf-pertanyaan_unik_1" class="form-control" placeholder="Pertanyaan keamanan pertama">
-            </div>
-            <div class="form-group">
-              <label>Jawaban <small>(isi untuk mengubah)</small></label>
-              <input type="text" id="pf-jawaban_unik_1" class="form-control" placeholder="Kosongkan bila tidak diubah">
-            </div>
-            <div class="form-group">
-              <label>Pertanyaan Kedua</label>
-              <input type="text" id="pf-pertanyaan_unik_2" class="form-control" placeholder="Pertanyaan keamanan kedua">
-            </div>
-            <div class="form-group">
-              <label>Jawaban <small>(isi untuk mengubah)</small></label>
-              <input type="text" id="pf-jawaban_unik_2" class="form-control" placeholder="Kosongkan bila tidak diubah">
             </div>
           </div>
         </section>
 
         <div class="profile-actions">
           <button type="button" id="pf-reset" class="btn btn-secondary">Batalkan Perubahan</button>
-          <button type="submit" id="pf-save" class="btn btn-primary">💾 Simpan Perubahan</button>
+          <button type="submit" id="pf-save" class="btn btn-primary">Simpan Perubahan</button>
         </div>
       </form>
 
@@ -178,6 +163,8 @@
   <script src="assets/js/utils.js"></script>
   <script src="assets/js/auth.js"></script>
   <script src="assets/js/api.js"></script>
+  <script src="assets/js/components/ui.js"></script>
+  <script src="assets/js/peserta-settings.js"></script>
   <script src="assets/js/profile.js"></script>
   <script src="assets/js/pwa.js"></script>
 </body>

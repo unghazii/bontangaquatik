@@ -1,74 +1,46 @@
-// Registrasi multi-step dengan validasi & UX premium
+/**
+ * Registrasi multi-step (4 langkah) — UX premium.
+ * Langkah: 1) Akun  2) Data Pribadi  3) Sekolah  4) Grup + Referral(opsional).
+ * Ikon mata password & toast memakai komponen reusable global `UI`.
+ */
 let currentStep = 1;
-const TOTAL_STEPS = 5;
-const input = document.querySelector('#password');
-const toggle = document.querySelector('#togglePassword');
-const eyeOpenIcon = `
-<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none">
-  <path d="M2 12C3.8 7.8 7.5 5 12 5C16.5 5 20.2 7.8 22 12C20.2 16.2 16.5 19 12 19C7.5 19 3.8 16.2 2 12Z"
-        stroke="#272424" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="12" cy="12" r="3" fill="#272424"/>
-</svg>
-`;
-
-const eyeClosedIcon = `
-<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none">
-  <path d="M3 3L21 21" stroke="#FF3B30" stroke-width="2" stroke-linecap="round"/>
-  <path d="M10.6 10.7C10.2 11.1 10 11.5 10 12C10 13.1 10.9 14 12 14C12.5 14 12.9 13.8 13.3 13.4"
-        stroke="#272424" stroke-width="2" stroke-linecap="round"/>
-  <path d="M9.9 5.1C10.6 5 11.3 5 12 5C16.5 5 20.2 7.8 22 12C21.2 13.8 20 15.3 18.5 16.4"
-        stroke="#272424" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M6.2 6.3C4.5 7.5 3.1 9.4 2 12C3.8 16.2 7.5 19 12 19C13.5 19 14.9 18.7 16.2 18.1"
-        stroke="#272424" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
-`;
-
-function updateIcon() {
-  toggle.innerHTML = input.type === 'password'
-    ? eyeOpenIcon
-    : eyeClosedIcon;
-}
-
-toggle.addEventListener('click', () => {
-  input.type = input.type === 'password' ? 'text' : 'password';
-  updateIcon();
-});
-
-updateIcon();
+const TOTAL_STEPS = 4;
 
 document.addEventListener('DOMContentLoaded', () => {
   Utils.mountNavbar('registrasi');
 
-  // Setup default values
+  // Password toggle (SVG eye reusable)
+  const passInput = document.getElementById('password');
+  const passToggle = document.getElementById('togglePassword');
+  if (passInput && passToggle) UI.passwordToggle(passInput, passToggle);
+
+  // Default tanggal mulai = hari ini
   const todayStr = Utils.formatDateInput(new Date());
   const startInput = document.getElementById('tanggal_mulai');
   startInput.value = todayStr;
   startInput.min = todayStr;
 
-  // Max tanggal lahir: hari ini - 5 tahun (min usia 5)
+  // Max tanggal lahir: hari ini - MIN_AGE tahun
   const tglLahirInput = document.getElementById('tanggal_lahir');
   const maxLahir = new Date(); maxLahir.setFullYear(maxLahir.getFullYear() - CONFIG.MIN_AGE);
   tglLahirInput.max = Utils.formatDateInput(maxLahir);
 
-  // Preview kelompok umur saat user pilih tanggal lahir
   tglLahirInput.addEventListener('change', () => {
     const tgl = tglLahirInput.value;
-    if (!tgl) {
-      document.getElementById('kelompok-umur-preview').textContent = '';
-      return;
-    }
+    const preview = document.getElementById('kelompok-umur-preview');
+    if (!tgl) { preview.textContent = ''; return; }
     const usia = Utils.calculateUsia(tgl);
     if (usia < CONFIG.MIN_AGE) {
-      document.getElementById('kelompok-umur-preview').innerHTML = `<span style="color:var(--color-danger);">⚠️ Usia minimal ${CONFIG.MIN_AGE} tahun</span>`;
+      preview.innerHTML = `<span style="color:var(--color-danger);">⚠️ Usia minimal ${CONFIG.MIN_AGE} tahun</span>`;
       return;
     }
     const kelompok = Utils.calculateKelompokUmur(tgl);
     const info = CONFIG.KELOMPOK_UMUR_INFO[kelompok] || '';
-    document.getElementById('kelompok-umur-preview').innerHTML = `🏆 Kelompok Umur: <strong style="color:var(--color-primary);">${kelompok}</strong> (${info}) • Usia ${usia} tahun`;
+    preview.innerHTML = `🏆 Kelompok Umur: <strong style="color:var(--color-primary);">${kelompok}</strong> (${info}) • Usia ${usia} tahun`;
   });
 
   renderClassInfo();
-  renderSecurityQuestions();
+  bindReferralField();
 
   // Auto-calc end date
   const durasiInput = document.getElementById('durasi');
@@ -77,8 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const start = startInput.value;
     const durasi = parseInt(durasiInput.value) || 0;
     if (!start || durasi <= 0) { endDisplay.value = ''; return; }
-    const startDate = new Date(start);
-    const endDate = Utils.addMonths(startDate, durasi);
+    const endDate = Utils.addMonths(new Date(start), durasi);
     endDisplay.value = Utils.formatDate(endDate);
     endDisplay.dataset.iso = Utils.formatDateInput(endDate);
   }
@@ -86,44 +57,36 @@ document.addEventListener('DOMContentLoaded', () => {
   durasiInput.addEventListener('input', recalcEnd);
   recalcEnd();
 
-  // Stepper navigation
   document.getElementById('btn-next').addEventListener('click', goNextStep);
   document.getElementById('btn-prev').addEventListener('click', goPrevStep);
-
-  // Submit
   document.getElementById('form-registrasi').addEventListener('submit', submitForm);
-
-  // Toggle password
-  document.getElementById('toggle-password').addEventListener('click', (e) => {
-    const input = document.getElementById('password');
-    input.type = input.type === 'password' ? 'text' : 'password';
-    e.target.textContent = input.type === 'password' ? '👁️' : '🙈';
-  });
 });
 
-function renderSecurityQuestions() {
-  const opts = (CONFIG.SECURITY_QUESTIONS || []).map(q => `<option value="${q}">${q}</option>`).join('')
-    + '<option value="__custom__">Lainnya (buat sendiri)…</option>';
-  ['sec-q1-select', 'sec-q2-select'].forEach((id, i) => {
-    const sel = document.getElementById(id);
-    if (!sel) return;
-    sel.innerHTML = '<option value="">- Pilih pertanyaan -</option>' + opts;
-    const customId = i === 0 ? 'sec-q1-custom' : 'sec-q2-custom';
-    sel.addEventListener('change', () => {
-      const custom = document.getElementById(customId);
-      const isCustom = sel.value === '__custom__';
-      custom.classList.toggle('hidden', !isCustom);
-      if (isCustom) custom.focus();
-    });
+/** Validasi & feedback realtime kode referral (opsional, harus 6 huruf bila diisi). */
+function bindReferralField() {
+  const input = document.getElementById('kode_referral');
+  const feedback = document.getElementById('referral-feedback');
+  if (!input) return;
+  input.addEventListener('input', () => {
+    input.value = input.value.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 6);
+    const val = input.value.trim();
+    if (val === '') {
+      feedback.textContent = 'Punya kode dari teman? Masukkan di sini (boleh dikosongkan).';
+      feedback.style.color = 'var(--color-text-secondary)';
+    } else if (/^[A-Z]{6}$/.test(val)) {
+      feedback.innerHTML = '✓ Format kode referral valid';
+      feedback.style.color = 'var(--color-success)';
+    } else {
+      feedback.innerHTML = '⚠️ Kode referral harus terdiri dari tepat 6 huruf';
+      feedback.style.color = 'var(--color-danger)';
+    }
   });
 }
 
-/** Ambil teks pertanyaan terpilih (dropdown atau custom). */
-function getSecurityQuestionValue(selectId, customId) {
-  const sel = document.getElementById(selectId);
-  if (!sel) return '';
-  if (sel.value === '__custom__') return (document.getElementById(customId)?.value || '').trim();
-  return sel.value;
+function isReferralValid() {
+  const input = document.getElementById('kode_referral');
+  const val = (input?.value || '').trim();
+  return val === '' || /^[A-Za-z]{6}$/.test(val);
 }
 
 function validateStep(step) {
@@ -132,52 +95,34 @@ function validateStep(step) {
   for (const inp of inputs) {
     if (!inp.value || inp.value.trim() === '') {
       inp.focus();
-      Utils.notify(`Mohon lengkapi: ${inp.previousElementSibling.textContent.replace('*', '').trim()}`, 'warning');
+      const label = inp.previousElementSibling ? inp.previousElementSibling.textContent.replace('*', '').trim() : 'field ini';
+      UI.toast(`Mohon lengkapi: ${label}`, 'warning');
       return false;
     }
   }
-  // Custom validations per step
   if (step === 1) {
     const password = stepEl.querySelector('[name="password"]').value;
-    if (password.length < 6) { Utils.notify('Password minimal 6 karakter', 'warning'); return false; }
+    if (password.length < 6) { UI.toast('Password minimal 6 karakter', 'warning'); return false; }
     const wa = stepEl.querySelector('[name="nomor_whatsapp"]').value.replace(/[^0-9]/g, '');
-    if (!/^[0-9]{8,15}$/.test(wa)) { Utils.notify('Nomor WhatsApp tidak valid (8-15 digit)', 'warning'); return false; }
+    if (!/^[0-9]{8,15}$/.test(wa)) { UI.toast('Nomor WhatsApp tidak valid (8-15 digit)', 'warning'); return false; }
   }
   if (step === 2) {
     const tglLahir = stepEl.querySelector('[name="tanggal_lahir"]').value;
-    const usia = Utils.calculateUsia(tglLahir);
-    if (usia < CONFIG.MIN_AGE) { Utils.notify(`Usia minimal ${CONFIG.MIN_AGE} tahun`, 'warning'); return false; }
+    if (Utils.calculateUsia(tglLahir) < CONFIG.MIN_AGE) { UI.toast(`Usia minimal ${CONFIG.MIN_AGE} tahun`, 'warning'); return false; }
     const nisnas = stepEl.querySelector('[name="nisnas"]').value;
-    if (!/^[0-9]+$/.test(nisnas)) { Utils.notify('NISN harus berupa angka', 'warning'); return false; }
+    if (!/^[0-9]+$/.test(nisnas)) { UI.toast('NISN harus berupa angka', 'warning'); return false; }
   }
-  if (step === 5) {
-    const q1 = getSecurityQuestionValue('sec-q1-select', 'sec-q1-custom');
-    const a1 = (document.getElementById('sec-a1').value || '').trim();
-    const q2 = getSecurityQuestionValue('sec-q2-select', 'sec-q2-custom');
-    const a2 = (document.getElementById('sec-a2').value || '').trim();
-    if (!q1) { Utils.notify('Pilih atau tulis pertanyaan keamanan #1', 'warning'); return false; }
-    if (!a1) { Utils.notify('Isi jawaban pertanyaan keamanan #1', 'warning'); return false; }
-    if (!q2) { Utils.notify('Pilih atau tulis pertanyaan keamanan #2', 'warning'); return false; }
-    if (!a2) { Utils.notify('Isi jawaban pertanyaan keamanan #2', 'warning'); return false; }
-    if (q1.toLowerCase() === q2.toLowerCase()) { Utils.notify('Kedua pertanyaan keamanan harus berbeda', 'warning'); return false; }
+  if (step === 4) {
+    if (!isReferralValid()) { UI.toast('Kode referral tidak valid — harus 6 huruf atau kosongkan.', 'warning'); return false; }
   }
   return true;
 }
 
 function goNextStep() {
   if (!validateStep(currentStep)) return;
-  if (currentStep < TOTAL_STEPS) {
-    currentStep++;
-    updateStepUI();
-  }
+  if (currentStep < TOTAL_STEPS) { currentStep++; updateStepUI(); }
 }
-
-function goPrevStep() {
-  if (currentStep > 1) {
-    currentStep--;
-    updateStepUI();
-  }
-}
+function goPrevStep() { if (currentStep > 1) { currentStep--; updateStepUI(); } }
 
 function updateStepUI() {
   document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
@@ -190,7 +135,6 @@ function updateStepUI() {
   document.getElementById('btn-prev').disabled = (currentStep === 1);
   document.getElementById('btn-next').classList.toggle('hidden', currentStep === TOTAL_STEPS);
   document.getElementById('btn-submit').classList.toggle('hidden', currentStep !== TOTAL_STEPS);
-  // Scroll to top of form smoothly
   document.getElementById('form-stepper').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -214,49 +158,45 @@ async function submitForm(e) {
     kelas: fd.get('kelas'),
     tanggal_mulai: fd.get('tanggal_mulai'),
     tanggal_akhir: document.getElementById('tanggal_akhir_display').dataset.iso || '',
-    pertanyaan_unik_1: getSecurityQuestionValue('sec-q1-select', 'sec-q1-custom'),
-    jawaban_unik_1: (document.getElementById('sec-a1').value || '').trim(),
-    pertanyaan_unik_2: getSecurityQuestionValue('sec-q2-select', 'sec-q2-custom'),
-    jawaban_unik_2: (document.getElementById('sec-a2').value || '').trim()
+    kode_referral: (fd.get('kode_referral') || '').trim().toUpperCase()
   };
 
+  const submitBtn = document.getElementById('btn-submit');
+  submitBtn.disabled = true;
   const res = await API.call('register', data);
+  submitBtn.disabled = false;
+
   if (res.success) {
-    Utils.notify('Registrasi berhasil! Mengarahkan ke WhatsApp admin...', 'success', 4000);
+    UI.toast('Registrasi berhasil! Mengarahkan ke WhatsApp admin...', 'success', { duration: 4000 });
     e.target.reset();
     setTimeout(() => {
-      const waUrl = Utils.waLink(CONFIG.CONTACT.whatsapp, CONFIG.WA_REGISTRATION_MESSAGE);
-      window.open(waUrl, '_blank');
+      window.open(Utils.waLink(CONFIG.CONTACT.whatsapp, CONFIG.WA_REGISTRATION_MESSAGE), '_blank');
       setTimeout(() => window.location.href = 'login.html', 1500);
     }, 1500);
   } else {
-    Utils.notify(res.message, 'error');
+    UI.toast(res.message || 'Registrasi gagal', 'error');
   }
 }
 
 function renderClassInfo() {
   const container = document.getElementById('class-info-list');
-  if (!container) return;
-  container.innerHTML = Object.entries(CONFIG.KELAS_DETAIL).map(([nama, d]) => `
-    <div class="class-info-item ${d.recommended ? 'recommended' : ''}">
-      <div class="class-info-head">
-        <span class="class-info-mascot">${d.mascot}</span>
-        <strong>${nama}</strong>
-        ${d.recommended ? '<span class="class-info-badge">⭐ Rekomendasi</span>' : ''}
-      </div>
-      <div class="class-info-body">
-        <div>📍 ${d.lokasi}</div>
-        <div>📅 ${d.jadwal_label}</div>
-      </div>
-    </div>
-  `).join('');
-
+  if (container) {
+    container.innerHTML = Object.entries(CONFIG.KELAS_DETAIL).map(([nama, d]) => `
+      <div class="class-info-item ${d.recommended ? 'recommended' : ''}">
+        <div class="class-info-head">
+          <span class="class-info-mascot">${d.mascot}</span>
+          <strong>${nama}</strong>
+          ${d.recommended ? '<span class="class-info-badge">⭐ Rekomendasi</span>' : ''}
+        </div>
+        <div class="class-info-body">
+          <div>📍 ${d.lokasi}</div>
+          <div>📅 ${d.jadwal_label}</div>
+        </div>
+      </div>`).join('');
+  }
   const select = document.getElementById('kelas');
   if (select) {
     select.innerHTML = '<option value="">- Pilih grup kelas -</option>' +
-      Object.keys(CONFIG.KELAS_DETAIL).map(k => {
-        const d = CONFIG.KELAS_DETAIL[k];
-        return `<option value="${k}">${k} • ${d.lokasi}</option>`;
-      }).join('');
+      Object.keys(CONFIG.KELAS_DETAIL).map(k => `<option value="${k}">${k} • ${CONFIG.KELAS_DETAIL[k].lokasi}</option>`).join('');
   }
 }

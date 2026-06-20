@@ -22,6 +22,7 @@
   <link rel="stylesheet" href="assets/css/navbar.css">
   <link rel="stylesheet" href="assets/css/peserta.css">
   <link rel="stylesheet" href="assets/css/pwa.css">
+  <link rel="stylesheet" href="assets/css/components.css">
 
 </head>
 <script src="pwa.js" defer></script>
@@ -42,6 +43,9 @@
         </div>
       </div>
 
+      <!-- Pengingat 1 jadwal terdekat (req #6) -->
+      <div id="upcoming-reminder" class="upcoming-reminder" hidden></div>
+
       <!-- Stats -->
       <div class="stats-grid">
         <div class="stat-card">
@@ -61,6 +65,15 @@
             <div class="progress-fill" id="progress-fill" style="width: 0%;"></div>
           </div>
         </div>
+      </div>
+
+      <!-- Berita dari Admin (req #6) -->
+      <div class="dashboard-section" id="berita-section" hidden>
+        <div class="section-head">
+          <h2>📰 Informasi &amp; Berita</h2>
+          <span class="jadwal-count" id="berita-count">0</span>
+        </div>
+        <div class="berita-scroller" id="berita-list"></div>
       </div>
 
       <!-- Jadwal -->
@@ -114,6 +127,8 @@
   <script src="assets/js/utils.js"></script>
   <script src="assets/js/auth.js"></script>
   <script src="assets/js/api.js"></script>
+  <script src="assets/js/components/ui.js"></script>
+  <script src="assets/js/peserta-settings.js"></script>
   <script src="assets/js/pdf-rapor.js"></script>
   <script src="assets/js/peserta.js"></script>
   <script src="assets/js/pwa.js"></script>

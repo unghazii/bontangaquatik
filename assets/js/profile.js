@@ -3,7 +3,8 @@
  *  - Memuat data via getDataLengkapPeserta
  *  - Menyimpan perubahan via updateProfilePeserta (hanya field yang aman)
  *  - Field pelatihan (kelas, kelompok umur, tanggal) read-only (hanya admin)
- *  - Optimistic: nama yang berubah langsung disinkron ke sesi (Auth.patchUser)
+ *  - "Batalkan Perubahan" -> konfirmasi modal -> kembali ke dashboard (req #8)
+ *  - Ikon mata password = SVG reusable (req #7)
  */
 (function () {
   'use strict';
@@ -18,12 +19,8 @@
     nisnas: 'pf-nisnas',
     asal_sekolah: 'pf-asal_sekolah',
     kelas_sekolah: 'pf-kelas_sekolah',
-    wali_kelas: 'pf-wali_kelas',
-    pertanyaan_unik_1: 'pf-pertanyaan_unik_1',
-    pertanyaan_unik_2: 'pf-pertanyaan_unik_2'
+    wali_kelas: 'pf-wali_kelas'
   };
-
-  let original = null; // snapshot untuk "Batalkan Perubahan"
 
   function getUser() {
     if (typeof Auth.getUser === 'function') return Auth.getUser();
@@ -51,8 +48,6 @@
     setVal('pf-kelompok_umur', data.Kelompok_Umur);
     setVal('pf-tanggal_mulai', data.Tanggal_Mulai);
     setVal('pf-tanggal_akhir', data.Tanggal_Akhir);
-    setVal('pf-pertanyaan_unik_1', data.Pertanyaan_Unik_1);
-    setVal('pf-pertanyaan_unik_2', data.Pertanyaan_Unik_2);
     document.getElementById('ph-nama').textContent = data.Nama_Lengkap || 'Saya';
     document.getElementById('ph-nomor').textContent = data.Nomor_Peserta || '-';
   }
@@ -62,26 +57,11 @@
     if (!v) return '';
     const d = new Date(v);
     if (isNaN(d.getTime())) {
-      // mungkin sudah "DD/MM/YYYY" atau "YYYY-MM-DD"
       const m = String(v).match(/(\d{4})-(\d{2})-(\d{2})/);
       return m ? m[0] : '';
     }
     const p = n => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-  }
-
-  function snapshot() {
-    const snap = {};
-    Object.values(EDITABLE).forEach(id => { snap[id] = document.getElementById(id)?.value || ''; });
-    snap['pf-password'] = '';
-    snap['pf-password2'] = '';
-    snap['pf-jawaban_unik_1'] = '';
-    snap['pf-jawaban_unik_2'] = '';
-    return snap;
-  }
-
-  function restore(snap) {
-    Object.entries(snap).forEach(([id, val]) => setVal(id, val));
   }
 
   async function load() {
@@ -96,7 +76,6 @@
       return;
     }
     fill(res.data);
-    original = snapshot();
     document.getElementById('profile-skeleton').classList.add('hidden');
     document.getElementById('profile-form').classList.remove('hidden');
   }
@@ -105,10 +84,10 @@
     e.preventDefault();
 
     const nama = document.getElementById('pf-nama_lengkap').value.trim();
-    if (!nama) { Utils.notify('Nama lengkap wajib diisi', 'warning'); return; }
+    if (!nama) { UI.toast('Nama lengkap wajib diisi', 'warning'); return; }
 
     const wa = document.getElementById('pf-nomor_whatsapp').value.replace(/[^0-9]/g, '');
-    if (wa && !/^[0-9]{8,15}$/.test(wa)) { Utils.notify('Nomor WhatsApp tidak valid (8-15 digit)', 'warning'); return; }
+    if (wa && !/^[0-9]{8,15}$/.test(wa)) { UI.toast('Nomor WhatsApp tidak valid (8-15 digit)', 'warning'); return; }
 
     const payload = { id_peserta: getUser().id };
     Object.entries(EDITABLE).forEach(([key, id]) => {
@@ -122,16 +101,10 @@
     const p1 = document.getElementById('pf-password').value;
     const p2 = document.getElementById('pf-password2').value;
     if (p1 || p2) {
-      if (p1.length < 6) { Utils.notify('Password baru minimal 6 karakter', 'warning'); return; }
-      if (p1 !== p2) { Utils.notify('Konfirmasi password tidak cocok', 'warning'); return; }
+      if (p1.length < 6) { UI.toast('Password baru minimal 6 karakter', 'warning'); return; }
+      if (p1 !== p2) { UI.toast('Konfirmasi password tidak cocok', 'warning'); return; }
       payload.password = p1;
     }
-
-    // Jawaban keamanan (opsional — hanya kirim bila diisi)
-    const a1 = document.getElementById('pf-jawaban_unik_1').value.trim();
-    const a2 = document.getElementById('pf-jawaban_unik_2').value.trim();
-    if (a1) payload.jawaban_unik_1 = a1;
-    if (a2) payload.jawaban_unik_2 = a2;
 
     const btn = document.getElementById('pf-save');
     btn.disabled = true;
@@ -139,16 +112,23 @@
     btn.disabled = false;
 
     if (res.success) {
-      Utils.notify(res.message || 'Profil berhasil diperbarui', 'success');
-      // Sinkronkan nama ke sesi & navbar (optimistic)
+      UI.toast(res.message || 'Profil berhasil diperbarui', 'success');
       if (typeof Auth.patchUser === 'function') Auth.patchUser({ nama });
       document.getElementById('ph-nama').textContent = nama;
-      // Bersihkan kolom sensitif & perbarui snapshot
-      ['pf-password', 'pf-password2', 'pf-jawaban_unik_1', 'pf-jawaban_unik_2'].forEach(id => setVal(id, ''));
-      original = snapshot();
+      ['pf-password', 'pf-password2'].forEach(id => setVal(id, ''));
     } else {
-      Utils.notify(res.message || 'Gagal menyimpan profil', 'error');
+      UI.toast(res.message || 'Gagal menyimpan profil', 'error');
     }
+  }
+
+  /** Batalkan Perubahan -> konfirmasi -> kembali ke dashboard (req #8). */
+  async function cancelEdit() {
+    const ok = await UI.confirm(
+      'Yakin membatalkan perubahan? Perubahan yang belum disimpan akan hilang dan Anda kembali ke dashboard.',
+      { title: 'Batalkan Perubahan', confirmLabel: 'Ya, batalkan', cancelLabel: 'Kembali', variant: 'danger' }
+    );
+    if (ok) window.location.href = 'peserta.html';
+    // Jika "Kembali" -> tetap di halaman, user lanjut mengedit.
   }
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -157,16 +137,8 @@
     Utils.mountNavbar('profile');
 
     document.getElementById('profile-form').addEventListener('submit', save);
-    document.getElementById('pf-reset').addEventListener('click', () => {
-      if (original) { restore(original); Utils.notify('Perubahan dibatalkan', 'info'); }
-    });
-    document.querySelectorAll('.password-toggle[data-target]').forEach(b => {
-      b.addEventListener('click', () => {
-        const inp = document.getElementById(b.dataset.target);
-        inp.type = inp.type === 'password' ? 'text' : 'password';
-        b.textContent = inp.type === 'password' ? '👁️' : '🙈';
-      });
-    });
+    document.getElementById('pf-reset').addEventListener('click', cancelEdit);
+    // Toggle password (SVG eye) di-bind otomatis oleh UI via [data-password-toggle].
 
     load();
   });

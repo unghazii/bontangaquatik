@@ -248,3 +248,103 @@
   .rapor-table th, .rapor-table td { padding: 6px 4px; }
   .jadwal-card .jadwal-detail { font-size: 12px; gap: 10px; }
 }
+/* =====================================================================
+   PESERTA ADD-ONS (Fase 3) — reminder, berita, kalender, settings.
+   ===================================================================== */
+
+/* ---------- PENGINGAT JADWAL TERDEKAT (req #6) ---------- */
+.upcoming-reminder {
+  display: flex; align-items: center; gap: 14px; margin-bottom: 18px;
+  padding: 16px 18px; border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--color-primary-light), var(--color-accent-soft));
+  border: 1px solid var(--color-border); animation: fadeIn .35s ease;
+}
+.reminder-icon { font-size: 30px; flex: 0 0 auto; }
+.reminder-body { flex: 1 1 auto; min-width: 0; }
+.reminder-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--color-text-subheading); }
+.reminder-main { font-size: 16px; font-weight: 700; color: var(--color-text-heading); margin: 2px 0; }
+.reminder-meta { font-size: 13px; color: var(--color-text-secondary); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.reminder-badge { flex: 0 0 auto; }
+@media (max-width: 560px) { .upcoming-reminder { flex-wrap: wrap; } .reminder-badge { order: 3; } }
+
+/* ---------- BERITA (req #6) ---------- */
+.berita-scroller {
+  display: flex; gap: 14px; overflow-x: auto; padding: 4px 2px 12px;
+  scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
+}
+.berita-scroller::-webkit-scrollbar { height: 7px; }
+.berita-scroller::-webkit-scrollbar-thumb { background: var(--color-border-strong); border-radius: 999px; }
+.berita-card {
+  scroll-snap-align: start; flex: 0 0 clamp(240px, 80vw, 300px);
+  background: var(--color-card); border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg); padding: 16px; cursor: pointer;
+  transition: var(--transition); display: flex; flex-direction: column; gap: 7px;
+}
+.berita-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--color-primary); }
+.berita-card:focus-visible { outline: none; box-shadow: var(--shadow-glow); }
+.berita-card__date { font-size: 12px; font-weight: 600; color: var(--color-text-subheading); }
+.berita-card__title { font-size: 16px; font-weight: 700; color: var(--color-text-heading); line-height: 1.3; }
+.berita-card__excerpt { font-size: 13.5px; color: var(--color-text-secondary); line-height: 1.5; }
+.berita-card__cta { margin-top: auto; font-size: 13px; font-weight: 600; color: var(--color-primary); }
+.berita-modal-date { font-size: 13px; color: var(--color-text-subheading); font-weight: 600; margin-bottom: 12px; }
+.berita-modal-desc { font-size: 14.5px; line-height: 1.65; color: var(--color-text-main); white-space: pre-wrap; }
+
+/* ---------- KALENDER JADWAL (req #9) ---------- */
+.cal-wrap { animation: fadeIn .3s ease; }
+.cal-head { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 6px; }
+.cal-title { font-size: 17px; font-weight: 700; color: var(--color-text-heading); min-width: 170px; text-align: center; }
+.cal-nav {
+  width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--color-border);
+  background: var(--color-card); color: var(--color-text-heading); font-size: 20px; cursor: pointer;
+  transition: var(--transition); line-height: 1;
+}
+.cal-nav:hover { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+.cal-today-row { text-align: center; margin-bottom: 12px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.cal-weekdays { margin-bottom: 6px; }
+.cal-weekday { text-align: center; font-size: 12px; font-weight: 700; color: var(--color-text-secondary); padding: 4px 0; }
+.cal-cell {
+  aspect-ratio: 1 / 1; border: 1px solid var(--color-border); border-radius: var(--radius-md);
+  background: var(--color-card); padding: 6px; display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-start; gap: 4px; transition: var(--transition); position: relative;
+}
+.cal-cell--empty { border: none; background: transparent; }
+.cal-cell.has-events { cursor: pointer; }
+.cal-cell.has-events:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); border-color: var(--color-primary); }
+.cal-cell.has-events:focus-visible { outline: none; box-shadow: var(--shadow-glow); }
+.cal-cell.is-today { border-color: var(--color-primary); box-shadow: inset 0 0 0 1px var(--color-primary); }
+.cal-cell.is-today .cal-daynum { color: var(--color-primary); font-weight: 800; }
+.cal-daynum { font-size: 14px; font-weight: 600; color: var(--color-text-main); }
+.cal-dots { display: flex; align-items: center; gap: 3px; flex-wrap: wrap; justify-content: center; }
+.cal-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+.cal-dot.aktif { background: var(--color-success); }
+.cal-dot.pending { background: var(--color-warning); }
+.cal-dot.cancel { background: var(--color-danger); }
+.cal-more { font-size: 10px; font-weight: 700; color: var(--color-text-secondary); }
+.cal-legend { display: flex; gap: 16px; justify-content: center; margin-top: 14px; font-size: 12.5px; color: var(--color-text-secondary); flex-wrap: wrap; }
+.cal-legend span { display: inline-flex; align-items: center; gap: 6px; }
+@media (max-width: 480px) {
+  .cal-grid { gap: 4px; }
+  .cal-cell { padding: 3px; border-radius: var(--radius-sm); }
+  .cal-daynum { font-size: 12px; }
+  .cal-dot { width: 5px; height: 5px; }
+}
+/* daftar sesi dalam modal hari */
+.cal-day-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.cal-day-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 14px; border: 1px solid var(--color-border); border-radius: var(--radius-md);
+  background: var(--color-bg-section);
+}
+.cal-day-item.is-personal { border-left: 3px solid var(--color-accent); }
+.cal-day-meta { font-size: 12.5px; color: var(--color-text-secondary); margin-top: 3px; }
+.cal-day-action { display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+
+/* ---------- SETTINGS MODAL (req #9) ---------- */
+.settings-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 10px 0; }
+.settings-row__label strong { display: block; font-size: 14.5px; color: var(--color-text-heading); }
+.settings-row__label small { font-size: 12px; color: var(--color-text-secondary); }
+.settings-divider { border: none; border-top: 1px solid var(--color-border); margin: 12px 0; }
+.settings-action { margin-top: 10px; }
+.contact-channel-row { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+.nav-settings-btn { display: inline-flex; align-items: center; justify-content: center; }

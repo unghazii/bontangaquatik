@@ -1106,3 +1106,115 @@ select.form-control { cursor: pointer; }
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
+
+/* =====================================================================
+   ADMIN ADD-ONS (Fase 2) — Task section, searchable peserta picker,
+   read-only fields, rapor status pill.
+   ===================================================================== */
+
+/* ---------- TASK SECTION (req #14) ---------- */
+.task-section {
+  margin: 4px 0 22px; padding: 18px;
+  background: linear-gradient(135deg, var(--color-accent-soft), var(--color-bg-section));
+  border: 1px solid var(--color-border); border-radius: var(--radius-lg);
+  animation: fadeIn .35s ease;
+}
+.task-section-head { margin-bottom: 14px; }
+.task-section-title {
+  display: flex; align-items: center; gap: 9px; font-size: 17px;
+  color: var(--color-text-heading); margin: 0;
+}
+.task-section-title .ic { width: 20px; height: 20px; color: var(--color-accent); }
+.task-count-badge {
+  font-size: 12px; font-weight: 700; min-width: 22px; height: 22px; padding: 0 7px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--color-accent); color: #fff; border-radius: 999px;
+}
+.task-section-sub { font-size: 12.5px; color: var(--color-text-secondary); margin: 4px 0 0; }
+
+.task-scroller {
+  display: flex; gap: 13px; overflow-x: auto; padding: 4px 2px 10px;
+  scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+.task-scroller::-webkit-scrollbar { height: 7px; }
+.task-scroller::-webkit-scrollbar-thumb { background: var(--color-border-strong); border-radius: 999px; }
+
+.task-card {
+  scroll-snap-align: start; flex: 0 0 clamp(230px, 78vw, 280px);
+  background: var(--color-card); border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-primary); border-radius: var(--radius-md);
+  padding: 14px 15px; cursor: pointer; transition: var(--transition);
+  display: flex; flex-direction: column; gap: 8px; position: relative;
+}
+.task-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-left-color: var(--color-accent); }
+.task-card:focus-visible { outline: none; box-shadow: var(--shadow-glow); }
+.task-card[data-type="payment"] { border-left-color: var(--color-warning); }
+.task-card[data-type="jadwal"]  { border-left-color: var(--color-primary); }
+.task-card__tag {
+  display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px;
+  padding: 3px 9px; border-radius: 999px;
+}
+.task-card[data-type="payment"] .task-card__tag { background: var(--badge-warning-bg); color: var(--badge-warning-text); }
+.task-card[data-type="jadwal"]  .task-card__tag { background: var(--badge-info-bg); color: var(--badge-info-text); }
+.task-card__title { font-size: 15px; font-weight: 700; color: var(--color-text-heading); line-height: 1.3; }
+.task-card__meta { font-size: 12.5px; color: var(--color-text-secondary); display: flex; flex-direction: column; gap: 3px; }
+.task-card__cta {
+  margin-top: 4px; font-size: 12.5px; font-weight: 600; color: var(--color-primary);
+  display: flex; align-items: center; gap: 5px;
+}
+
+/* ---------- SEARCHABLE PESERTA PICKER (req #10) ---------- */
+.peserta-picker { position: relative; }
+.peserta-picker__chips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 8px; }
+.peserta-chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: var(--color-primary-light); color: var(--color-text-subheading);
+  border: 1px solid var(--color-border); border-radius: 999px;
+  padding: 5px 6px 5px 12px; font-size: 13px; font-weight: 600;
+  animation: chipIn .2s ease;
+}
+@keyframes chipIn { from { transform: scale(.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.peserta-chip button {
+  border: none; background: var(--color-border-strong); color: var(--color-card);
+  width: 18px; height: 18px; border-radius: 50%; cursor: pointer; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 14px;
+  transition: var(--transition);
+}
+.peserta-chip button:hover { background: var(--color-danger); }
+.peserta-picker__dropdown {
+  position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 50;
+  background: var(--color-card); border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md); box-shadow: var(--shadow-lg);
+  max-height: 240px; overflow-y: auto; display: none;
+}
+.peserta-picker__dropdown.show { display: block; animation: fadeIn .15s ease; }
+.peserta-option {
+  padding: 11px 14px; cursor: pointer; font-size: 14px; display: flex;
+  justify-content: space-between; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--color-border); transition: background .15s ease;
+}
+.peserta-option:last-child { border-bottom: none; }
+.peserta-option:hover, .peserta-option.active { background: var(--color-primary-light); }
+.peserta-option small { color: var(--color-text-secondary); font-weight: 600; }
+.peserta-option--empty { color: var(--color-text-secondary); cursor: default; text-align: center; font-style: italic; }
+.peserta-option--empty:hover { background: transparent; }
+
+/* ---------- READ-ONLY FIELD (req #11) ---------- */
+.readonly-field {
+  background: var(--color-bg-section); border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-sm); padding: 9px 12px; font-size: 14px;
+  color: var(--color-text-main); font-weight: 600; min-height: 40px;
+  display: flex; align-items: center;
+}
+.lock-note {
+  display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px;
+  color: var(--color-text-secondary); font-weight: 500; margin-top: 3px;
+}
+
+/* ---------- RAPOR STATUS PILL (req #13) ---------- */
+.rapor-status { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; font-size: 12.5px; }
+.rapor-status.sudah { color: var(--color-success); }
+.rapor-status.belum { color: var(--color-text-secondary); }
+.rapor-status .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }

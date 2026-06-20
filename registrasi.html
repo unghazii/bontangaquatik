@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="assets/css/navbar.css">
   <link rel="stylesheet" href="assets/css/auth.css">
   <link rel="stylesheet" href="assets/css/pwa.css">
+  <link rel="stylesheet" href="assets/css/components.css">
 
 </head>
 <script src="pwa.js" defer></script>
@@ -43,7 +44,6 @@
             <div class="step" data-step="2"><span class="step-num">2</span><span class="step-label">Data Pribadi</span></div>
             <div class="step" data-step="3"><span class="step-num">3</span><span class="step-label">Sekolah</span></div>
             <div class="step" data-step="4"><span class="step-num">4</span><span class="step-label">Grup</span></div>
-            <div class="step" data-step="5"><span class="step-num">5</span><span class="step-label">Keamanan</span></div>
           </div>
 
           <!-- Info kelas referensi -->
@@ -74,7 +74,6 @@
                   <div class="password-wrap">
                     <input type="password" name="password" id="password" class="form-control" required minlength="6" placeholder="Minimal 6 karakter">
                     <button id="togglePassword" class="password-toggle" type="button"></button>
-                    <!-- <button type="button" class="password-toggle" id="toggle-password">👁️</button> -->
                   </div>
                 </div>
                 <div class="form-group">
@@ -154,35 +153,13 @@
               <div class="form-group">
                 <label>Pelatihan Berakhir Pada</label>
                 <input type="text" id="tanggal_akhir_display" class="form-control" readonly placeholder="Otomatis terisi sesuai durasi">
-                <!-- <p class="form-helper">📅 Otomatis dihitung dari tanggal mulai + durasi</p> -->
-              </div>
-            </div>
-
-            <!-- STEP 5: Pertanyaan Keamanan -->
-            <div class="form-step" data-step="5">
-              <h4 class="form-section-title">Pertanyaan Keamanan</h4>
-              <p class="form-helper" style="margin-bottom:14px;">Digunakan untuk memulihkan akun jika Anda lupa password.</p>
-
-              <div class="form-group">
-                <label>Pertanyaan Pertama *</label>
-                <select id="sec-q1-select" class="form-control"></select>
-                <input type="text" id="sec-q1-custom" class="form-control hidden" style="margin-top:8px;" placeholder="Tulis pertanyaan Anda sendiri">
               </div>
               <div class="form-group">
-                <label>Jawaban *</label>
-                <input type="text" id="sec-a1" name="jawaban_unik_1" class="form-control" placeholder="Jawaban yang mudah Anda ingat">
+                <label>Kode Referral (opsional)</label>
+                <input type="text" name="kode_referral" id="kode_referral" class="form-control" maxlength="6"
+                  placeholder="6 huruf, mis. ABCDEF" autocomplete="off" style="text-transform:uppercase;letter-spacing:2px;">
+                <p class="form-helper" id="referral-feedback">Punya kode dari teman? Masukkan di sini (boleh dikosongkan).</p>
               </div>
-
-              <div class="form-group" style="margin-top:18px;">
-                <label>Pertanyaan Kedua *</label>
-                <select id="sec-q2-select" class="form-control"></select>
-                <input type="text" id="sec-q2-custom" class="form-control hidden" style="margin-top:8px;" placeholder="Tulis pertanyaan Anda sendiri">
-              </div>
-              <div class="form-group">
-                <label>Jawaban *</label>
-                <input type="text" id="sec-a2" name="jawaban_unik_2" class="form-control" placeholder="Jawaban yang mudah Anda ingat">
-              </div>
-              <!-- <p class="form-helper">💡 Jawaban tidak peka huruf besar/kecil. Simpan baik-baik karena dibutuhkan saat reset password.</p> -->
             </div>
 
             <!-- Navigation buttons -->
@@ -204,6 +181,7 @@
   <script src="assets/js/utils.js"></script>
   <script src="assets/js/auth.js"></script>
   <script src="assets/js/api.js"></script>
+  <script src="assets/js/components/ui.js"></script>
   <script src="assets/js/registrasi.js"></script>
   <script src="assets/js/pwa.js"></script>
 </body>

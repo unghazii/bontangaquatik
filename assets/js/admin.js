@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderSkeleton('tbody-jadwal', 8, 6);
   renderSkeleton('tbody-berita', 5, 4);
   renderSkeleton('tbody-kehadiran', 7, 6);
-  renderSkeleton('tbody-rapor', 5, 4);
+  renderSkeleton('tbody-rapor', 6, 5);
 
   await Promise.all([loadPeserta(), loadJadwal(), loadKehadiran(), loadRapor(), loadBerita()]);
   updateStats();
@@ -156,7 +156,16 @@ function setupFilters() {
     if (el) el.addEventListener('input', applyKehadiranFilters);
   });
   document.getElementById('filter-periode')?.addEventListener('change', loadKehadiran);
-  document.getElementById('search-rapor')?.addEventListener('input', applyRaporFilters);
+  // Rapor filters (req #13)
+  const predikatSel = document.getElementById('filter-predikat-rapor');
+  if (predikatSel && predikatSel.options.length <= 1) {
+    predikatSel.insertAdjacentHTML('beforeend',
+      CONFIG.PREDIKAT_OPTIONS.map(p => `<option value="${p}">${p}</option>`).join(''));
+  }
+  ['search-rapor', 'filter-status-rapor', 'filter-predikat-rapor', 'sort-rapor'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', applyRaporFilters);
+  });
 }
 
 function updateStats() {
@@ -164,6 +173,7 @@ function updateStats() {
   document.getElementById('stat-jadwal').textContent = jadwalCache.length;
   document.getElementById('stat-kehadiran').textContent = kehadiranCache.length;
   document.getElementById('stat-pending').textContent = pesertaCache.filter(p => !Utils.formatBool(p.Status_Pembayaran).includes('TRUE')).length;
+  renderTaskSection();
 }
 
 // =============================================================
@@ -175,6 +185,8 @@ async function loadPeserta() {
   pesertaCache = res.data || [];
   pesertaListLunas = pesertaCache.filter(p => Utils.formatBool(p.Status_Pembayaran) === 'TRUE');
   applyPesertaFilters();
+  applyRaporFilters();
+  renderTaskSection();
 }
 
 function applyPesertaFilters() {
@@ -280,34 +292,40 @@ function openPesertaEditModal(id) {
   if (!p) return;
   const isPaid = Utils.formatBool(p.Status_Pembayaran) === 'TRUE';
   const kelasOpts = CONFIG.KELAS_OPTIONS.map(k => `<option value="${k}" ${p.Kelas === k ? 'selected' : ''}>${k}</option>`).join('');
-  const jkOpts = CONFIG.JENIS_KELAMIN_OPTIONS.map(j => `<option value="${j}" ${p.Jenis_Kelamin === j ? 'selected' : ''}>${j}</option>`).join('');
+  const ro = (v) => Utils.escapeHtml(v) || '<em class="text-muted">-</em>';
   const html = `
     <div class="modal-backdrop active" id="peserta-edit-modal">
       <div class="modal modal-md">
         <div class="modal-header">
-          <h3>${Icons.pencil()} Edit Peserta</h3>
+          <h3>${Icons.pencil()} Edit Data Pelatihan</h3>
           <button class="modal-close" aria-label="Tutup" onclick="document.getElementById('peserta-edit-modal').remove()">${Icons.x()}</button>
         </div>
         <div class="modal-body">
+          <div class="info-banner">${Icons.info()}
+            <p>Demi keamanan, <strong>data diri peserta (termasuk username & password) tidak dapat diubah admin</strong>. Admin hanya dapat mengatur grup, tanggal pelatihan, nomor punggung, dan status pembayaran.</p>
+          </div>
+
+          <h4 class="form-section-title">${Icons.user()} Data Diri <span class="lock-note">🔒 terkunci</span></h4>
           <div class="form-grid-2">
-            <div class="form-group"><label>Nama Lengkap *</label><input id="e-nama" class="form-control" value="${Utils.escapeHtml(p.Nama_Lengkap)}"></div>
-            <div class="form-group"><label>Username *</label><input id="e-username" class="form-control" value="${Utils.escapeHtml(p.Username)}"></div>
-            <div class="form-group"><label>Password baru (kosongkan jika tidak ganti)</label><input id="e-password" class="form-control" type="text" value="" placeholder="••••"></div>
-            <div class="form-group"><label>WhatsApp *</label><input id="e-wa" class="form-control" value="${Utils.escapeHtml(p.Nomor_Whatsapp)}"></div>
-            <div class="form-group"><label>Jenis Kelamin</label><select id="e-jk" class="form-control"><option value="">-</option>${jkOpts}</select></div>
-            <div class="form-group"><label>Tempat Lahir</label><input id="e-tempat" class="form-control" value="${Utils.escapeHtml(p.Tempat_Lahir || '')}"></div>
-            <div class="form-group"><label>Tanggal Lahir</label><input id="e-tgllahir" class="form-control" type="date" value="${Utils.formatDateInput(p.Tanggal_Lahir)}"></div>
-            <div class="form-group"><label>NISN</label><input id="e-nisnas" class="form-control" value="${Utils.escapeHtml(p.NISNAS || '')}"></div>
-            <div class="form-group"><label>Asal Sekolah</label><input id="e-sekolah" class="form-control" value="${Utils.escapeHtml(p.Asal_Sekolah || '')}"></div>
-            <div class="form-group"><label>Kelas Sekolah</label><input id="e-kelassekolah" class="form-control" value="${Utils.escapeHtml(p.Kelas_Sekolah || '')}"></div>
-            <div class="form-group"><label>Wali Kelas</label><input id="e-wali" class="form-control" value="${Utils.escapeHtml(p.Wali_Kelas || '')}"></div>
-            <div class="form-group"><label>Kelas Renang *</label><select id="e-kelas" class="form-control">${kelasOpts}</select></div>
-            <div class="form-group"><label>Mulai</label><input id="e-mulai" class="form-control" type="date" value="${Utils.formatDateInput(p.Tanggal_Mulai)}"></div>
-            <div class="form-group"><label>Berakhir</label><input id="e-akhir" class="form-control" type="date" value="${Utils.formatDateInput(p.Tanggal_Akhir)}"></div>
+            <div class="form-group"><label>Nama Lengkap</label><div class="readonly-field">${ro(p.Nama_Lengkap)}</div></div>
+            <div class="form-group"><label>Username</label><div class="readonly-field">${ro(p.Username)}</div></div>
+            <div class="form-group"><label>WhatsApp</label><div class="readonly-field">${ro(p.Nomor_Whatsapp)}</div></div>
+            <div class="form-group"><label>NISN</label><div class="readonly-field">${ro(p.NISNAS)}</div></div>
+            <div class="form-group"><label>Jenis Kelamin</label><div class="readonly-field">${ro(p.Jenis_Kelamin)}</div></div>
+            <div class="form-group"><label>Tanggal Lahir</label><div class="readonly-field">${Utils.formatDate(p.Tanggal_Lahir)}</div></div>
+            <div class="form-group"><label>Asal Sekolah</label><div class="readonly-field">${ro(p.Asal_Sekolah)}</div></div>
+            <div class="form-group"><label>Kode Referral</label><div class="readonly-field">${ro(p.Kode_Referral)}</div></div>
+          </div>
+
+          <h4 class="form-section-title" style="margin-top:18px;">${Icons.pool()} Data Pelatihan <span class="lock-note">✏️ dapat diubah</span></h4>
+          <div class="form-grid-2">
+            <div class="form-group"><label>Grup Renang *</label><select id="e-kelas" class="form-control">${kelasOpts}</select></div>
             <div class="form-group"><label>Nomor Peserta (nomor punggung) ${isPaid ? '*' : ''}</label><input id="e-nomor" class="form-control" value="${Utils.escapeHtml(p.Nomor_Peserta || '')}" placeholder="Contoh: 001 / A12" inputmode="numeric"></div>
+            <div class="form-group"><label>Tanggal Mulai</label><input id="e-mulai" class="form-control" type="date" value="${Utils.formatDateInput(p.Tanggal_Mulai)}"></div>
+            <div class="form-group"><label>Tanggal Akhir</label><input id="e-akhir" class="form-control" type="date" value="${Utils.formatDateInput(p.Tanggal_Akhir)}"></div>
             <div class="form-group"><label>Status Pembayaran</label><select id="e-bayar" class="form-control"><option value="false" ${!isPaid ? 'selected' : ''}>Belum Lunas</option><option value="true" ${isPaid ? 'selected' : ''}>Lunas</option></select></div>
           </div>
-          <div class="info-banner">${Icons.info()}<p><strong>Nomor Peserta wajib diisi</strong> sebelum mengubah status ke <strong>Lunas</strong>. Mengubah ke Lunas akan auto-generate jadwal kelas otomatis.</p></div>
+          <div class="info-banner">${Icons.info()}<p><strong>Nomor Peserta wajib diisi</strong> sebelum mengubah status ke <strong>Lunas</strong>.</p></div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" onclick="document.getElementById('peserta-edit-modal').remove()">Batal</button>
@@ -323,7 +341,7 @@ async function savePeserta(id) {
   const wantLunas = document.getElementById('e-bayar').value === 'true';
   const nomorPeserta = document.getElementById('e-nomor').value.trim();
 
-  // GUARD (client): tidak boleh LUNAS tanpa Nomor Peserta → tampilkan modal peringatan
+  // GUARD (client): tidak boleh LUNAS tanpa Nomor Peserta
   if (wantLunas && !nomorPeserta) {
     showAlertModal(
       'Nomor Peserta Wajib Diisi',
@@ -334,30 +352,17 @@ async function savePeserta(id) {
     return;
   }
 
+  // Hanya field yang BOLEH diubah admin yang dikirim (req #11).
   const payload = {
     id: id,
-    nama_lengkap: document.getElementById('e-nama').value.trim(),
-    username: document.getElementById('e-username').value.trim(),
-    nomor_whatsapp: document.getElementById('e-wa').value.trim(),
-    jenis_kelamin: document.getElementById('e-jk').value,
-    tempat_lahir: document.getElementById('e-tempat').value.trim(),
-    tanggal_lahir: document.getElementById('e-tgllahir').value,
-    nisnas: document.getElementById('e-nisnas').value.trim(),
-    asal_sekolah: document.getElementById('e-sekolah').value.trim(),
-    kelas_sekolah: document.getElementById('e-kelassekolah').value.trim(),
-    wali_kelas: document.getElementById('e-wali').value.trim(),
     kelas: document.getElementById('e-kelas').value,
     tanggal_mulai: document.getElementById('e-mulai').value,
     tanggal_akhir: document.getElementById('e-akhir').value,
     nomor_peserta: nomorPeserta,
     status_pembayaran: wantLunas
   };
-  const password = document.getElementById('e-password').value;
-  if (password) payload.password = password;
 
-  Utils.showLoader(true);
   const res = await API.call('updatePeserta', payload);
-  Utils.showLoader(false);
   if (res.success) {
     Utils.notify(res.message, 'success', 5000);
     document.getElementById('peserta-edit-modal').remove();
@@ -407,6 +412,7 @@ async function loadJadwal() {
   if (!res.success) { Utils.notify(res.message, 'error'); return; }
   jadwalCache = res.data || [];
   applyJadwalFilters();
+  renderTaskSection();
 }
 
 function applyJadwalFilters() {
@@ -462,12 +468,20 @@ function openJadwalModal() {
         </div>
         <div class="modal-body">
           <div class="info-banner">${Icons.info()}
-            <p><strong>Jadwal Personal:</strong> bisa untuk <strong>beberapa peserta sekaligus</strong> dengan tanggal, jam, dan lokasi yang sama. Tekan <em>Tambah peserta</em> untuk menambah baris.</p>
+            <p><strong>Jadwal Personal:</strong> Digunakan untuk menambahkan jadwal khusus <strong>diluar pelatihan kelas</strong></p>
           </div>
           <div class="form-group">
-            <label>Peserta * <span class="text-muted" id="j-peserta-count">(1 dipilih)</span></label>
-            <div id="j-peserta-rows"></div>
-            <button type="button" class="btn btn-secondary btn-sm btn-icon" style="margin-top:8px;" onclick="addPesertaRow()">${Icons.plus()} <span>Tambah peserta</span></button>
+            <label>Peserta * <span class="text-muted" id="j-peserta-count">(0 dipilih)</span></label>
+            <div class="peserta-picker" id="j-peserta-picker">
+              <div class="peserta-picker__chips" id="j-peserta-chips"></div>
+              <div class="search-wrap" style="width:100%;">
+                <svg class="ic search-ic" aria-hidden="true"><use href="#ic-search"/></svg>
+                <input type="text" id="j-peserta-search" class="search-input" autocomplete="off"
+                  placeholder="Ketik nama peserta untuk mencari..." aria-label="Cari peserta">
+              </div>
+              <div class="peserta-picker__dropdown" id="j-peserta-dropdown"></div>
+            </div>
+            <p class="form-helper">Pilih peserta dari daftar (data dari database). Nama tidak bisa diketik manual & tidak bisa dipilih dua kali.</p>
           </div>
           <div class="form-grid-2">
             <div class="form-group"><label>Tanggal *</label><input id="j-tanggal" class="form-control" type="date"></div>
@@ -483,60 +497,127 @@ function openJadwalModal() {
       </div>
     </div>`;
   document.body.insertAdjacentHTML('beforeend', html);
-  addPesertaRow(); // baris pertama
+  PesertaPicker.init();
   ModalHelper.focusFirst(document.getElementById('jadwal-modal'));
 }
 
-/** HTML <option> daftar peserta lunas — dipakai tiap baris select. */
-function pesertaOptionsHtml() {
-  return '<option value="">- Pilih peserta -</option>' +
-    pesertaListLunas.map(p => `<option value="${p.Id_Peserta}">${Utils.escapeHtml(p.Nama_Lengkap)} • ${p.Kelas}</option>`).join('');
-}
+/* =============================================================
+   PESERTA PICKER (req #10) — searchable, no-duplicate, no manual entry.
+   Hanya bisa memilih peserta LUNAS dari database (pesertaListLunas).
+   ============================================================= */
+const PesertaPicker = {
+  selected: [],   // array of {id, nama, kelas}
+  activeIndex: -1,
+  _filtered: [],
 
-/** Tambah satu baris select peserta (multi-peserta). */
-function addPesertaRow() {
-  const wrap = document.getElementById('j-peserta-rows');
-  if (!wrap) return;
-  const row = document.createElement('div');
-  row.className = 'peserta-select-row';
-  row.innerHTML = `
-    <select class="form-control j-peserta">${pesertaOptionsHtml()}</select>
-    <button type="button" class="icon-btn delete" title="Hapus baris" aria-label="Hapus baris" onclick="removePesertaRow(this)">${Icons.x()}</button>`;
-  wrap.appendChild(row);
-  updatePesertaCount();
-}
+  init() {
+    this.selected = [];
+    this.activeIndex = -1;
+    const search = document.getElementById('j-peserta-search');
+    const dropdown = document.getElementById('j-peserta-dropdown');
+    if (!search || !dropdown) return;
 
-function removePesertaRow(btn) {
-  const wrap = document.getElementById('j-peserta-rows');
-  const rows = wrap.querySelectorAll('.peserta-select-row');
-  if (rows.length <= 1) { Utils.notify('Minimal 1 peserta', 'warning'); return; }
-  btn.closest('.peserta-select-row').remove();
-  updatePesertaCount();
-}
+    search.addEventListener('input', () => this.renderDropdown(search.value));
+    search.addEventListener('focus', () => this.renderDropdown(search.value));
+    search.addEventListener('keydown', (e) => this.onKey(e));
+    // Tutup dropdown saat klik di luar
+    document.addEventListener('mousedown', this._outside = (e) => {
+      const picker = document.getElementById('j-peserta-picker');
+      if (picker && !picker.contains(e.target)) dropdown.classList.remove('show');
+    });
+    this.renderChips();
+  },
 
-function updatePesertaCount() {
-  const n = document.querySelectorAll('#j-peserta-rows .peserta-select-row').length;
-  const el = document.getElementById('j-peserta-count');
-  if (el) el.textContent = `(${n} baris)`;
-}
+  available(query) {
+    const q = (query || '').trim().toLowerCase();
+    const chosen = new Set(this.selected.map(s => s.id));
+    return pesertaListLunas
+      .filter(p => !chosen.has(p.Id_Peserta))
+      .filter(p => !q || String(p.Nama_Lengkap).toLowerCase().includes(q) || String(p.Kelas).toLowerCase().includes(q))
+      .slice(0, 50);
+  },
+
+  renderDropdown(query) {
+    const dropdown = document.getElementById('j-peserta-dropdown');
+    if (!dropdown) return;
+    this._filtered = this.available(query);
+    this.activeIndex = -1;
+    if (this._filtered.length === 0) {
+      const msg = (query && query.trim())
+        ? 'Tidak ditemukan data peserta tersebut'
+        : 'Semua peserta lunas sudah dipilih';
+      dropdown.innerHTML = `<div class="peserta-option peserta-option--empty">${msg}</div>`;
+    } else {
+      dropdown.innerHTML = this._filtered.map((p, i) =>
+        `<div class="peserta-option" data-i="${i}" onmousedown="event.preventDefault();PesertaPicker.pick(${i})">
+           <span>${Utils.escapeHtml(p.Nama_Lengkap)}</span><small>${Utils.escapeHtml(p.Kelas) || '-'}</small>
+         </div>`).join('');
+    }
+    dropdown.classList.add('show');
+  },
+
+  onKey(e) {
+    const dropdown = document.getElementById('j-peserta-dropdown');
+    const opts = dropdown ? dropdown.querySelectorAll('.peserta-option:not(.peserta-option--empty)') : [];
+    if (e.key === 'ArrowDown') { e.preventDefault(); this.move(1, opts); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); this.move(-1, opts); }
+    else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (this.activeIndex >= 0 && this._filtered[this.activeIndex]) this.pick(this.activeIndex);
+    } else if (e.key === 'Escape') { dropdown.classList.remove('show'); }
+  },
+
+  move(dir, opts) {
+    if (!opts.length) return;
+    this.activeIndex = (this.activeIndex + dir + opts.length) % opts.length;
+    opts.forEach((o, i) => o.classList.toggle('active', i === this.activeIndex));
+    opts[this.activeIndex].scrollIntoView({ block: 'nearest' });
+  },
+
+  pick(i) {
+    const p = this._filtered[i];
+    if (!p) return;
+    if (this.selected.some(s => s.id === p.Id_Peserta)) return; // guard duplikat
+    this.selected.push({ id: p.Id_Peserta, nama: p.Nama_Lengkap, kelas: p.Kelas });
+    const search = document.getElementById('j-peserta-search');
+    if (search) { search.value = ''; search.focus(); }
+    this.renderChips();
+    this.renderDropdown('');
+  },
+
+  remove(id) {
+    this.selected = this.selected.filter(s => s.id !== id);
+    this.renderChips();
+  },
+
+  renderChips() {
+    const chips = document.getElementById('j-peserta-chips');
+    const count = document.getElementById('j-peserta-count');
+    if (!chips) return;
+    chips.innerHTML = this.selected.map(s =>
+      `<span class="peserta-chip">${Utils.escapeHtml(s.nama)}
+         <button type="button" aria-label="Hapus ${Utils.escapeHtml(s.nama)}" onclick="PesertaPicker.remove('${s.id}')">${Icons.x()}</button>
+       </span>`).join('');
+    if (count) count.textContent = `(${this.selected.length} dipilih)`;
+  },
+
+  ids() { return this.selected.map(s => s.id); }
+};
 
 async function saveJadwalNew() {
   const session = Auth.getSession();
-  const selects = Array.from(document.querySelectorAll('#j-peserta-rows .j-peserta'));
-  const ids = [...new Set(selects.map(s => s.value).filter(Boolean))]; // unik & non-kosong
+  const ids = PesertaPicker.ids();
   const tanggal = document.getElementById('j-tanggal').value;
   const pukul = document.getElementById('j-pukul').value.trim();
   const lokasi = document.getElementById('j-lokasi').value;
   const status = document.getElementById('j-status').value;
 
-  if (ids.length === 0) { Utils.notify('Mohon pilih minimal 1 peserta', 'warning'); return; }
+  if (ids.length === 0) { Utils.notify('Mohon pilih minimal 1 peserta dari daftar', 'warning'); return; }
   if (!tanggal || !pukul || !lokasi) { Utils.notify('Mohon lengkapi tanggal, pukul, dan lokasi', 'warning'); return; }
 
-  Utils.showLoader(true);
   const res = await API.call('createJadwalBatch', {
     id_pelatih: session.data.id, peserta: ids, tanggal, pukul, lokasi, status
   });
-  Utils.showLoader(false);
   if (res.success) {
     Utils.notify(res.message, 'success');
     document.getElementById('jadwal-modal').remove();
@@ -840,34 +921,69 @@ async function loadRapor() {
 
 function applyRaporFilters() {
   const search = (document.getElementById('search-rapor')?.value || '').toLowerCase();
-  let filtered = [...raporCache];
-  if (search) filtered = filtered.filter(r => String(r.nama_peserta).toLowerCase().includes(search));
-  filtered.sort((a, b) => new Date(b.Tanggal_Rapor) - new Date(a.Tanggal_Rapor));
-  renderRapor(filtered);
+  const fStatus = document.getElementById('filter-status-rapor')?.value || 'all';
+  const fPredikat = document.getElementById('filter-predikat-rapor')?.value || 'all';
+  const sort = document.getElementById('sort-rapor')?.value || 'update_desc';
+
+  // Gabungkan SEMUA peserta dengan rapornya (jika ada).
+  const raporByPeserta = {};
+  raporCache.forEach(r => { raporByPeserta[r.Id_Peserta] = r; });
+  let rows = pesertaCache.map(p => {
+    const r = raporByPeserta[p.Id_Peserta] || null;
+    return {
+      id_peserta: p.Id_Peserta,
+      id_rapor: r ? r.Id_Rapor : null,
+      nama: p.Nama_Lengkap,
+      kelas: p.Kelas,
+      predikat: r ? (r.Predikat || '') : '',
+      catatan: r ? (r.Catatan || '') : '',
+      tanggal_update: r ? r.Tanggal_Rapor : '',
+      has_rapor: !!r
+    };
+  });
+
+  if (search) rows = rows.filter(x => String(x.nama).toLowerCase().includes(search));
+  if (fStatus === 'sudah') rows = rows.filter(x => x.has_rapor);
+  else if (fStatus === 'belum') rows = rows.filter(x => !x.has_rapor);
+  if (fPredikat !== 'all') rows = rows.filter(x => x.predikat === fPredikat);
+
+  rows.sort((a, b) => {
+    if (sort === 'nama_asc') return String(a.nama).localeCompare(String(b.nama));
+    const ta = a.tanggal_update ? new Date(a.tanggal_update).getTime() : 0;
+    const tb = b.tanggal_update ? new Date(b.tanggal_update).getTime() : 0;
+    return sort === 'update_asc' ? (ta - tb) : (tb - ta);
+  });
+
+  renderRapor(rows);
 }
 
 function renderRapor(data) {
   const tbody = document.getElementById('tbody-rapor');
-  if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="empty-cell">Belum ada rapor</td></tr>`; return; }
-  tbody.innerHTML = data.map(r => `
-    <tr>
-      <td>${Utils.escapeHtml(r.nama_peserta)}</td>
-      <td><span class="status-badge info">${Utils.escapeHtml(r.Predikat) || '-'}</span></td>
-      <td class="truncate-cell">${Utils.escapeHtml((r.Catatan || '').substring(0, 60))}${(r.Catatan || '').length > 60 ? '…' : ''}</td>
-      <td>${Utils.formatDate(r.Tanggal_Rapor)}</td>
-      <td>
-        <div class="action-btns">
-          <button class="icon-btn view" title="Unduh PDF rapor" aria-label="Unduh PDF rapor" onclick="downloadAdminRaporPDF('${r.Id_Peserta}', this)">${Icons.download()}</button>
-          <button class="icon-btn edit" title="Edit rapor" aria-label="Edit rapor" onclick="openRaporAdminModal('${r.Id_Peserta}')">${Icons.pencil()}</button>
-          <button class="icon-btn delete" title="Hapus rapor" aria-label="Hapus rapor" onclick="deleteRaporConfirm('${r.Id_Rapor}')">${Icons.trash()}</button>
-        </div>
-      </td>
-    </tr>`).join('');
+  if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="6" class="empty-cell">Tidak ada data peserta</td></tr>`; return; }
+  tbody.innerHTML = data.map(x => {
+    const statusPill = x.has_rapor
+      ? `<span class="rapor-status sudah"><span class="dot"></span>Sudah</span>`
+      : `<span class="rapor-status belum"><span class="dot"></span>Belum</span>`;
+    const aksi = x.has_rapor
+      ? `<button class="icon-btn view" title="Unduh PDF rapor" aria-label="Unduh PDF rapor" onclick="downloadAdminRaporPDF('${x.id_peserta}', this)">${Icons.download()}</button>
+         <button class="icon-btn edit" title="Edit rapor" aria-label="Edit rapor" onclick="openRaporAdminModal('${x.id_peserta}')">${Icons.pencil()}</button>
+         <button class="icon-btn delete" title="Hapus rapor" aria-label="Hapus rapor" onclick="deleteRaporConfirm('${x.id_rapor}')">${Icons.trash()}</button>`
+      : `<button class="btn btn-primary btn-sm btn-icon" onclick="openRaporAdminModal('${x.id_peserta}')">${Icons.plus()} <span>Buat Rapor</span></button>`;
+    return `<tr>
+      <td>${Utils.escapeHtml(x.nama)} <span class="kelas-tag">${Utils.escapeHtml(x.kelas) || '-'}</span></td>
+      <td>${x.predikat ? `<span class="status-badge info">${Utils.escapeHtml(x.predikat)}</span>` : '<em class="text-muted">-</em>'}</td>
+      <td class="truncate-cell">${x.catatan ? Utils.escapeHtml(x.catatan.substring(0, 60)) + (x.catatan.length > 60 ? '…' : '') : '<em class="text-muted">-</em>'}</td>
+      <td>${x.tanggal_update ? Utils.formatDate(x.tanggal_update) : '<em class="text-muted">-</em>'}</td>
+      <td>${statusPill}</td>
+      <td><div class="action-btns">${aksi}</div></td>
+    </tr>`;
+  }).join('');
 }
 
 function openRaporAdminModal(idPeserta) {
   const existing = idPeserta ? raporCache.find(r => r.Id_Peserta === idPeserta) : null;
-  const pesertaOpts = pesertaListLunas.map(p => `<option value="${p.Id_Peserta}" ${idPeserta === p.Id_Peserta ? 'selected' : ''}>${Utils.escapeHtml(p.Nama_Lengkap)} • ${p.Kelas}</option>`).join('');
+  const sourceList = pesertaCache.length ? pesertaCache : pesertaListLunas;
+  const pesertaOpts = sourceList.map(p => `<option value="${p.Id_Peserta}" ${idPeserta === p.Id_Peserta ? 'selected' : ''}>${Utils.escapeHtml(p.Nama_Lengkap)} • ${p.Kelas}</option>`).join('');
   const predikatOpts = CONFIG.PREDIKAT_OPTIONS.map(pr => `<option value="${pr}" ${existing && existing.Predikat === pr ? 'selected' : ''}>${pr}</option>`).join('');
 
   let waktuRows = '';
@@ -989,4 +1105,156 @@ async function downloadAdminRaporPDF(idPeserta, btn) {
     Utils.showLoader(false);
     if (btn) btn.classList.remove('is-loading');
   }
+}
+// =============================================================
+// TASK SECTION (req #14) — kartu tindak lanjut (swipe).
+//   • Pembayaran belum lunas  -> isi nomor punggung + ubah status
+//   • Jadwal hari ini belum aktif -> aktifkan / cancel
+// Section disembunyikan bila tidak ada task.
+// =============================================================
+function computeTasks() {
+  const tasks = [];
+  // Task pembayaran: peserta belum lunas
+  pesertaCache.forEach(p => {
+    if (Utils.formatBool(p.Status_Pembayaran) !== 'TRUE') {
+      tasks.push({
+        type: 'payment', id: p.Id_Peserta,
+        title: p.Nama_Lengkap,
+        meta: [`${Utils.escapeHtml(p.Kelas) || '-'}`, p.Nomor_Peserta ? `No. ${Utils.escapeHtml(p.Nomor_Peserta)}` : 'Nomor punggung belum diisi']
+      });
+    }
+  });
+  // Task jadwal: jadwal HARI INI yang masih Pending (belum diaktifkan)
+  const todayISO = Utils.formatDateInput(new Date());
+  jadwalCache.forEach(j => {
+    if (Utils.formatDateInput(j.Tanggal) === todayISO && String(j.Status).toLowerCase() === 'pending') {
+      tasks.push({
+        type: 'jadwal', id: j.Id_Jadwal,
+        title: `${j.is_personal ? 'Personal' : 'Kelas'} • ${Utils.escapeHtml(j.Kelas) || '-'}`,
+        meta: [`${Utils.escapeHtml(j.Pukul)}`, `${Utils.escapeHtml(j.Lokasi)}`]
+      });
+    }
+  });
+  return tasks;
+}
+
+function renderTaskSection() {
+  const section = document.getElementById('task-section');
+  const scroller = document.getElementById('task-scroller');
+  const badge = document.getElementById('task-count');
+  if (!section || !scroller) return;
+
+  const tasks = computeTasks();
+  if (tasks.length === 0) { section.hidden = true; scroller.innerHTML = ''; return; }
+  section.hidden = false;
+  if (badge) badge.textContent = tasks.length;
+
+  scroller.innerHTML = tasks.map(t => {
+    const tag = t.type === 'payment'
+      ? `${Icons.hourglass()} Pembayaran`
+      : `${Icons.clock()} Jadwal`;
+    const cta = t.type === 'payment' ? 'Atur pembayaran' : 'Aktifkan jadwal';
+    return `<div class="task-card" data-type="${t.type}" role="button" tabindex="0"
+        onclick="openTaskModal('${t.type}','${t.id}')"
+        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openTaskModal('${t.type}','${t.id}')}">
+        <span class="task-card__tag">${tag}</span>
+        <div class="task-card__title">${Utils.escapeHtml(t.title)}</div>
+        <div class="task-card__meta">${t.meta.map(m => `<span>${m}</span>`).join('')}</div>
+        <div class="task-card__cta">${cta} ${Icons.check()}</div>
+      </div>`;
+  }).join('');
+}
+
+function openTaskModal(type, id) {
+  if (type === 'payment') return openTaskPaymentModal(id);
+  if (type === 'jadwal') return openTaskJadwalModal(id);
+}
+
+/** Task pembayaran — HANYA nomor punggung & status (tidak bisa edit data peserta). */
+function openTaskPaymentModal(idPeserta) {
+  const p = pesertaCache.find(x => x.Id_Peserta === idPeserta);
+  if (!p) return;
+  const isPaid = Utils.formatBool(p.Status_Pembayaran) === 'TRUE';
+  const html = `
+    <div class="modal-backdrop active" id="task-modal">
+      <div class="modal modal-sm">
+        <div class="modal-header">
+          <h3>${Icons.hourglass()} Tindak Lanjut Pembayaran</h3>
+          <button class="modal-close" aria-label="Tutup" onclick="document.getElementById('task-modal').remove()">${Icons.x()}</button>
+        </div>
+        <div class="modal-body">
+          <div class="info-banner">${Icons.user()}<p>Peserta: <strong>${Utils.escapeHtml(p.Nama_Lengkap)}</strong> • ${Utils.escapeHtml(p.Kelas) || '-'}</p></div>
+          <div class="form-group"><label>Nomor Peserta (nomor punggung)</label>
+            <input id="t-nomor" class="form-control" value="${Utils.escapeHtml(p.Nomor_Peserta || '')}" placeholder="Contoh: 001 / A12" inputmode="numeric"></div>
+          <div class="form-group"><label>Status Pembayaran</label>
+            <select id="t-bayar" class="form-control">
+              <option value="false" ${!isPaid ? 'selected' : ''}>Belum Lunas</option>
+              <option value="true" ${isPaid ? 'selected' : ''}>Lunas</option>
+            </select></div>
+          <div class="info-banner">${Icons.info()}<p><strong>Nomor Peserta wajib diisi</strong> sebelum status menjadi <strong>Lunas</strong>. Aksi ini tidak mengubah data diri peserta lainnya.</p></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="document.getElementById('task-modal').remove()">Batal</button>
+          <button class="btn btn-primary" onclick="saveTaskPayment('${idPeserta}')">Simpan</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+  ModalHelper.focusFirst(document.getElementById('task-modal'));
+}
+
+async function saveTaskPayment(idPeserta) {
+  const wantLunas = document.getElementById('t-bayar').value === 'true';
+  const nomor = document.getElementById('t-nomor').value.trim();
+  if (wantLunas && !nomor) {
+    const el = document.getElementById('t-nomor');
+    if (el) { el.focus(); el.classList.add('input-error'); }
+    Utils.notify('Nomor Peserta wajib diisi sebelum status Lunas.', 'warning');
+    return;
+  }
+  const res = await API.call('updatePeserta', { id: idPeserta, nomor_peserta: nomor, status_pembayaran: wantLunas });
+  if (res.success) {
+    Utils.notify(res.message, 'success');
+    document.getElementById('task-modal').remove();
+    await loadPeserta(); await loadJadwal(); updateStats();
+  } else if (res.code === 'NOMOR_PESERTA_REQUIRED') {
+    showAlertModal('Nomor Peserta Wajib Diisi', Utils.escapeHtml(res.message));
+  } else Utils.notify(res.message, 'error');
+}
+
+/** Task jadwal — HANYA ubah status aktif/cancel (tidak bisa edit jadwal). */
+function openTaskJadwalModal(idJadwal) {
+  const j = jadwalCache.find(x => x.Id_Jadwal === idJadwal);
+  if (!j) return;
+  const html = `
+    <div class="modal-backdrop active" id="task-modal">
+      <div class="modal modal-sm">
+        <div class="modal-header">
+          <h3>${Icons.clock()} Aktivasi Jadwal Hari Ini</h3>
+          <button class="modal-close" aria-label="Tutup" onclick="document.getElementById('task-modal').remove()">${Icons.x()}</button>
+        </div>
+        <div class="modal-body">
+          <div class="info-banner">${Icons.info()}
+            <p><strong>${j.is_personal ? 'Personal' : 'Kelas'} ${Utils.escapeHtml(j.Kelas) || ''}</strong><br>
+            ${Utils.formatDate(j.Tanggal)} • ${Utils.escapeHtml(j.Pukul)} • ${Utils.escapeHtml(j.Lokasi)}</p></div>
+          <p class="form-helper">Pilih tindakan. Aksi ini hanya mengubah <strong>status</strong> jadwal — tidak mengubah detail jadwal lainnya.</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="document.getElementById('task-modal').remove()">Batal</button>
+          <button class="btn btn-danger" onclick="saveTaskJadwal('${idJadwal}','Cancel')">${Icons.x()} <span>Cancel</span></button>
+          <button class="btn btn-primary" onclick="saveTaskJadwal('${idJadwal}','Aktif')">${Icons.check()} <span>Aktifkan</span></button>
+        </div>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+  ModalHelper.focusFirst(document.getElementById('task-modal'));
+}
+
+async function saveTaskJadwal(idJadwal, status) {
+  const res = await API.call('updateJadwal', { id: idJadwal, status });
+  if (res.success) {
+    Utils.notify('Jadwal diperbarui: ' + status, 'success');
+    document.getElementById('task-modal').remove();
+    await loadJadwal(); updateStats();
+  } else Utils.notify(res.message, 'error');
 }
