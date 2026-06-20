@@ -302,10 +302,10 @@ function openPesertaEditModal(id) {
         </div>
         <div class="modal-body">
           <div class="info-banner">${Icons.info()}
-            <p>Demi keamanan, <strong>data diri peserta (termasuk username & password) tidak dapat diubah admin</strong>. Admin hanya dapat mengatur grup, tanggal pelatihan, nomor punggung, dan status pembayaran.</p>
+            <p>Demi keamanan pengguna, Admin tidak dapat mengubah <strong>data diri peserta.</strong></p>
           </div>
 
-          <h4 class="form-section-title">${Icons.user()} Data Diri <span class="lock-note">🔒 terkunci</span></h4>
+          <h4 class="form-section-title">${Icons.user()} Data Diri <span class="lock-note"> (Hanya peserta yang dapat mengubah data ini)</span></h4>
           <div class="form-grid-2">
             <div class="form-group"><label>Nama Lengkap</label><div class="readonly-field">${ro(p.Nama_Lengkap)}</div></div>
             <div class="form-group"><label>Username</label><div class="readonly-field">${ro(p.Username)}</div></div>
@@ -317,7 +317,7 @@ function openPesertaEditModal(id) {
             <div class="form-group"><label>Kode Referral</label><div class="readonly-field">${ro(p.Kode_Referral)}</div></div>
           </div>
 
-          <h4 class="form-section-title" style="margin-top:18px;">${Icons.pool()} Data Pelatihan <span class="lock-note">✏️ dapat diubah</span></h4>
+          <h4 class="form-section-title" style="margin-top:18px;">${Icons.pool()} Data Pelatihan <span class="lock-note"> (Admin dapat mengubah data berikut)</span></h4>
           <div class="form-grid-2">
             <div class="form-group"><label>Grup Renang *</label><select id="e-kelas" class="form-control">${kelasOpts}</select></div>
             <div class="form-group"><label>Nomor Peserta (nomor punggung) ${isPaid ? '*' : ''}</label><input id="e-nomor" class="form-control" value="${Utils.escapeHtml(p.Nomor_Peserta || '')}" placeholder="Contoh: 001 / A12" inputmode="numeric"></div>
@@ -325,7 +325,7 @@ function openPesertaEditModal(id) {
             <div class="form-group"><label>Tanggal Akhir</label><input id="e-akhir" class="form-control" type="date" value="${Utils.formatDateInput(p.Tanggal_Akhir)}"></div>
             <div class="form-group"><label>Status Pembayaran</label><select id="e-bayar" class="form-control"><option value="false" ${!isPaid ? 'selected' : ''}>Belum Lunas</option><option value="true" ${isPaid ? 'selected' : ''}>Lunas</option></select></div>
           </div>
-          <div class="info-banner">${Icons.info()}<p><strong>Nomor Peserta wajib diisi</strong> sebelum mengubah status ke <strong>Lunas</strong>.</p></div>
+          // <div class="info-banner">${Icons.info()}<p><strong>Nomor Peserta wajib diisi</strong> sebelum mengubah status ke <strong>Lunas</strong>.</p></div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" onclick="document.getElementById('peserta-edit-modal').remove()">Batal</button>
@@ -481,7 +481,6 @@ function openJadwalModal() {
               </div>
               <div class="peserta-picker__dropdown" id="j-peserta-dropdown"></div>
             </div>
-            <p class="form-helper">Pilih peserta dari daftar (data dari database). Nama tidak bisa diketik manual & tidak bisa dipilih dua kali.</p>
           </div>
           <div class="form-grid-2">
             <div class="form-group"><label>Tanggal *</label><input id="j-tanggal" class="form-control" type="date"></div>
@@ -1191,7 +1190,7 @@ function openTaskPaymentModal(idPeserta) {
               <option value="false" ${!isPaid ? 'selected' : ''}>Belum Lunas</option>
               <option value="true" ${isPaid ? 'selected' : ''}>Lunas</option>
             </select></div>
-          <div class="info-banner">${Icons.info()}<p><strong>Nomor Peserta wajib diisi</strong> sebelum status menjadi <strong>Lunas</strong>. Aksi ini tidak mengubah data diri peserta lainnya.</p></div>
+          <div class="info-banner">${Icons.info()}<p><strong>Nomor Peserta wajib diisi</strong> sebelum status menjadi <strong>Lunas</strong>.</p></div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" onclick="document.getElementById('task-modal').remove()">Batal</button>
@@ -1237,7 +1236,7 @@ function openTaskJadwalModal(idJadwal) {
           <div class="info-banner">${Icons.info()}
             <p><strong>${j.is_personal ? 'Personal' : 'Kelas'} ${Utils.escapeHtml(j.Kelas) || ''}</strong><br>
             ${Utils.formatDate(j.Tanggal)} • ${Utils.escapeHtml(j.Pukul)} • ${Utils.escapeHtml(j.Lokasi)}</p></div>
-          <p class="form-helper">Pilih tindakan. Aksi ini hanya mengubah <strong>status</strong> jadwal — tidak mengubah detail jadwal lainnya.</p>
+          <p class="form-helper"><strong>Aktifkan</strong> apabila kelas pelatihan akan di mulai dan <strong>Cancel</strong> apabila jadwal kelas dibatalkan</p>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" onclick="document.getElementById('task-modal').remove()">Batal</button>
