@@ -247,7 +247,7 @@ const PDFRapor = {
     // STEMPEL — di-overlay TERAKHIR (di depan teks), di area tengah antara klub & pelatih
     try {
       const stemp = await this.loadImageAsDataURL('assets/rapor/stemple.png');
-      const stampW = 34;
+      const stampW = 40;
       const stampH = stampW * (stemp.height / stemp.width);
       const stampX = footerCenterX - stampW / 2;
       const stampY = clubY + 2; // mulai tepat di bawah teks klub, mengisi gap menuju nama pelatih
