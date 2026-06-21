@@ -325,7 +325,6 @@ function openPesertaEditModal(id) {
             <div class="form-group"><label>Tanggal Akhir</label><input id="e-akhir" class="form-control" type="date" value="${Utils.formatDateInput(p.Tanggal_Akhir)}"></div>
             <div class="form-group"><label>Status Pembayaran</label><select id="e-bayar" class="form-control"><option value="false" ${!isPaid ? 'selected' : ''}>Belum Lunas</option><option value="true" ${isPaid ? 'selected' : ''}>Lunas</option></select></div>
           </div>
-          // <div class="info-banner">${Icons.info()}<p><strong>Nomor Peserta wajib diisi</strong> sebelum mengubah status ke <strong>Lunas</strong>.</p></div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" onclick="document.getElementById('peserta-edit-modal').remove()">Batal</button>
@@ -1190,7 +1189,6 @@ function openTaskPaymentModal(idPeserta) {
               <option value="false" ${!isPaid ? 'selected' : ''}>Belum Lunas</option>
               <option value="true" ${isPaid ? 'selected' : ''}>Lunas</option>
             </select></div>
-          <div class="info-banner">${Icons.info()}<p><strong>Nomor Peserta wajib diisi</strong> sebelum status menjadi <strong>Lunas</strong>.</p></div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" onclick="document.getElementById('task-modal').remove()">Batal</button>
