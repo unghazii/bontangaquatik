@@ -14,7 +14,7 @@
  *   10 Asal_Sekolah      11 Kelas_Sekolah     12 Wali_Kelas
  *   13 Kelompok_Umur     14 Kelas             15 Tanggal_Mulai
  *   16 Tanggal_Akhir     17 Status_Pembayaran
- *   18 Nomor_Peserta  (nomor punggung; wajib sebelum LUNAS)
+ *   18 Nomor_Peserta  (wajib sebelum LUNAS)
  *   19 (deprecated)      20 (deprecated)       <- bekas Pertanyaan/Jawaban Unik 1
  *   21 (deprecated)      22 (deprecated)       <- bekas Pertanyaan/Jawaban Unik 2
  *   23 Kode_Referral (BARU — 6 huruf, auto-generate jika kosong)
@@ -40,7 +40,8 @@
  *   15 Waktu_25_Bebas_Pelampung   16 Waktu_25_Dada_Pelampung   (BARU)
  *   17 Waktu_25_Kupu_Pelampung    18 Waktu_25_Punggung_Pelampung
  *
- * Berita: Id_Berita | Judul | Tanggal | Deskripsi | Link
+ * Berita: Id_Berita | Judul | Tanggal | Deskripsi | Link | Status (BARU)
+ *   Status: Publik | Semua Peserta | Peserta Grup A | Peserta Grup B | Peserta Grup C
  */
 
 const SPREADSHEET_ID = '1Jvndc1jgdlx4iSw2nNp9ezAM-MbU12Y8o1R_nrmLmQw';
@@ -60,8 +61,20 @@ const SHEET_HEADERS = {
     'Waktu_50_Bebas','Waktu_50_Dada','Waktu_50_Kupu','Waktu_50_Punggung',
     'Tanggal_Rapor','Id_Pelatih',
     'Waktu_25_Bebas_Pelampung','Waktu_25_Dada_Pelampung','Waktu_25_Kupu_Pelampung','Waktu_25_Punggung_Pelampung'
+  ],
+  // Berita: kolom 6 (Status) DITAMBAHKAN DI AKHIR — target audiens berita.
+  // Opsi: Publik | Semua Peserta | Peserta Grup A | Peserta Grup B | Peserta Grup C
+  // (kosong = diperlakukan sebagai 'Publik' demi kompatibilitas data lama).
+  Berita: [
+    'Id_Berita','Judul','Tanggal','Deskripsi','Link','Status'
   ]
 };
+
+/** Index kolom Berita (1-based). */
+const BERITA_COL = { Id:1, Judul:2, Tanggal:3, Deskripsi:4, Link:5, Status:6 };
+
+/** Opsi status berita yang valid. */
+const BERITA_STATUS = ['Publik', 'Semua Peserta', 'Peserta Grup A', 'Peserta Grup B', 'Peserta Grup C'];
 
 /** Index kolom (1-based) — single source of truth, hindari "magic number". */
 const PESERTA_COL = {
@@ -133,12 +146,15 @@ function handleRequest(e) {
       case 'getAllRapor':           result = getAllRapor(); break;
       case 'upsertRapor':           result = upsertRapor(params); break;
       case 'deleteRapor':           result = deleteRapor(params); break;
-      case 'getAllBerita':          result = getAllBerita(); break;
-      case 'getActiveBerita':       result = getAllBerita(); break;
+      case 'getAllBerita':          result = getAllBerita(params); break;
+      case 'getActiveBerita':       result = getActiveBerita(params); break;
       case 'createBerita':          result = createBerita(params); break;
       case 'updateBerita':          result = updateBerita(params); break;
       case 'deleteBerita':          result = deleteBerita(params); break;
       case 'getPelatihList':        result = getPelatihList(); break;
+      case 'getSettings':           result = getSettings(); break;
+      case 'updateSettings':        result = updateSettings(params); break;
+      case 'generateNomorPeserta':  result = generateNomorPeserta(params); break;
       case 'migrate':               result = migrateSheets(); break;
       default: result = { success: false, message: 'Action tidak dikenal: ' + action };
     }
@@ -304,8 +320,8 @@ function findPesertaByIdentity(p) {
 }
 
 function verifyResetIdentity(p) {
-  if (!p.nama_lengkap || !p.tanggal_lahir || !p.nomor_whatsapp || !p.nisnas) {
-    return { success: false, message: 'Nama lengkap, tanggal lahir, nomor WhatsApp, dan NISN wajib diisi.' };
+  if (!p.nama_lengkap || !p.tanggal_lahir || !p.nomor_whatsapp) {
+    return { success: false, message: 'Nama lengkap, tanggal lahir, dan nomor WhatsApp wajib diisi.' };
   }
   const peserta = findPesertaByIdentity(p);
   if (!peserta) return { success: false, message: 'Data tidak cocok. Pastikan semua data sesuai dengan saat pendaftaran.' };
@@ -451,7 +467,7 @@ function updatePeserta(p) {
 
   // GUARD: tidak boleh LUNAS tanpa Nomor_Peserta
   if (newPaid && !nomorPeserta) {
-    return { success: false, code: 'NOMOR_PESERTA_REQUIRED', message: 'Nomor Peserta (nomor punggung) wajib diisi sebelum status diubah menjadi LUNAS.' };
+    return { success: false, code: 'NOMOR_PESERTA_REQUIRED', message: 'Nomor Peserta wajib diisi sebelum status diubah menjadi LUNAS.' };
   }
 
   if (p.nama_lengkap !== undefined) sheet.getRange(row, PESERTA_COL.Nama).setValue(p.nama_lengkap);
@@ -737,16 +753,72 @@ function deleteRapor(p) {
 }
 
 // ====================== BERITA ======================
-function getAllBerita() {
-  const berita = sheetToObjects(getSheet('Berita')).map(b => ({ ...b, Tanggal: formatDate(b.Tanggal) }));
+/** Pastikan kolom header 'Status' ada di sheet Berita (self-heal, idempotent). */
+function ensureBeritaStatusHeader() {
+  const sheet = getSheet('Berita');
+  if (!sheet) return;
+  const lastCol = Math.max(sheet.getLastColumn(), 1);
+  const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
+  if (norm(headers[BERITA_COL.Status - 1]) !== norm('Status')) {
+    sheet.getRange(1, BERITA_COL.Status).setValue('Status');
+  }
+}
+
+/** Normalisasi status berita; nilai kosong/legacy diperlakukan sebagai 'Publik'. */
+function normBeritaStatus(v) {
+  const s = String(v == null ? '' : v).trim();
+  if (!s) return 'Publik';
+  const found = BERITA_STATUS.find(opt => norm(opt) === norm(s));
+  return found || 'Publik';
+}
+
+/**
+ * Tentukan apakah sebuah berita boleh tampil untuk audiens tertentu.
+ * @param status   status berita (sudah dinormalisasi)
+ * @param audience 'public' | 'peserta' | nama kelas ('Grup A' dst.) | 'admin'
+ */
+function beritaVisibleFor(status, audience) {
+  if (audience === 'admin') return true;
+  if (audience === 'public') return status === 'Publik';
+  // Peserta (punya kelas) — Publik & Semua Peserta selalu tampil; berita grup hanya untuk grupnya.
+  if (status === 'Publik' || status === 'Semua Peserta') return true;
+  const kelas = String(audience || '').trim();        // mis. 'Grup A'
+  return status === 'Peserta ' + kelas;
+}
+
+/**
+ * Ambil berita sesuai audiens.
+ *   - admin (default, tanpa param)   : SEMUA berita (untuk panel admin).
+ *   - p.audience='public'            : hanya berita Publik (index.html).
+ *   - p.kelas='Grup A' (peserta)     : Publik + Semua Peserta + Peserta Grup A.
+ */
+function getAllBerita(p) {
+  p = p || {};
+  ensureBeritaStatusHeader();
+  let audience = 'admin';
+  if (p.audience === 'public') audience = 'public';
+  else if (p.kelas) audience = String(p.kelas).trim();
+
+  const berita = sheetToObjects(getSheet('Berita')).map(b => {
+    const status = normBeritaStatus(b.Status);
+    return Object.assign({}, b, { Tanggal: formatDate(b.Tanggal), Status: status });
+  }).filter(b => beritaVisibleFor(b.Status, audience));
+
   berita.sort((a, b) => new Date(b.Tanggal) - new Date(a.Tanggal));
   return { success: true, data: berita };
 }
 
+/** Khusus index.html (publik) — hanya berita berstatus Publik. */
+function getActiveBerita(p) {
+  return getAllBerita({ audience: 'public' });
+}
+
 function createBerita(p) {
   const sheet = getSheet('Berita');
+  ensureBeritaStatusHeader();
   const id = generateId('BRT');
-  sheet.appendRow([id, p.judul, p.tanggal || new Date(), p.deskripsi || '', p.link || '']);
+  const status = normBeritaStatus(p.status);
+  sheet.appendRow([id, p.judul, p.tanggal || new Date(), p.deskripsi || '', p.link || '', status]);
   return { success: true, message: 'Berita dibuat', id: id };
 }
 
@@ -754,10 +826,11 @@ function updateBerita(p) {
   const sheet = getSheet('Berita');
   const row = findRowIndex(sheet, 0, p.id);
   if (row === -1) return { success: false, message: 'Berita tidak ditemukan' };
-  if (p.judul !== undefined) sheet.getRange(row, 2).setValue(p.judul);
-  if (p.tanggal !== undefined) sheet.getRange(row, 3).setValue(p.tanggal);
-  if (p.deskripsi !== undefined) sheet.getRange(row, 4).setValue(p.deskripsi);
-  if (p.link !== undefined) sheet.getRange(row, 5).setValue(p.link);
+  if (p.judul !== undefined) sheet.getRange(row, BERITA_COL.Judul).setValue(p.judul);
+  if (p.tanggal !== undefined) sheet.getRange(row, BERITA_COL.Tanggal).setValue(p.tanggal);
+  if (p.deskripsi !== undefined) sheet.getRange(row, BERITA_COL.Deskripsi).setValue(p.deskripsi);
+  if (p.link !== undefined) sheet.getRange(row, BERITA_COL.Link).setValue(p.link);
+  if (p.status !== undefined) sheet.getRange(row, BERITA_COL.Status).setValue(normBeritaStatus(p.status));
   return { success: true, message: 'Berita diperbarui' };
 }
 
@@ -767,6 +840,109 @@ function deleteBerita(p) {
   if (row === -1) return { success: false, message: 'Berita tidak ditemukan' };
   sheet.deleteRow(row);
   return { success: true, message: 'Berita dihapus' };
+}
+
+// ====================== SETTINGS (ScriptProperties) ======================
+/**
+ * Dua variabel penyimpan nomor urut TERAKHIR yang dipakai untuk men-generate
+ * Nomor_Peserta otomatis:
+ *   - seq_ac : nomor urut terakhir untuk Grup A & Grup C (berbagi counter)
+ *   - seq_b  : nomor urut terakhir untuk Grup B (counter tersendiri)
+ * Disimpan di Script Properties agar persisten & dapat diubah admin.
+ */
+const SETTINGS_KEYS = { ac: 'NOMOR_SEQ_AC', b: 'NOMOR_SEQ_B' };
+
+function getSettings() {
+  const props = PropertiesService.getScriptProperties();
+  const ac = parseInt(props.getProperty(SETTINGS_KEYS.ac), 10);
+  const b = parseInt(props.getProperty(SETTINGS_KEYS.b), 10);
+  return { success: true, data: {
+    seq_ac: isNaN(ac) ? 0 : ac,
+    seq_b: isNaN(b) ? 0 : b
+  }};
+}
+
+function updateSettings(p) {
+  const props = PropertiesService.getScriptProperties();
+  if (p.seq_ac !== undefined) {
+    const n = parseInt(p.seq_ac, 10);
+    if (isNaN(n) || n < 0) return { success: false, message: 'Nomor urut Grup A/C harus berupa angka ≥ 0.' };
+    props.setProperty(SETTINGS_KEYS.ac, String(n));
+  }
+  if (p.seq_b !== undefined) {
+    const n = parseInt(p.seq_b, 10);
+    if (isNaN(n) || n < 0) return { success: false, message: 'Nomor urut Grup B harus berupa angka ≥ 0.' };
+    props.setProperty(SETTINGS_KEYS.b, String(n));
+  }
+  return { success: true, message: 'Pengaturan nomor peserta disimpan', data: getSettings().data };
+}
+
+/** Counter key (ac/b) berdasarkan kelas peserta. */
+function counterKeyForKelas(kelas) {
+  return (String(kelas).trim() === 'Grup B') ? 'b' : 'ac'; // Grup A & C -> ac
+}
+
+/** Bagian ddmmyy (6 digit) dari tanggal lahir. */
+function ddmmyyFromDate(tanggalLahir) {
+  const d = new Date(tanggalLahir);
+  if (isNaN(d.getTime())) return '';
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yy = String(d.getFullYear()).slice(-2);
+  return dd + mm + yy;
+}
+
+/** Semua Nomor_Peserta yang sudah terpakai (untuk jaminan unik). */
+function existingNomorSet(excludeId) {
+  const set = {};
+  sheetToObjects(getSheet('Peserta')).forEach(p => {
+    if (excludeId && p.Id_Peserta === excludeId) return;
+    const n = String(p.Nomor_Peserta || '').trim();
+    if (n) set[n] = true;
+  });
+  return set;
+}
+
+/**
+ * Generate Nomor_Peserta otomatis untuk seorang peserta:
+ *   format = ddmmyy(6) + urut(4).
+ * Counter diambil dari Script Properties (ac/b), di-increment, dijamin unik,
+ * lalu disimpan kembali. Nomor ditulis ke baris peserta.
+ */
+function generateNomorPeserta(p) {
+  const sheet = getSheet('Peserta');
+  const row = findRowIndex(sheet, 0, p.id_peserta);
+  if (row === -1) return { success: false, message: 'Peserta tidak ditemukan' };
+
+  const peserta = sheetToObjects(sheet).find(x => x.Id_Peserta === p.id_peserta);
+  const tgl = peserta.Tanggal_Lahir;
+  const ddmmyy = ddmmyyFromDate(tgl);
+  if (!ddmmyy) return { success: false, message: 'Tanggal lahir peserta tidak valid sehingga nomor tidak dapat dibuat.' };
+
+  const kelas = peserta.Kelas;
+  const which = counterKeyForKelas(kelas);
+  const propKey = SETTINGS_KEYS[which];
+  const props = PropertiesService.getScriptProperties();
+
+  let seq = parseInt(props.getProperty(propKey), 10);
+  if (isNaN(seq) || seq < 0) seq = 0;
+
+  const used = existingNomorSet(p.id_peserta);
+  let nomor = '';
+  // Increment hingga ditemukan nomor unik (urut + ddmmyy).
+  for (let i = 0; i < 100000; i++) {
+    seq += 1;
+    const urut = String(seq).padStart(4, '0');
+    nomor = ddmmyy + urut;
+    if (!used[nomor]) break;
+  }
+
+  props.setProperty(propKey, String(seq));
+  sheet.getRange(row, PESERTA_COL.NomorPeserta).setValue(nomor);
+
+  return { success: true, message: 'Nomor peserta dibuat: ' + nomor, data: {
+    nomor_peserta: nomor, counter: which, seq: seq
+  }};
 }
 
 function getPelatihList() {

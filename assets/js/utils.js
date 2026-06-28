@@ -10,13 +10,20 @@ const Theme = {
   apply(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem(this.KEY, theme);
+    const isDark = theme === 'dark';
+    // Backward-compat: tombol emoji lama (jika masih ada di halaman).
     const btn = document.getElementById('theme-toggle-btn');
-    if (btn) btn.innerHTML = theme === 'dark' ? '☀️' : '🌙';
+    if (btn) btn.innerHTML = isDark ? '☀️' : '🌙';
+    // Switch modern: perbarui state aria + kelas untuk animasi thumb.
+    document.querySelectorAll('.theme-switch').forEach(sw => {
+      sw.classList.toggle('is-dark', isDark);
+      sw.setAttribute('aria-checked', isDark ? 'true' : 'false');
+    });
     let meta = document.querySelector('meta[name="theme-color"]');
     if (!meta) {
       meta = document.createElement('meta'); meta.name = 'theme-color'; document.head.appendChild(meta);
     }
-    meta.content = theme === 'dark' ? '#0B0F12' : '#FFFFFF';
+    meta.content = isDark ? '#0B0F12' : '#FFFFFF';
   },
   toggle() {
     const next = (document.documentElement.getAttribute('data-theme') === 'dark') ? 'light' : 'dark';
@@ -180,7 +187,23 @@ const Utils = {
      ============================================ */
   mountNavbar(activeRoute = '') {
     const session = Auth.getSession();
-    const themeIcon = Theme.get() === 'dark' ? '☀️' : '🌙';
+    const isDark = Theme.get() === 'dark';
+
+    // Switch tema modern — HANYA untuk pengunjung (belum login).
+    // Untuk admin & peserta, kontrol tema dipindah ke menu Pengaturan.
+    const themeSwitchHtml = (!session) ? `
+      <button type="button" id="theme-switch" class="theme-switch ${isDark ? 'is-dark' : ''}" role="switch"
+        aria-checked="${isDark ? 'true' : 'false'}" aria-label="Ganti tema gelap/terang" title="Ganti tema gelap/terang">
+        <span class="theme-switch__track">
+          <span class="theme-switch__ico theme-switch__ico--sun" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+          </span>
+          <span class="theme-switch__ico theme-switch__ico--moon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+          </span>
+          <span class="theme-switch__thumb" aria-hidden="true"></span>
+        </span>
+      </button>` : '';
 
     let userBlock = '';
     if (session && session.role === 'peserta') {
@@ -208,7 +231,6 @@ const Utils = {
             </div>
             <span>${CONFIG.BRAND_NAME}</span>
           </a>
-          <button class="navbar-toggle" id="navbar-toggle" aria-label="Menu">☰</button>
           <div class="navbar-menu" id="navbar-menu">
             <div class="navbar-links">
               <a href="index.html" class="nav-link ${activeRoute === 'home' ? 'active' : ''}">Home</a>
@@ -216,18 +238,25 @@ const Utils = {
               ${session && session.role === 'admin' ? `<a href="admin.html" class="nav-link ${activeRoute === 'admin' ? 'active' : ''}">Admin Panel</a>` : ''}
             </div>
             <div class="navbar-actions">
-              <button id="theme-toggle-btn" class="theme-toggle" aria-label="Ganti tema" title="Ganti tema gelap/terang">${themeIcon}</button>
               ${userBlock}
             </div>
+          </div>
+          <div class="navbar-end">
+            ${themeSwitchHtml}
+            <button class="navbar-toggle" id="navbar-toggle" aria-label="Menu" aria-expanded="false">☰</button>
           </div>
         </div>
       </nav>`;
     document.body.insertAdjacentHTML('afterbegin', html);
 
-    document.getElementById('navbar-toggle').addEventListener('click', () => {
-      document.getElementById('navbar-menu').classList.toggle('show');
+    const toggleBtn = document.getElementById('navbar-toggle');
+    if (toggleBtn) toggleBtn.addEventListener('click', () => {
+      const menu = document.getElementById('navbar-menu');
+      const shown = menu.classList.toggle('show');
+      toggleBtn.setAttribute('aria-expanded', shown ? 'true' : 'false');
     });
-    document.getElementById('theme-toggle-btn').addEventListener('click', () => Theme.toggle());
+    const themeSwitch = document.getElementById('theme-switch');
+    if (themeSwitch) themeSwitch.addEventListener('click', () => Theme.toggle());
   },
 
   /* ============================================

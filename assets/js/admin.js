@@ -120,6 +120,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   await Promise.all([loadPeserta(), loadJadwal(), loadKehadiran(), loadRapor(), loadBerita()]);
   updateStats();
   setupFilters();
+
+  // Menu Pengaturan (tema, tampilan jadwal/kehadiran, variabel nomor peserta).
+  if (window.AdminSettings) AdminSettings.renderInto('admin-settings-root');
+  document.addEventListener('admin:jadwalviewchange', () => applyJadwalFilters());
+  document.addEventListener('admin:kehadiranviewchange', () => applyKehadiranFilters());
 });
 
 // =============================================================
@@ -320,7 +325,7 @@ function openPesertaEditModal(id) {
           <h4 class="form-section-title" style="margin-top:18px;">${Icons.pool()} Data Pelatihan <span class="lock-note"> (Admin dapat mengubah data berikut)</span></h4>
           <div class="form-grid-2">
             <div class="form-group"><label>Grup Renang *</label><select id="e-kelas" class="form-control">${kelasOpts}</select></div>
-            <div class="form-group"><label>Nomor Peserta (nomor punggung) ${isPaid ? '*' : ''}</label><input id="e-nomor" class="form-control" value="${Utils.escapeHtml(p.Nomor_Peserta || '')}" placeholder="Contoh: 001 / A12" inputmode="numeric"></div>
+            <div class="form-group"><label>Nomor Peserta ${isPaid ? '*' : ''}</label><input id="e-nomor" class="form-control" value="${Utils.escapeHtml(p.Nomor_Peserta || '')}" placeholder="Contoh: 001 / A12" inputmode="numeric"></div>
             <div class="form-group"><label>Tanggal Mulai</label><input id="e-mulai" class="form-control" type="date" value="${Utils.formatDateInput(p.Tanggal_Mulai)}"></div>
             <div class="form-group"><label>Tanggal Akhir</label><input id="e-akhir" class="form-control" type="date" value="${Utils.formatDateInput(p.Tanggal_Akhir)}"></div>
             <div class="form-group"><label>Status Pembayaran</label><select id="e-bayar" class="form-control"><option value="false" ${!isPaid ? 'selected' : ''}>Belum Lunas</option><option value="true" ${isPaid ? 'selected' : ''}>Lunas</option></select></div>
@@ -344,7 +349,7 @@ async function savePeserta(id) {
   if (wantLunas && !nomorPeserta) {
     showAlertModal(
       'Nomor Peserta Wajib Diisi',
-      'Anda tidak dapat menyimpan status pembayaran <strong>LUNAS</strong> tanpa mengisi <strong>Nomor Peserta</strong> (nomor punggung) terlebih dahulu. Mohon lengkapi kolom Nomor Peserta.'
+      'Anda tidak dapat menyimpan status pembayaran <strong>LUNAS</strong> tanpa mengisi <strong>Nomor Peserta</strong> terlebih dahulu. Mohon lengkapi kolom Nomor Peserta.'
     );
     const el = document.getElementById('e-nomor');
     if (el) { el.focus(); el.classList.add('input-error'); }
@@ -435,6 +440,21 @@ function applyJadwalFilters() {
 }
 
 function renderJadwal(data) {
+  const mode = (window.AdminSettings && AdminSettings.getJadwalView()) || 'list';
+  const tableWrap = document.getElementById('jadwal-table-wrap');
+  const calWrap = document.getElementById('jadwal-calendar-view');
+  if (mode === 'calendar') {
+    if (tableWrap) tableWrap.hidden = true;
+    if (calWrap) calWrap.hidden = false;
+    renderJadwalCalendar(data);
+  } else {
+    if (calWrap) calWrap.hidden = true;
+    if (tableWrap) tableWrap.hidden = false;
+    renderJadwalTable(data);
+  }
+}
+
+function renderJadwalTable(data) {
   const tbody = document.getElementById('tbody-jadwal');
   if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="8" class="empty-cell">Tidak ada jadwal</td></tr>`; return; }
   tbody.innerHTML = data.map(j => `
@@ -453,6 +473,74 @@ function renderJadwal(data) {
         </div>
       </td>
     </tr>`).join('');
+}
+
+// ---- Calendar view (admin jadwal) ----
+let jadwalCalCursor = null; // bulan yang sedang ditampilkan (Date, tgl 1)
+
+function renderJadwalCalendar(data) {
+  const wrap = document.getElementById('jadwal-calendar-view');
+  if (!wrap) return;
+
+  // Default ke bulan dengan jadwal terdekat dari hari ini (atau bulan ini).
+  if (!jadwalCalCursor) {
+    const today = new Date(); today.setDate(1); today.setHours(0, 0, 0, 0);
+    jadwalCalCursor = today;
+  }
+
+  const year = jadwalCalCursor.getFullYear();
+  const month = jadwalCalCursor.getMonth();
+  const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+  // Kelompokkan jadwal per tanggal (ISO).
+  const byDate = {};
+  data.forEach(j => {
+    const iso = Utils.formatDateInput(j.Tanggal);
+    if (!iso) return;
+    (byDate[iso] = byDate[iso] || []).push(j);
+  });
+
+  const firstDay = new Date(year, month, 1);
+  const startWeekday = firstDay.getDay(); // 0=Min
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const todayIso = Utils.formatDateInput(new Date());
+  const dayLabels = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+
+  let cells = '';
+  for (let i = 0; i < startWeekday; i++) cells += `<div class="cal-cell cal-cell--empty"></div>`;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const items = (byDate[iso] || []).sort((a, b) => String(a.Pukul).localeCompare(String(b.Pukul)));
+    const chips = items.slice(0, 4).map(j => {
+      const st = String(j.Status || '').toLowerCase();
+      const label = `${Utils.escapeHtml(j.Kelas || (j.is_personal ? 'Personal' : '-'))} · ${Utils.escapeHtml(j.Pukul || '')}`;
+      return `<button type="button" class="cal-chip ${st}" title="${label} — ${Utils.escapeHtml(j.Lokasi || '')}" onclick="openJadwalEditModal('${j.Id_Jadwal}')">${label}</button>`;
+    }).join('');
+    const more = items.length > 4 ? `<span class="cal-more">+${items.length - 4} lagi</span>` : '';
+    cells += `<div class="cal-cell ${iso === todayIso ? 'is-today' : ''} ${items.length ? 'has-items' : ''}">
+        <div class="cal-date">${d}</div>
+        <div class="cal-chips">${chips}${more}</div>
+      </div>`;
+  }
+
+  wrap.innerHTML = `
+    <div class="cal-header">
+      <button type="button" class="icon-btn" id="cal-prev" aria-label="Bulan sebelumnya">‹</button>
+      <h3 class="cal-title">${monthNames[month]} ${year}</h3>
+      <button type="button" class="icon-btn" id="cal-next" aria-label="Bulan berikutnya">›</button>
+      <button type="button" class="btn btn-secondary btn-sm" id="cal-today">Hari ini</button>
+    </div>
+    <div class="cal-weekdays">${dayLabels.map(l => `<div>${l}</div>`).join('')}</div>
+    <div class="cal-grid">${cells}</div>
+    <div class="cal-legend">
+      <span><i class="dot aktif"></i> Aktif</span>
+      <span><i class="dot pending"></i> Pending</span>
+      <span><i class="dot cancel"></i> Cancel</span>
+    </div>`;
+
+  wrap.querySelector('#cal-prev').addEventListener('click', () => { jadwalCalCursor = new Date(year, month - 1, 1); applyJadwalFilters(); });
+  wrap.querySelector('#cal-next').addEventListener('click', () => { jadwalCalCursor = new Date(year, month + 1, 1); applyJadwalFilters(); });
+  wrap.querySelector('#cal-today').addEventListener('click', () => { const t = new Date(); jadwalCalCursor = new Date(t.getFullYear(), t.getMonth(), 1); applyJadwalFilters(); });
 }
 
 function openJadwalModal() {
@@ -740,12 +828,19 @@ function applyBeritaFilters() {
 
 function renderBerita(data) {
   const tbody = document.getElementById('tbody-berita');
-  if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="empty-cell">Belum ada berita</td></tr>`; return; }
+  if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="6" class="empty-cell">Belum ada berita</td></tr>`; return; }
+  const statusClass = (s) => {
+    const v = String(s || 'Publik');
+    if (v === 'Publik') return 'success';
+    if (v === 'Semua Peserta') return 'info';
+    return 'personal';
+  };
   tbody.innerHTML = data.map(b => `
     <tr>
       <td>${Utils.formatDate(b.Tanggal)}</td>
       <td>${Utils.escapeHtml(b.Judul)}</td>
       <td class="truncate-cell">${Utils.escapeHtml((b.Deskripsi || '').substring(0, 80))}${(b.Deskripsi || '').length > 80 ? '…' : ''}</td>
+      <td><span class="status-badge ${statusClass(b.Status)}">${Utils.escapeHtml(b.Status || 'Publik')}</span></td>
       <td>${b.Link ? `<a href="${Utils.escapeHtml(b.Link)}" target="_blank" rel="noopener">${Icons.link()} Buka</a>` : '<em class="text-muted">-</em>'}</td>
       <td>
         <div class="action-btns">
@@ -769,6 +864,13 @@ function openBeritaModal(id) {
           <div class="form-group"><label>Judul *</label><input id="b-judul" class="form-control" value="${b ? Utils.escapeHtml(b.Judul) : ''}" placeholder="Contoh: Lomba Renang Kaltim 2025"></div>
           <div class="form-group"><label>Tanggal *</label><input id="b-tanggal" class="form-control" type="date" value="${b ? Utils.formatDateInput(b.Tanggal) : Utils.formatDateInput(new Date())}"></div>
           <div class="form-group"><label>Deskripsi *</label><textarea id="b-desc" class="form-control" rows="4" placeholder="Ringkasan berita atau informasi penting...">${b ? Utils.escapeHtml(b.Deskripsi || '') : ''}</textarea></div>
+          <div class="form-group">
+            <label>Target Audiens *</label>
+            <select id="b-status" class="form-control">
+              ${['Publik', 'Semua Peserta', 'Peserta Grup A', 'Peserta Grup B', 'Peserta Grup C']
+                .map(s => `<option value="${s}" ${(b ? (b.Status || 'Publik') : 'Publik') === s ? 'selected' : ''}>${s}</option>`).join('')}
+            </select>
+          </div>
           <div class="form-group"><label>Link (URL Sumber)</label><input id="b-link" class="form-control" type="url" value="${b ? Utils.escapeHtml(b.Link || '') : ''}" placeholder="https://..."></div>
         </div>
         <div class="modal-footer">
@@ -785,11 +887,12 @@ async function saveBerita(id) {
   const judul = document.getElementById('b-judul').value.trim();
   const tanggal = document.getElementById('b-tanggal').value;
   const deskripsi = document.getElementById('b-desc').value.trim();
+  const status = document.getElementById('b-status').value || 'Publik';
   const link = document.getElementById('b-link').value.trim();
   if (!judul || !tanggal || !deskripsi) { Utils.notify('Judul, tanggal, dan deskripsi wajib diisi', 'warning'); return; }
   Utils.showLoader(true);
   const action = id ? 'updateBerita' : 'createBerita';
-  const payload = { judul, tanggal, deskripsi, link };
+  const payload = { judul, tanggal, deskripsi, link, status };
   if (id) payload.id = id;
   const res = await API.call(action, payload);
   Utils.showLoader(false);
@@ -835,6 +938,21 @@ function applyKehadiranFilters() {
 }
 
 function renderKehadiran(data) {
+  const mode = (window.AdminSettings && AdminSettings.getKehadiranView()) || 'list';
+  const tableWrap = document.getElementById('kehadiran-table-wrap');
+  const pivotWrap = document.getElementById('kehadiran-pivot-view');
+  if (mode === 'table') {
+    if (tableWrap) tableWrap.hidden = true;
+    if (pivotWrap) pivotWrap.hidden = false;
+    renderKehadiranPivot(data);
+  } else {
+    if (pivotWrap) pivotWrap.hidden = true;
+    if (tableWrap) tableWrap.hidden = false;
+    renderKehadiranList(data);
+  }
+}
+
+function renderKehadiranList(data) {
   const tbody = document.getElementById('tbody-kehadiran');
   if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">Tidak ada data kehadiran</td></tr>`; return; }
   tbody.innerHTML = data.map(k => `
@@ -851,6 +969,69 @@ function renderKehadiran(data) {
         </div>
       </td>
     </tr>`).join('');
+}
+
+/**
+ * Tampilan TABEL kehadiran (mengikuti format download Excel):
+ * baris = peserta, kolom = tanggal, sel = H (hadir) / I (izin).
+ * Dibangun dari data kehadiran yang sedang ditampilkan (hasil filter).
+ */
+function renderKehadiranPivot(data) {
+  const wrap = document.getElementById('kehadiran-pivot-view');
+  if (!wrap) return;
+  if (!data || data.length === 0) {
+    UI.emptyState(wrap, { title: 'Tidak ada data kehadiran', message: 'Tidak ada record kehadiran pada filter ini.' });
+    return;
+  }
+
+  // Kumpulkan tanggal unik (ISO) & peserta unik.
+  const dateSet = new Set();
+  const pesertaMap = {}; // nama -> { kelas, byDate: {iso: 'H'|'I'} }
+  data.forEach(k => {
+    const iso = Utils.formatDateInput(k.tanggal_raw || k.tanggal);
+    if (!iso) return;
+    dateSet.add(iso);
+    const nama = k.nama_peserta || '-';
+    if (!pesertaMap[nama]) pesertaMap[nama] = { kelas: k.kelas || '-', byDate: {} };
+    pesertaMap[nama].byDate[iso] = (k.status_label === 'hadir') ? 'H' : 'I';
+  });
+
+  const dates = Array.from(dateSet).sort();
+  const namaList = Object.keys(pesertaMap).sort((a, b) => a.localeCompare(b));
+  const monthShort = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+
+  const headCols = dates.map(iso => {
+    const [, m, d] = iso.split('-');
+    return `<th class="pivot-date" title="${iso}"><span>${Number(d)}</span><small>${monthShort[Number(m) - 1]}</small></th>`;
+  }).join('');
+
+  const rows = namaList.map((nama, idx) => {
+    const info = pesertaMap[nama];
+    const cells = dates.map(iso => {
+      const v = info.byDate[iso] || '';
+      const cls = v === 'H' ? 'hadir' : (v === 'I' ? 'izin' : 'kosong');
+      return `<td class="pivot-cell ${cls}">${v}</td>`;
+    }).join('');
+    return `<tr>
+        <td class="pivot-no">${idx + 1}</td>
+        <td class="pivot-nama">${Utils.escapeHtml(nama)}</td>
+        <td><span class="kelas-tag">${Utils.escapeHtml(info.kelas)}</span></td>
+        ${cells}
+      </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <div class="pivot-legend">
+      <span><i class="dot hadir"></i> H = Hadir</span>
+      <span><i class="dot izin"></i> I = Izin</span>
+      <span><i class="dot kosong"></i> – = Tidak ada record</span>
+    </div>
+    <div class="pivot-scroll">
+      <table class="pivot-table">
+        <thead><tr><th class="pivot-no">No.</th><th class="pivot-nama">Nama Peserta</th><th>Kelas</th>${headCols}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
 }
 
 async function deleteKehadiranConfirm(id) {
@@ -924,9 +1105,11 @@ function applyRaporFilters() {
   const sort = document.getElementById('sort-rapor')?.value || 'update_desc';
 
   // Gabungkan SEMUA peserta dengan rapornya (jika ada).
+  // Request: peserta dengan status pembayaran BELUM LUNAS tidak ditampilkan di tab rapor.
   const raporByPeserta = {};
   raporCache.forEach(r => { raporByPeserta[r.Id_Peserta] = r; });
-  let rows = pesertaCache.map(p => {
+  const pesertaLunas = pesertaCache.filter(p => Utils.formatBool(p.Status_Pembayaran) === 'TRUE');
+  let rows = pesertaLunas.map(p => {
     const r = raporByPeserta[p.Id_Peserta] || null;
     return {
       id_peserta: p.Id_Peserta,
@@ -980,8 +1163,11 @@ function renderRapor(data) {
 
 function openRaporAdminModal(idPeserta) {
   const existing = idPeserta ? raporCache.find(r => r.Id_Peserta === idPeserta) : null;
-  const sourceList = pesertaCache.length ? pesertaCache : pesertaListLunas;
+  // Hanya peserta LUNAS yang dapat dibuatkan rapor.
+  const sourceList = pesertaListLunas.length ? pesertaListLunas : pesertaCache.filter(p => Utils.formatBool(p.Status_Pembayaran) === 'TRUE');
   const pesertaOpts = sourceList.map(p => `<option value="${p.Id_Peserta}" ${idPeserta === p.Id_Peserta ? 'selected' : ''}>${Utils.escapeHtml(p.Nama_Lengkap)} • ${p.Kelas}</option>`).join('');
+  const currentPeserta = idPeserta ? pesertaCache.find(p => p.Id_Peserta === idPeserta) : null;
+  const currentNomor = currentPeserta ? (currentPeserta.Nomor_Peserta || '') : '';
   const predikatOpts = CONFIG.PREDIKAT_OPTIONS.map(pr => `<option value="${pr}" ${existing && existing.Predikat === pr ? 'selected' : ''}>${pr}</option>`).join('');
 
   let waktuRows = '';
@@ -1010,6 +1196,14 @@ function openRaporAdminModal(idPeserta) {
         <div class="modal-body">
           <div class="form-group"><label>Peserta *</label><select id="rp-peserta" class="form-control" ${existing ? 'disabled' : ''}><option value="">- Pilih peserta -</option>${pesertaOpts}</select></div>
 
+          <div class="form-group">
+            <label>Nomor Peserta</label>
+            <div class="input-with-action">
+              <input id="rp-nomor" class="form-control" value="${Utils.escapeHtml(currentNomor)}" placeholder="10 digit (ddmmyy + urut)" inputmode="numeric" maxlength="10">
+              <button type="button" class="btn btn-secondary btn-sm" id="rp-generate-nomor" title="Generate otomatis dari tanggal lahir + nomor urut">${Icons.star()} <span>Generate</span></button>
+            </div>
+          </div>
+
           <h4 class="form-section-title">Capaian Waktu Latihan</h4>
           <p class="form-helper">Format waktu: <code>mm.ss.ms</code> (contoh: <code>01.08.12</code>). Kosongkan jika belum ada data.</p>
           <table class="rapor-input-table">
@@ -1029,6 +1223,38 @@ function openRaporAdminModal(idPeserta) {
     </div>`;
   document.body.insertAdjacentHTML('beforeend', html);
   ModalHelper.focusFirst(document.getElementById('rapor-admin-modal'));
+
+  // Sinkronkan kolom Nomor Peserta saat peserta dipilih (untuk rapor baru).
+  const selEl = document.getElementById('rp-peserta');
+  const nomorEl = document.getElementById('rp-nomor');
+  if (selEl && nomorEl && !existing) {
+    selEl.addEventListener('change', () => {
+      const ps = pesertaCache.find(p => p.Id_Peserta === selEl.value);
+      nomorEl.value = ps ? (ps.Nomor_Peserta || '') : '';
+    });
+  }
+  // Generate nomor peserta otomatis dari backend.
+  const genBtn = document.getElementById('rp-generate-nomor');
+  if (genBtn) {
+    genBtn.addEventListener('click', async () => {
+      const pid = selEl ? selEl.value : idPeserta;
+      if (!pid) { Utils.notify('Pilih peserta terlebih dahulu', 'warning'); return; }
+      genBtn.classList.add('is-loading'); genBtn.disabled = true;
+      const res = await API.call('generateNomorPeserta', { id_peserta: pid });
+      genBtn.classList.remove('is-loading'); genBtn.disabled = false;
+      if (res.success && res.data) {
+        nomorEl.value = res.data.nomor_peserta;
+        Utils.notify(res.message, 'success');
+        // Refresh cache nomor agar konsisten di tabel & modal lain.
+        const cp = pesertaCache.find(p => p.Id_Peserta === pid);
+        if (cp) cp.Nomor_Peserta = res.data.nomor_peserta;
+        const lp = pesertaListLunas.find(p => p.Id_Peserta === pid);
+        if (lp) lp.Nomor_Peserta = res.data.nomor_peserta;
+      } else {
+        Utils.notify(res.message || 'Gagal membuat nomor peserta', 'error');
+      }
+    });
+  }
 }
 
 async function saveRapor() {
@@ -1058,6 +1284,24 @@ async function saveRapor() {
   };
 
   Utils.showLoader(true);
+  // Simpan Nomor Peserta bila diubah (CRUD nomor peserta di modal rapor).
+  const nomorEl = document.getElementById('rp-nomor');
+  if (nomorEl) {
+    const nomorBaru = nomorEl.value.trim();
+    const ps = pesertaCache.find(p => p.Id_Peserta === idPeserta);
+    const nomorLama = ps ? String(ps.Nomor_Peserta || '').trim() : '';
+    if (nomorBaru !== nomorLama) {
+      const upd = await API.call('updatePeserta', { id: idPeserta, nomor_peserta: nomorBaru });
+      if (!upd.success) {
+        Utils.showLoader(false);
+        Utils.notify(upd.message || 'Gagal menyimpan nomor peserta', 'error');
+        return;
+      }
+      if (ps) ps.Nomor_Peserta = nomorBaru;
+      const lp = pesertaListLunas.find(p => p.Id_Peserta === idPeserta);
+      if (lp) lp.Nomor_Peserta = nomorBaru;
+    }
+  }
   const res = await API.call('upsertRapor', payload);
   Utils.showLoader(false);
   if (res.success) {
@@ -1182,7 +1426,7 @@ function openTaskPaymentModal(idPeserta) {
         </div>
         <div class="modal-body">
           <div class="info-banner">${Icons.user()}<p>Peserta: <strong>${Utils.escapeHtml(p.Nama_Lengkap)}</strong> • ${Utils.escapeHtml(p.Kelas) || '-'}</p></div>
-          <div class="form-group"><label>Nomor Peserta (nomor punggung)</label>
+          <div class="form-group"><label>Nomor Peserta</label>
             <input id="t-nomor" class="form-control" value="${Utils.escapeHtml(p.Nomor_Peserta || '')}" placeholder="Contoh: 001 / A12" inputmode="numeric"></div>
           <div class="form-group"><label>Status Pembayaran</label>
             <select id="t-bayar" class="form-control">

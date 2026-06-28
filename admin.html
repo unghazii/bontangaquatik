@@ -85,6 +85,9 @@
       <symbol id="ic-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
       </symbol>
+      <symbol id="ic-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </symbol>
     </defs>
   </svg>
 
@@ -165,6 +168,10 @@
           <svg class="ic" aria-hidden="true"><use href="#ic-doc"/></svg>
           <span>Rapor</span>
         </button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="pengaturan">
+          <svg class="ic" aria-hidden="true"><use href="#ic-settings"/></svg>
+          <span>Pengaturan</span>
+        </button>
       </div>
 
       <!-- ============== TAB PESERTA ============== -->
@@ -244,7 +251,7 @@
             <span>Tambah Jadwal Personal</span>
           </button>
         </div>
-        <div class="table-wrap">
+        <div class="table-wrap" id="jadwal-table-wrap">
           <table class="data-table">
             <thead>
               <tr>
@@ -260,6 +267,7 @@
             <tbody id="tbody-jadwal"></tbody>
           </table>
         </div>
+        <div class="admin-calendar" id="jadwal-calendar-view" hidden></div>
       </div>
 
       <!-- ============== TAB BERITA ============== -->
@@ -279,7 +287,7 @@
         <div class="table-wrap">
           <table class="data-table">
             <thead>
-              <tr><th>Tanggal</th><th>Judul</th><th>Deskripsi</th><th>Link</th><th class="th-actions">Aksi</th></tr>
+              <tr><th>Tanggal</th><th>Judul</th><th>Deskripsi</th><th>Status</th><th>Link</th><th class="th-actions">Aksi</th></tr>
             </thead>
             <tbody id="tbody-berita"></tbody>
           </table>
@@ -326,7 +334,7 @@
             <span>Export Excel</span>
           </button>
         </div>
-        <div class="table-wrap">
+        <div class="table-wrap" id="kehadiran-table-wrap">
           <table class="data-table">
             <thead>
               <tr><th>Tanggal</th><th>Peserta</th><th>Kelas</th><th>Pukul</th><th>Status</th><th>Catatan</th><th class="th-actions">Aksi</th></tr>
@@ -334,6 +342,7 @@
             <tbody id="tbody-kehadiran"></tbody>
           </table>
         </div>
+        <div class="admin-pivot" id="kehadiran-pivot-view" hidden></div>
       </div>
 
       <!-- ============== TAB RAPOR ============== -->
@@ -378,6 +387,11 @@
         </div>
       </div>
 
+      <!-- ============== TAB PENGATURAN ============== -->
+      <div class="tab-content" id="tab-pengaturan" role="tabpanel">
+        <div id="admin-settings-root"></div>
+      </div>
+
     </div>
   </div>
 
@@ -393,6 +407,7 @@
   <script src="assets/js/components/ui.js"></script>
   <script src="assets/js/excel-export.js"></script>
   <script src="assets/js/pdf-rapor.js"></script>
+  <script src="assets/js/admin-settings.js"></script>
   <script src="assets/js/admin.js"></script>
   <script src="assets/js/pwa.js"></script>
 </body>

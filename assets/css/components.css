@@ -1,9 +1,3 @@
-/* ===================================================================
-   COMPONENTS — Reusable Design System (UI.*)
-   Dibangun di atas design-token CSS variables yang sudah ada (global.css).
-   Tujuan: konsistensi (predictable UI) + UX modern (toast, shimmer, modal).
-   =================================================================== */
-
 /* ---------------- TOAST (upgrade dari .notif) ---------------- */
 #ui-toast-stack {
   position: fixed; top: calc(env(safe-area-inset-top, 0px) + 78px);

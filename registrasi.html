@@ -46,13 +46,6 @@
             <div class="step" data-step="4"><span class="step-num">4</span><span class="step-label">Grup</span></div>
           </div>
 
-          <!-- Info kelas referensi -->
-          <div class="class-info-banner">
-            <h4>Info Kelas Tersedia</h4>
-            <!-- <p class="text-muted" style="font-size:13px;margin-bottom:12px;">Usia minimal pendaftaran: <strong>5 tahun</strong></p> -->
-            <div class="class-info-list" id="class-info-list"></div>
-          </div>
-
           <form id="form-registrasi" autocomplete="on">
 
             <!-- STEP 1: Akun -->
@@ -86,7 +79,7 @@
             <!-- STEP 2: Data Pribadi -->
             <div class="form-step" data-step="2">
               <h4 class="form-section-title">Data Pribadi</h4>
-              <div class="form-grid-2">
+              <div class="form-grid-1">
                 <div class="form-group">
                   <label>Jenis Kelamin *</label>
                   <select name="jenis_kelamin" id="jenis_kelamin" class="form-control" required>
@@ -94,10 +87,6 @@
                     <option value="Laki-laki">Laki-laki</option>
                     <option value="Perempuan">Perempuan</option>
                   </select>
-                </div>
-                <div class="form-group">
-                  <label>NISN *</label>
-                  <input type="text" name="nisnas" class="form-control" required pattern="[0-9]*" inputmode="numeric" placeholder="Nomor Induk Siswa">
                 </div>
               </div>
               <div class="form-grid-2">
@@ -115,11 +104,10 @@
 
             <!-- STEP 3: Sekolah -->
             <div class="form-step" data-step="3">
-              <h4 class="form-section-title">🏫 Data Sekolah</h4>
+              <h4 class="form-section-title">Data Sekolah</h4>
               <div class="form-group">
                 <label>Asal Sekolah *</label>
                 <input type="text" name="asal_sekolah" class="form-control" required placeholder="Contoh: TK Amanah / SD Negeri 001">
-                <!-- <p class="form-helper">⚠️ Harap gunakan format penulisan yang benar karena akan ditampilkan dalam rapor kemajuan peserta.</p> -->
               </div>
               <div class="form-grid-2">
                 <div class="form-group">
@@ -135,7 +123,7 @@
 
             <!-- STEP 4: Kelas Renang -->
             <div class="form-step" data-step="4">
-              <h4 class="form-section-title">🏊 Pilihan Kelas Renang</h4>
+              <h4 class="form-section-title">Pilihan Kelas Renang</h4>
               <div class="form-group">
                 <label>Pilih Kelas *</label>
                 <select name="kelas" id="kelas" class="form-control" required></select>
@@ -153,12 +141,6 @@
               <div class="form-group">
                 <label>Pelatihan Berakhir Pada</label>
                 <input type="text" id="tanggal_akhir_display" class="form-control" readonly placeholder="Otomatis terisi sesuai durasi">
-              </div>
-              <div class="form-group">
-                <label>Kode Referral (opsional)</label>
-                <input type="text" name="kode_referral" id="kode_referral" class="form-control" maxlength="6"
-                  placeholder="Masukan Kode" autocomplete="off" style="text-transform:uppercase;letter-spacing:2px;">
-                <!-- <p class="form-helper" id="referral-feedback">Punya kode dari teman? Masukkan di sini (boleh dikosongkan).</p> -->
               </div>
             </div>
 

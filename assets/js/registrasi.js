@@ -1,7 +1,6 @@
 /**
- * Registrasi multi-step (4 langkah) — UX premium.
- * Langkah: 1) Akun  2) Data Pribadi  3) Sekolah  4) Grup + Referral(opsional).
- * Ikon mata password & toast memakai komponen reusable global `UI`.
+ * Registrasi multi-step (4 langkah).
+ * Langkah: 1) Akun  2) Data Pribadi  3) Sekolah  4) Grup.
  */
 let currentStep = 1;
 const TOTAL_STEPS = 4;
@@ -36,11 +35,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const kelompok = Utils.calculateKelompokUmur(tgl);
     const info = CONFIG.KELOMPOK_UMUR_INFO[kelompok] || '';
-    preview.innerHTML = `🏆 Kelompok Umur: <strong style="color:var(--color-primary);">${kelompok}</strong> (${info}) • Usia ${usia} tahun`;
+    preview.innerHTML = `Kelompok Umur: <strong style="color:var(--color-primary);">${kelompok}</strong> (${info}) • Usia ${usia} tahun`;
   });
 
   renderClassInfo();
-  bindReferralField();
 
   // Auto-calc end date
   const durasiInput = document.getElementById('durasi');
@@ -62,33 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('form-registrasi').addEventListener('submit', submitForm);
 });
 
-/** Validasi & feedback realtime kode referral (opsional, harus 6 huruf bila diisi). */
-function bindReferralField() {
-  const input = document.getElementById('kode_referral');
-  const feedback = document.getElementById('referral-feedback');
-  if (!input) return;
-  input.addEventListener('input', () => {
-    input.value = input.value.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 6);
-    const val = input.value.trim();
-    if (val === '') {
-      feedback.textContent = 'Punya kode dari teman? Masukkan di sini (boleh dikosongkan).';
-      feedback.style.color = 'var(--color-text-secondary)';
-    } else if (/^[A-Z]{6}$/.test(val)) {
-      feedback.innerHTML = '✓ Format kode referral valid';
-      feedback.style.color = 'var(--color-success)';
-    } else {
-      feedback.innerHTML = '⚠️ Kode referral harus terdiri dari tepat 6 huruf';
-      feedback.style.color = 'var(--color-danger)';
-    }
-  });
-}
-
-function isReferralValid() {
-  const input = document.getElementById('kode_referral');
-  const val = (input?.value || '').trim();
-  return val === '' || /^[A-Za-z]{6}$/.test(val);
-}
-
 function validateStep(step) {
   const stepEl = document.querySelector(`.form-step[data-step="${step}"]`);
   const inputs = stepEl.querySelectorAll('input[required], select[required]');
@@ -109,11 +80,8 @@ function validateStep(step) {
   if (step === 2) {
     const tglLahir = stepEl.querySelector('[name="tanggal_lahir"]').value;
     if (Utils.calculateUsia(tglLahir) < CONFIG.MIN_AGE) { UI.toast(`Usia minimal ${CONFIG.MIN_AGE} tahun`, 'warning'); return false; }
-    const nisnas = stepEl.querySelector('[name="nisnas"]').value;
-    if (!/^[0-9]+$/.test(nisnas)) { UI.toast('NISN harus berupa angka', 'warning'); return false; }
-  }
-  if (step === 4) {
-    if (!isReferralValid()) { UI.toast('Kode referral tidak valid — harus 6 huruf atau kosongkan.', 'warning'); return false; }
+    // const nisnas = stepEl.querySelector('[name="nisnas"]').value;
+    // if (!/^[0-9]+$/.test(nisnas)) { UI.toast('NISN harus berupa angka', 'warning'); return false; }
   }
   return true;
 }
@@ -151,14 +119,13 @@ async function submitForm(e) {
     jenis_kelamin: fd.get('jenis_kelamin'),
     tempat_lahir: fd.get('tempat_lahir').trim(),
     tanggal_lahir: fd.get('tanggal_lahir'),
-    nisnas: fd.get('nisnas').trim(),
+    // nisnas: fd.get('nisnas').trim(),
     asal_sekolah: fd.get('asal_sekolah').trim(),
     kelas_sekolah: fd.get('kelas_sekolah').trim(),
     wali_kelas: fd.get('wali_kelas').trim(),
     kelas: fd.get('kelas'),
     tanggal_mulai: fd.get('tanggal_mulai'),
     tanggal_akhir: document.getElementById('tanggal_akhir_display').dataset.iso || '',
-    kode_referral: (fd.get('kode_referral') || '').trim().toUpperCase()
   };
 
   const submitBtn = document.getElementById('btn-submit');

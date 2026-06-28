@@ -1,8 +1,7 @@
 /**
  * ===================================================================
- * PESERTA SETTINGS (req #9)
+ * PESERTA SETTINGS
  * ===================================================================
- * Modal pengaturan peserta yang dibuka dari tombol gear di navbar.
  * Berisi:
  *   • Tema default (terang / gelap)
  *   • Tampilan jadwal (grid / kalender) — disimpan & memicu re-render dashboard
@@ -94,14 +93,14 @@
         ${seg('view', currentView, [{ v: 'grid', t: '▦ Grid' }, { v: 'calendar', t: '📅 Kalender' }])}
       </div>
       <hr class="settings-divider">
-      <button type="button" class="btn btn-accent btn-block settings-action" id="set-share">
-        🔗 Bagikan Rekomendasi (WhatsApp)
+      <button type="button" class="btn btn-success btn-block settings-action" id="set-share">
+        💬 Bagikan Rekomendasi
       </button>
       <button type="button" class="btn btn-secondary btn-block settings-action" id="set-contact">
-        🛟 Pengaduan / Pertanyaan ke Admin
+        Pengaduan Layanan
       </button>`;
 
-    const m = UI.modal({ title: '⚙️ Pengaturan', size: 'sm', body });
+    const m = UI.modal({ title: 'Pengaturan', size: 'sm', body });
 
     // Segmented: tema
     m.el.querySelector('[data-seg="theme"]').addEventListener('click', (e) => {
@@ -116,8 +115,10 @@
       setViewMode(btn.dataset.val);
       UI.toast('Tampilan jadwal: ' + (btn.dataset.val === 'calendar' ? 'Kalender' : 'Grid'), 'success', { duration: 1800 });
     });
-    m.el.querySelector('#set-share').addEventListener('click', shareRecommendation);
-    m.el.querySelector('#set-contact').addEventListener('click', () => { m.close(); openContactAdmin(); });
+    const shareBtn = m.el.querySelector('#set-share');
+    if (shareBtn) shareBtn.addEventListener('click', shareRecommendation);
+    const contactBtn = m.el.querySelector('#set-contact');
+    if (contactBtn) contactBtn.addEventListener('click', () => { m.close(); openContactAdmin(); });
   }
 
   global.PesertaSettings = { open, getViewMode, setViewMode, shareRecommendation, openContactAdmin };

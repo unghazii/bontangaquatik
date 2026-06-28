@@ -1,6 +1,6 @@
 /**
  * Lupa Password — alur 2 langkah (tanpa pertanyaan keamanan):
- *   1. Verifikasi identitas: Nama Lengkap + Tanggal Lahir + No WhatsApp + NISN
+ *   1. Verifikasi identitas: Nama Lengkap + Tanggal Lahir + No WhatsApp
  *      -> action 'verifyResetIdentity' (cek tanpa mengubah apa pun)
  *   2. Buat password baru -> action 'resetPassword' (kirim ulang validator + password)
  *
@@ -10,7 +10,7 @@
 (function () {
   'use strict';
 
-  const state = { nama_lengkap: '', tanggal_lahir: '', nomor_whatsapp: '', nisnas: '' };
+  const state = { nama_lengkap: '', tanggal_lahir: '', nomor_whatsapp: '' };
 
   function showStep(id) {
     document.querySelectorAll('.fp-step').forEach(f => f.classList.remove('active'));
@@ -25,14 +25,12 @@
     const nama = document.getElementById('fp-nama').value.trim();
     const tglLahir = document.getElementById('fp-tgl-lahir').value;
     const wa = document.getElementById('fp-wa').value.replace(/[^0-9]/g, '');
-    const nisn = document.getElementById('fp-nisn').value.trim();
 
     if (!nama) { UI.toast('Masukkan nama lengkap Anda', 'warning'); return; }
     if (!tglLahir) { UI.toast('Masukkan tanggal lahir Anda', 'warning'); return; }
     if (!/^[0-9]{8,15}$/.test(wa)) { UI.toast('Nomor WhatsApp tidak valid (8-15 digit)', 'warning'); return; }
-    if (!nisn) { UI.toast('Masukkan NISN Anda', 'warning'); return; }
 
-    const payload = { nama_lengkap: nama, tanggal_lahir: tglLahir, nomor_whatsapp: wa, nisnas: nisn };
+    const payload = { nama_lengkap: nama, tanggal_lahir: tglLahir, nomor_whatsapp: wa };
     const res = await API.call('verifyResetIdentity', payload);
     if (!res.success) { UI.toast(res.message || 'Verifikasi gagal', 'error'); return; }
 

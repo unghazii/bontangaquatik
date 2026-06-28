@@ -6,7 +6,7 @@
    - Offline fallback ke index.html
    ================================================================ */
 
-const VERSION       = 'v1.0.0';
+const VERSION       = 'v1.1.0';
 const STATIC_CACHE  = `aquatik-static-${VERSION}`;
 const RUNTIME_CACHE = `aquatik-runtime-${VERSION}`;
 

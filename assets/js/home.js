@@ -2,6 +2,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   Utils.mountNavbar('home');
 
+  initHeroFX();
   renderClassesSection();
   renderScheduleSection();
   loadBerita();
@@ -23,6 +24,74 @@ document.addEventListener('DOMContentLoaded', () => {
     a.href = Utils.waLink(CONFIG.CONTACT.whatsapp, 'Halo Bontang Aquatik, saya tertarik untuk bergabung kelas pelatihan renang. Mohon informasinya.');
   });
 });
+
+/* ===================== HERO FX: gelembung + mouse-follow ===================== */
+function initHeroFX() {
+  const hero = document.getElementById('hero');
+  if (!hero) return;
+  const spotlight = hero.querySelector('.hero-spotlight');
+  const bubbles = document.getElementById('hero-bubbles');
+
+  // Gelembung putih ambient (background tidak terkesan solid)
+  if (bubbles) {
+    let html = '';
+    for (let i = 0; i < 16; i++) {
+      const size  = (10 + Math.random() * 46).toFixed(0);
+      const left  = (Math.random() * 100).toFixed(2);
+      const dur   = (7 + Math.random() * 10).toFixed(1);
+      const delay = (Math.random() * 12).toFixed(1);
+      const drift = (Math.random() * 60 - 30).toFixed(0);
+      html += `<span class="bubble" style="width:${size}px;height:${size}px;left:${left}%;` +
+              `animation-duration:${dur}s;animation-delay:-${delay}s;--drift:${drift}px;"></span>`;
+    }
+    bubbles.innerHTML = html;
+  }
+
+  // Efek selalu aktif (mengabaikan preferensi reduced-motion atas permintaan)
+  let half = (spotlight ? spotlight.offsetWidth : 520) / 2;
+  let tx = 0, ty = 0, cx = 0, cy = 0, raf = null, started = false, lastSpawn = 0;
+
+  const loop = () => {
+    cx += (tx - cx) * 0.15;
+    cy += (ty - cy) * 0.15;
+    if (spotlight) spotlight.style.transform = `translate3d(${cx - half}px, ${cy - half}px, 0)`;
+    if (bubbles) {
+      const r = hero.getBoundingClientRect();
+      const dx = (cx - r.width / 2) / r.width;
+      const dy = (cy - r.height / 2) / r.height;
+      bubbles.style.transform = `translate3d(${dx * -26}px, ${dy * -18}px, 0)`;
+    }
+    raf = (Math.abs(tx - cx) > 0.4 || Math.abs(ty - cy) > 0.4)
+      ? requestAnimationFrame(loop) : null;
+  };
+
+  // Lahirkan gelembung kecil di posisi kursor
+  const spawnBubble = (x, y) => {
+    const b = document.createElement('span');
+    b.className = 'cursor-bubble';
+    const size = 6 + Math.random() * 16;
+    b.style.left   = (x + (Math.random() * 24 - 12)) + 'px';
+    b.style.top    = y + 'px';
+    b.style.width  = size + 'px';
+    b.style.height = size + 'px';
+    hero.appendChild(b);
+    setTimeout(() => b.remove(), 1200);
+  };
+
+  hero.addEventListener('pointermove', (e) => {
+    const r = hero.getBoundingClientRect();
+    tx = e.clientX - r.left;
+    ty = e.clientY - r.top;
+    if (!started) { started = true; cx = tx; cy = ty; }  // mulai dari kursor, bukan pojok
+    hero.classList.add('spotlight-active');
+    if (!raf) raf = requestAnimationFrame(loop);
+
+    const now = performance.now();
+    if (now - lastSpawn > 90) { lastSpawn = now; spawnBubble(tx, ty); }
+  });
+  hero.addEventListener('pointerleave', () => hero.classList.remove('spotlight-active'));
+  window.addEventListener('resize', () => { half = (spotlight ? spotlight.offsetWidth : 520) / 2; });
+}
 
 /* ===================== KELAS TERSEDIA ===================== */
 function renderClassesSection() {
@@ -88,16 +157,18 @@ function renderScheduleSection() {
 /* ============================================================
    SECTION BERITA — Carousel horizontal
    - Section hidden by default; ditampilkan hanya jika ada data
-   - Auto-loop swipe via scroll-snap
+   - Berita SEDIKIT  → card di tengah (align center), tanpa autoplay
+   - Berita BANYAK   → carousel auto-geser tiap beberapa detik
+   - Tanpa tombol prev/next
    ============================================================ */
 async function loadBerita() {
-  const section = document.getElementById('berita');
+  const section  = document.getElementById('berita');
   const carousel = document.getElementById('news-carousel');
   if (!section || !carousel) return;
 
   const res = await API.call('getActiveBerita');
   if (!res.success || !res.data || res.data.length === 0) {
-    // Hide section seluruhnya jika tidak ada berita (Request 4)
+    // Hide section seluruhnya jika tidak ada berita
     section.classList.add('hidden');
     return;
   }
@@ -111,21 +182,16 @@ async function loadBerita() {
       </div>
       <h3 class="news-title">${Utils.escapeHtml(b.Judul)}</h3>
       <p class="news-desc">${Utils.escapeHtml(b.Deskripsi || '').substring(0, 200)}${(b.Deskripsi || '').length > 200 ? '…' : ''}</p>
-      ${b.Link ? `<a href="${Utils.escapeHtml(b.Link)}" target="_blank" rel="noopener" class="btn btn-accent btn-sm news-link">Baca Selengkapnya →</a>` : `<span class="text-muted" style="font-size:12px;">Tidak ada link lanjutan</span>`}
+      ${b.Link
+        ? `<a href="${Utils.escapeHtml(b.Link)}" target="_blank" rel="noopener" class="btn btn-accent btn-sm news-link">Baca Selengkapnya →</a>`
+        : `<span class="text-muted" style="font-size:12px;">Tidak ada link lanjutan</span>`}
     </article>
   `).join('');
-
-  // Render dots
-  const dotsContainer = document.getElementById('news-dots');
-  dotsContainer.innerHTML = berita.map((_, i) =>
-    `<button class="news-dot ${i === 0 ? 'active' : ''}" data-idx="${i}" aria-label="Berita ${i + 1}"></button>`
-  ).join('');
 
   // Show section
   section.classList.remove('hidden');
 
-  // Carousel logic
-  const dots = dotsContainer.querySelectorAll('.news-dot');
+  const dotsContainer = document.getElementById('news-dots');
   const cards = carousel.querySelectorAll('.news-card');
 
   const scrollToIdx = (idx) => {
@@ -133,30 +199,62 @@ async function loadBerita() {
     if (card) carousel.scrollTo({ left: card.offsetLeft - 12, behavior: 'smooth' });
   };
 
-  dots.forEach(d => d.addEventListener('click', () => scrollToIdx(Number(d.dataset.idx))));
+  // Ukur layout setelah render selesai
+  requestAnimationFrame(() => {
+    const fits = carousel.scrollWidth <= carousel.clientWidth + 4;
 
-  // Update dot active on scroll
-  let scrollTimer;
-  carousel.addEventListener('scroll', () => {
-    clearTimeout(scrollTimer);
-    scrollTimer = setTimeout(() => {
-      let activeIdx = 0;
-      let minDist = Infinity;
-      cards.forEach((c, i) => {
-        const dist = Math.abs(c.offsetLeft - carousel.scrollLeft - 12);
-        if (dist < minDist) { minDist = dist; activeIdx = i; }
-      });
-      dots.forEach((d, i) => d.classList.toggle('active', i === activeIdx));
-    }, 100);
-  });
+    // ---- BERITA SEDIKIT → di tengah, tanpa dots & autoplay ----
+    if (fits) {
+      carousel.classList.add('news-centered');
+      if (dotsContainer) dotsContainer.innerHTML = '';
+      return;
+    }
 
-  // Nav buttons
-  document.getElementById('news-prev').addEventListener('click', () => {
-    const active = Array.from(dots).findIndex(d => d.classList.contains('active'));
-    scrollToIdx(Math.max(0, active - 1));
-  });
-  document.getElementById('news-next').addEventListener('click', () => {
-    const active = Array.from(dots).findIndex(d => d.classList.contains('active'));
-    scrollToIdx(Math.min(berita.length - 1, active + 1));
+    // ---- BERITA BANYAK → carousel auto-geser ----
+    carousel.classList.remove('news-centered');
+
+    if (dotsContainer) {
+      dotsContainer.innerHTML = berita.map((_, i) =>
+        `<button class="news-dot ${i === 0 ? 'active' : ''}" data-idx="${i}" aria-label="Berita ${i + 1}"></button>`
+      ).join('');
+    }
+    const dots = dotsContainer ? Array.from(dotsContainer.querySelectorAll('.news-dot')) : [];
+
+    // Sinkronkan dot aktif saat di-scroll
+    let scrollTimer;
+    carousel.addEventListener('scroll', () => {
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(() => {
+        let activeIdx = 0, minDist = Infinity;
+        cards.forEach((c, i) => {
+          const dist = Math.abs(c.offsetLeft - carousel.scrollLeft - 12);
+          if (dist < minDist) { minDist = dist; activeIdx = i; }
+        });
+        dots.forEach((d, i) => d.classList.toggle('active', i === activeIdx));
+      }, 90);
+    });
+
+    // ---- Autoplay ----
+    let current = 0, timer = null;
+    const nextSlide = () => {
+      const atEnd = carousel.scrollLeft + carousel.clientWidth >= carousel.scrollWidth - 8;
+      current = atEnd ? 0 : Math.min(current + 1, cards.length - 1);
+      scrollToIdx(current);
+    };
+    const start = () => { if (!timer) timer = setInterval(nextSlide, 4000); };
+    const stop  = () => { clearInterval(timer); timer = null; };
+
+    // Klik dot → loncat + reset timer
+    dots.forEach(d => d.addEventListener('click', () => {
+      scrollToIdx(Number(d.dataset.idx)); stop(); start();
+    }));
+
+    // Pause saat pengguna berinteraksi
+    ['mouseenter', 'pointerdown', 'touchstart'].forEach(ev =>
+      carousel.addEventListener(ev, stop, { passive: true }));
+    ['mouseleave', 'touchend'].forEach(ev =>
+      carousel.addEventListener(ev, start, { passive: true }));
+
+    start();
   });
 }

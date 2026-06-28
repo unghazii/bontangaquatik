@@ -361,7 +361,9 @@ function openCalendarDay(iso) {
 let beritaCachePeserta = [];
 
 async function loadBeritaPeserta() {
-  const res = await API.call('getAllBerita');
+  const user = (Auth && Auth.getUser && Auth.getUser()) || {};
+  const kelas = user.kelas || user.Kelas || '';
+  const res = await API.call('getAllBerita', { kelas });
   if (!res.success) return;
   beritaCachePeserta = res.data || [];
   renderBeritaPeserta();
@@ -412,7 +414,6 @@ function renderUpcomingReminder() {
   const status = String(upcoming.Status).toLowerCase();
   const badgeClass = status === 'aktif' ? 'badge-success' : 'badge-warning';
   box.innerHTML = `
-    <div class="reminder-icon">⏰</div>
     <div class="reminder-body">
       <div class="reminder-label">Jadwal Terdekat Anda</div>
       <div class="reminder-main">${Utils.formatDateLong(upcoming.Tanggal)} • ${Utils.escapeHtml(upcoming.Pukul)}</div>

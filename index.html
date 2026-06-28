@@ -74,10 +74,10 @@
 
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#169AC4">
-  
+
   <!-- Stylesheet PWA (WAJIB agar modal & banner terlihat) -->
   <link rel="stylesheet" href="assets/css/pwa.css">
-  
+
   <!-- iOS-specific (agar terbuka tanpa Safari UI saat dipasang) -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -91,10 +91,14 @@
 <!-- <script src="pwa.js" defer></script> -->
 <body>
 
-  <!-- HERO -->
-  <section class="hero">
+  <!-- ============================== HERO (UPGRADED) ============================== -->
+  <section class="hero" id="hero">
+    <!-- Layer dekoratif -->
+    <div class="hero-spotlight" aria-hidden="true"></div>
+    <div class="hero-bubbles" id="hero-bubbles" aria-hidden="true"></div>
+
     <div class="hero-inner">
-      <div>
+      <div class="hero-copy">
         <h1>Kelas Renang Profesional <span>Bontang Aquatik</span></h1>
         <p>Klub pelatihan renang terbaik di Bontang dengan pelatih profesional. Tingkatkan kemampuan renangmu dengan kelas pelatihan terstruktur dan menyenangkan.</p>
         <div class="hero-buttons">
@@ -107,6 +111,14 @@
         <img src="assets/images/hero.jpeg" alt="Latihan Renang Bontang Aquatik" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
         <div class="hero-image-placeholder" style="display:none;">🏊‍♂️</div>
       </div>
+    </div>
+
+    <!-- Ombak bawah (timbul + shadow) -->
+    <div class="hero-wave" aria-hidden="true">
+      <svg viewBox="0 0 1440 120" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <path class="hero-wave-back"  d="M0,70 C200,30 380,104 600,74 C820,44 1040,104 1280,66 C1360,52 1410,58 1440,56 L1440,120 L0,120 Z"/>
+        <path class="hero-wave-front" d="M0,48 C160,96 320,96 480,66 C640,36 800,18 960,42 C1120,66 1280,84 1440,60 L1440,120 L0,120 Z"/>
+      </svg>
     </div>
   </section>
 
@@ -362,9 +374,7 @@
         <p>Info lomba, tips renang, dan kabar terbaru dari pelatih.</p>
       </div>
       <div class="news-carousel-wrapper">
-        <button class="news-nav news-prev" aria-label="Sebelumnya" id="news-prev">◀</button>
         <div class="news-carousel" id="news-carousel"></div>
-        <button class="news-nav news-next" aria-label="Berikutnya" id="news-next">▶</button>
       </div>
       <div class="news-dots" id="news-dots"></div>
     </div>
