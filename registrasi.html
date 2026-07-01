@@ -1,30 +1,30 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <link rel="manifest" href="manifest.json">
+  <meta charset="UTF-8">
   <meta name="theme-color" content="#169AC4">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Bontang Aquatik">
+  <meta name="apple-mobile-web-app-title" content="Bontang Akuatik">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="index, follow">
+  
+  <!-- SEO -->
+  <meta name="description" content="Formulir pendaftaran kelas renang Bontang Akuatik. Pilih kelas Grup A, B, atau C.">
+  <meta name="keywords" content="daftar renang bontang, registrasi bontang Akuatik, pendaftaran kelas renang">
+  
+  <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="assets/images/logo.webp">
   <link rel="apple-touch-icon" sizes="180x180" href="assets/images/logo.webp">
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Daftar Kelas Renang - Bontang Aquatik</title>
-  <meta name="description" content="Formulir pendaftaran kelas renang Bontang Aquatik. Pilih kelas Grup A, B, atau C.">
-  <meta name="keywords" content="daftar renang bontang, registrasi bontang aquatik, pendaftaran kelas renang">
-  <meta name="robots" content="index, follow">
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#169AC4">
-  <link rel="icon" type="image/jpeg" href="assets/images/logo.webp">
-  <link rel="apple-touch-icon" href="assets/images/logo.webp">
+  <link rel="icon" type="image/png" href="assets/images/logo.png">
   <link rel="stylesheet" href="assets/css/global.css">
   <link rel="stylesheet" href="assets/css/navbar.css">
   <link rel="stylesheet" href="assets/css/auth.css">
   <link rel="stylesheet" href="assets/css/pwa.css">
   <link rel="stylesheet" href="assets/css/components.css">
-
+  
+  <title>Daftar Kelas Renang - Bontang Akuatik</title>
 </head>
 
 <body>
@@ -34,10 +34,10 @@
         <div class="auth-header">
           <div class="icon">📝</div>
           <h1>Daftar Kelas Renang</h1>
-          <p>Lengkapi data Anda untuk mulai latihan di Bontang Aquatik</p>
+          <p>Lengkapi data Anda untuk mulai latihan di Bontang Akuatik</p>
         </div>
+        
         <div class="auth-body">
-
           <!-- Stepper untuk UX -->
           <div class="stepper" id="form-stepper">
             <div class="step active" data-step="1"><span class="step-num">1</span><span class="step-label">Akun</span></div>
@@ -54,24 +54,27 @@
               <div class="form-grid-2">
                 <div class="form-group">
                   <label>Nama Lengkap *</label>
-                  <input type="text" name="nama_lengkap" class="form-control" required placeholder="Nama lengkap peserta">
+                  <input type="text" name="nama_lengkap" class="form-control" required placeholder="e.g., Muhammad Ghazi Al Ghifari" autocomplete="name">
                 </div>
                 <div class="form-group">
                   <label>Nama Panggilan *</label>
-                  <input type="text" name="username" class="form-control" required placeholder="Username" autocomplete="username">
+                  <input type="text" name="username" class="form-control" required placeholder="e.g., Ghazi" autocomplete="username">
                 </div>
               </div>
               <div class="form-grid-2">
                 <div class="form-group">
                   <label>Password *</label>
                   <div class="password-wrap">
-                    <input type="password" name="password" id="password" class="form-control" required minlength="6" placeholder="Minimal 6 karakter">
+                    <input type="password" name="password" id="password" class="form-control" required minlength="6" placeholder="Silahkan Buat Password" autocomplete="password">
                     <button id="togglePassword" class="password-toggle" type="button"></button>
                   </div>
                 </div>
                 <div class="form-group">
-                  <label>Nomor WhatsApp *</label>
-                  <input type="tel" name="nomor_whatsapp" class="form-control" required placeholder="6281234567890" inputmode="numeric">
+                    <label>Nomor WhatsApp *</label>
+                    <div class="phone-input-group">
+                        <span class="phone-prefix">+62</span>
+                        <input type="tel" name="nomor_whatsapp" class="phone-input" placeholder="81234567890" inputmode="numeric" maxlength="12" required>
+                    </div>
                 </div>
               </div>
             </div>
@@ -92,7 +95,7 @@
               <div class="form-grid-2">
                 <div class="form-group">
                   <label>Tempat Lahir *</label>
-                  <input type="text" name="tempat_lahir" class="form-control" required placeholder="Contoh: Bontang">
+                  <input type="text" name="tempat_lahir" class="form-control" required placeholder="e.g., Bontang">
                 </div>
                 <div class="form-group">
                   <label>Tanggal Lahir *</label>
@@ -107,25 +110,30 @@
               <h4 class="form-section-title">Data Sekolah</h4>
               <div class="form-group">
                 <label>Asal Sekolah *</label>
-                <input type="text" name="asal_sekolah" class="form-control" required placeholder="Contoh: TK Amanah / SD Negeri 001">
+                <input type="text" name="asal_sekolah" class="form-control" required placeholder="e.g., SD 1 Yayasan Pupuk Kaltim">
               </div>
               <div class="form-grid-2">
                 <div class="form-group">
                   <label>Kelas Sekolah *</label>
-                  <input type="text" name="kelas_sekolah" class="form-control" required placeholder="Contoh: 2A / 3 SD / Kelas B">
+                  <input type="text" name="kelas_sekolah" class="form-control" required placeholder="e.g., 4A">
                 </div>
                 <div class="form-group">
                   <label>Wali Kelas *</label>
-                  <input type="text" name="wali_kelas" class="form-control" required placeholder="Nama wali kelas">
+                  <input type="text" name="wali_kelas" class="form-control" required placeholder="e.g., Pak Budi">
                 </div>
               </div>
             </div>
 
             <!-- STEP 4: Kelas Renang -->
             <div class="form-step" data-step="4">
+              <!-- Info kelas referensi -->
+              <div class="class-info-banner">
+                <h4>Info Kelas Tersedia</h4>
+                <div class="class-info-list" id="class-info-list"></div>
+              </div>
               <h4 class="form-section-title">Pilihan Kelas Renang</h4>
               <div class="form-group">
-                <label>Pilih Kelas *</label>
+                <label>Pilih Kelas Renang *</label>
                 <select name="kelas" id="kelas" class="form-control" required></select>
               </div>
               <div class="form-grid-2">
@@ -135,7 +143,7 @@
                 </div>
                 <div class="form-group">
                   <label>Durasi (bulan) *</label>
-                  <input type="number" name="durasi" id="durasi" class="form-control" required min="1" max="24" value="1">
+                  <input type="number" name="durasi" id="durasi" class="form-control" required min="1" max="24" value="1" required placeholder="Periode Pelatihan">
                 </div>
               </div>
               <div class="form-group">

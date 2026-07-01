@@ -163,6 +163,55 @@ img { max-width: 100%; display: block; }
 .btn-block { width: 100%; }
 
 /* ============== FORM ============== */
+.phone-input-group{
+    display:flex;
+    align-items:center;
+    width:100%;
+    border:1.5px solid var(--color-border);
+    border-radius:var(--radius-md);
+    background:var(--color-card);
+    transition:var(--transition);
+    overflow:hidden;
+}
+.phone-input-group:focus-within{
+    border-color:var(--color-primary);
+    box-shadow:0 0 0 3px rgba(0,123,255,.12);
+}
+.phone-prefix{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:12px 14px;
+    font-family:inherit;
+    font-size:14px;
+    font-weight:500;
+    color:var(--color-text-heading);
+    background:var(--color-bg-section);
+    border-right:1.5px solid var(--color-border);
+    white-space:nowrap;
+    user-select:none;
+}
+
+.phone-input{
+    flex:1;
+    border:none;
+    outline:none;
+    padding:12px 14px;
+    font-family:inherit;
+    font-size:14px;
+    color:var(--color-text-heading);
+    background:transparent;
+}
+.phone-input::placeholder{
+    color:#9ca3af;
+}
+
+.form-text{
+    display:block;
+    margin-top:6px;
+    font-size:12px;
+    color:#6b7280;
+}
 .form-group { margin-bottom: 18px; }
 .form-group label {
   display: block; margin-bottom: 6px; font-weight: 500;

@@ -1,7 +1,3 @@
-/**
- * Registrasi multi-step (4 langkah).
- * Langkah: 1) Akun  2) Data Pribadi  3) Sekolah  4) Grup.
- */
 let currentStep = 1;
 const TOTAL_STEPS = 4;
 
@@ -63,25 +59,61 @@ document.addEventListener('DOMContentLoaded', () => {
 function validateStep(step) {
   const stepEl = document.querySelector(`.form-step[data-step="${step}"]`);
   const inputs = stepEl.querySelectorAll('input[required], select[required]');
+  // Validasi field wajib
   for (const inp of inputs) {
     if (!inp.value || inp.value.trim() === '') {
       inp.focus();
-      const label = inp.previousElementSibling ? inp.previousElementSibling.textContent.replace('*', '').trim() : 'field ini';
+      const label = inp.previousElementSibling
+        ? inp.previousElementSibling.textContent.replace('*', '').trim()
+        : 'field ini';
       UI.toast(`Mohon lengkapi: ${label}`, 'warning');
       return false;
     }
   }
+
   if (step === 1) {
+    const username = stepEl.querySelector('[name="username"]').value.trim();
     const password = stepEl.querySelector('[name="password"]').value;
-    if (password.length < 6) { UI.toast('Password minimal 6 karakter', 'warning'); return false; }
-    const wa = stepEl.querySelector('[name="nomor_whatsapp"]').value.replace(/[^0-9]/g, '');
-    if (!/^[0-9]{8,15}$/.test(wa)) { UI.toast('Nomor WhatsApp tidak valid (8-15 digit)', 'warning'); return false; }
+    if (password.length < 6) {
+      UI.toast('Password minimal 6 karakter', 'warning');
+      return false;
+    }
+    if (password.toLowerCase() === username.toLowerCase()) {
+      UI.toast('Password tidak boleh sama dengan username', 'warning');
+      return false;
+    }
+
+    const waInput = stepEl.querySelector('[name="nomor_whatsapp"]');
+    const wa = waInput.value.trim();
+    if (wa.startsWith('+62')) {
+      UI.toast('Awali nomor dengan angka 8', 'warning');
+      waInput.focus();
+      return false;
+    }
+    const waNumber = wa.replace(/\D/g, '');
+    if (waNumber.startsWith('0') || waNumber.startsWith('62')) {
+      UI.toast('Awali nomor dengan angka 8', 'warning');
+      waInput.focus();
+      return false;
+    }
+    if (!waNumber.startsWith('8')) {
+      UI.toast('Nomor Anda tidak valid', 'warning');
+      waInput.focus();
+      return false;
+    }
+    if (waNumber.length < 9 || waNumber.length > 12) {
+      UI.toast('Nomor WhatsApp harus terdiri dari 9-12 digit', 'warning');
+      waInput.focus();
+      return false;
+    }
   }
+
   if (step === 2) {
     const tglLahir = stepEl.querySelector('[name="tanggal_lahir"]').value;
-    if (Utils.calculateUsia(tglLahir) < CONFIG.MIN_AGE) { UI.toast(`Usia minimal ${CONFIG.MIN_AGE} tahun`, 'warning'); return false; }
-    // const nisnas = stepEl.querySelector('[name="nisnas"]').value;
-    // if (!/^[0-9]+$/.test(nisnas)) { UI.toast('NISN harus berupa angka', 'warning'); return false; }
+    if (Utils.calculateUsia(tglLahir) < CONFIG.MIN_AGE) {
+      UI.toast(`Usia minimal ${CONFIG.MIN_AGE} tahun`, 'warning');
+      return false;
+    }
   }
   return true;
 }
@@ -115,11 +147,10 @@ async function submitForm(e) {
     nama_lengkap: fd.get('nama_lengkap').trim(),
     username: fd.get('username').trim(),
     password: fd.get('password'),
-    nomor_whatsapp: fd.get('nomor_whatsapp').replace(/[^0-9]/g, ''),
+    nomor_whatsapp: '62' + fd.get('nomor_whatsapp').replace(/\D/g, ''),
     jenis_kelamin: fd.get('jenis_kelamin'),
     tempat_lahir: fd.get('tempat_lahir').trim(),
     tanggal_lahir: fd.get('tanggal_lahir'),
-    // nisnas: fd.get('nisnas').trim(),
     asal_sekolah: fd.get('asal_sekolah').trim(),
     kelas_sekolah: fd.get('kelas_sekolah').trim(),
     wali_kelas: fd.get('wali_kelas').trim(),
@@ -161,9 +192,10 @@ function renderClassInfo() {
         </div>
       </div>`).join('');
   }
+
   const select = document.getElementById('kelas');
   if (select) {
     select.innerHTML = '<option value="">- Pilih grup kelas -</option>' +
-      Object.keys(CONFIG.KELAS_DETAIL).map(k => `<option value="${k}">${k} • ${CONFIG.KELAS_DETAIL[k].lokasi}</option>`).join('');
+      Object.keys(CONFIG.KELAS_DETAIL).map(k => `<option value="${k}">${k} • ${CONFIG.KELAS_DETAIL[k].jadwal_label} • ${CONFIG.KELAS_DETAIL[k].lokasi}</option>`).join('');
   }
 }
