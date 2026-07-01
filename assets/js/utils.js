@@ -246,7 +246,7 @@ const Utils = {
         <div class="navbar-inner">
           <a href="index.html" class="navbar-brand">
             <div class="navbar-brand-logo">
-              <img src="assets/images/logo.webp" alt="${CONFIG.BRAND_NAME}" onerror="this.style.display='none';this.parentElement.textContent='🏊';">
+              <img src="assets/images/logo.png" alt="${CONFIG.BRAND_NAME}" onerror="this.style.display='none';this.parentElement.textContent='🏊';">
             </div>
             <span>${CONFIG.BRAND_NAME}</span>
           </a>
