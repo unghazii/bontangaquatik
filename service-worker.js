@@ -20,8 +20,9 @@ const PRECACHE_URLS = [
   './pwa.js',
   '/manifest.json',
   './assets/images/logo.png',
-  './assets/icon-192.png',
-  './assets/icon-512.png',
+  './assets/images/logo.webp',
+  '/assets/images/logo.png',
+  '/assets/images/logo.webp',
 ];
 
 /* ============== INSTALL ============== */
