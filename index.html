@@ -1,113 +1,85 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <link rel="manifest" href="manifest.json">
+  <meta charset="UTF-8">
   <meta name="theme-color" content="#169AC4">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Bontang Aquatik">
-  <link rel="apple-touch-icon" href="assets/images/logo.webp">
-  <link rel="apple-touch-icon" sizes="180x180" href="assets/images/logo.webp">
-  <meta charset="UTF-8">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Bontang Akuatik">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- ===== SEO ===== -->
-  <title>Bontang Aquatik - Kelas Renang Bontang | Pelatih Renang Profesional Kolam Renang Bontang</title>
-  <meta name="description" content="Bontang Aquatik adalah klub pelatihan renang profesional di Bontang. Pelatih bersertifikat, latihan rutin di Kenari Waterpark Bontang (Kenari Waterpark) & Grand Equator Hotel Bontang. Daftar kelas Grup A, B, C sekarang!">
-  <meta name="keywords" content="renang bontang, bontang aquatik, pelatih renang, kenari waterpark, bontang waterpark, kolam renang bontang, Kenari Waterpark Bontang, Grand Equator Hotel Bontang, renang YPK, klub renang bontang, les renang bontang, kursus renang bontang, latihan renang bontang, renang anak bontang">
-  <meta name="author" content="Bontang Aquatik">
+  <!-- ============================== SEO ============================== -->
+  <meta name="description" content="Bontang Akuatik adalah klub pelatihan renang profesional di Bontang. Pelatih bersertifikat, latihan rutin di Kenari Waterpark Bontang (Kenari Waterpark) & Grand Equator Hotel Bontang. Daftar kelas Grup A, B, C sekarang!">
+  <meta name="keywords" content="renang bontang, bontang akuatik, pelatih renang, kenari waterpark, bontang waterpark, kolam renang bontang, Kenari Waterpark Bontang, Grand Equator Hotel Bontang, renang YPK, klub renang bontang, les renang bontang, kursus renang bontang, latihan renang bontang, renang anak bontang">
+  <meta name="author" content="Bontang Akuatik">
   <meta name="robots" content="index, follow">
   <meta name="geo.region" content="ID-KI">
   <meta name="geo.placename" content="Bontang, Kalimantan Timur">
-
-  <!-- OpenGraph / Facebook -->
+  <!-- ============================== OpenGraph FACEBOOK ============================== -->
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Bontang Aquatik - Kelas Pelatihan Renang Profesional di Bontang">
+  <meta property="og:title" content="Bontang Akuatik - Kelas Pelatihan Renang Profesional di Bontang">
   <meta property="og:description" content="Klub pelatihan renang profesional di Bontang. Latihan di Kenari Waterpark Bontang & Ekuator dengan pelatih bersertifikat.">
   <meta property="og:image" content="assets/images/logo.webp">
   <meta property="og:locale" content="id_ID">
-  <meta property="og:site_name" content="Bontang Aquatik">
-
-  <!-- Twitter -->
+  <meta property="og:site_name" content="Bontang Akuatik">
+  <!-- ============================== TWITTER ============================== -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Bontang Aquatik - Kelas Renang Bontang">
+  <meta name="twitter:title" content="Bontang Akuatik - Kelas Renang Bontang">
   <meta name="twitter:description" content="Klub pelatihan renang profesional di Bontang dengan pelatih bersertifikat.">
   <meta name="twitter:image" content="assets/images/logo.webp">
-
-  <!-- PWA -->
+  
   <link rel="manifest" href="manifest.json">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Bontang Aquatik">
-  <meta name="theme-color" content="#169AC4">
-
-  <!-- ===== FAVICON ===== -->
-  <link rel="icon" type="image/jpeg" href="assets/images/logo.webp">
   <link rel="apple-touch-icon" href="assets/images/logo.webp">
-
-  <!-- ===== Structured Data (JSON-LD) ===== -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "SportsActivityLocation",
-    "name": "Bontang Aquatik",
-    "description": "Klub pelatihan renang profesional di Bontang dengan pelatih bersertifikat. Latihan di Kenari Waterpark Bontang dan Grand Equator Hotel Bontang.",
-    "image": "assets/images/logo.webp",
-    "address": {
-      "@type": "PostalAddress",
-      "addressLocality": "Bontang",
-      "addressRegion": "Kalimantan Timur",
-      "addressCountry": "ID"
-    },
-    "sport": "Swimming",
-    "telephone": "+62816679671",
-    "areaServed": "Bontang",
-    "keywords": "renang bontang, bontang aquatik, pelatih renang, kenari waterpark, bontang waterpark, kolam renang bontang, Kenari Waterpark Bontang, Grand Equator Hotel Bontang"
-  }
-  </script>
-
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/images/logo.webp">
+  <link rel="icon" type="image/png" href="assets/images/logo.png">
   <link rel="stylesheet" href="assets/css/global.css">
   <link rel="stylesheet" href="assets/css/navbar.css">
   <link rel="stylesheet" href="assets/css/home.css">
   <link rel="stylesheet" href="assets/css/pwa.css">
 
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#169AC4">
+  <!-- ============================== STRUKTUR DATA ============================== -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SportsActivityLocation",
+      "name": "Bontang Akuatik",
+      "description": "Klub pelatihan renang profesional di Bontang dengan pelatih bersertifikat. Latihan di Kenari Waterpark Bontang dan Grand Equator Hotel Bontang.",
+      "image": "assets/images/logo.webp",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Bontang",
+        "addressRegion": "Kalimantan Timur",
+        "addressCountry": "ID"
+      },
+      "sport": "Swimming",
+      "telephone": "+62816679671",
+      "areaServed": "Bontang",
+      "keywords": "renang bontang, bontang akuatik, pelatih renang, kenari waterpark, bontang waterpark, kolam renang bontang, Kenari Waterpark Bontang, Grand Equator Hotel Bontang"
+    }
+  </script>
 
-  <!-- iOS-specific (agar terbuka tanpa Safari UI saat dipasang) -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Bontang Aquatik">
-  <link rel="apple-touch-icon" href="assets/images/logo.webp">
-  <link rel="apple-touch-icon" sizes="180x180" href="assets/images/logo.webp">
-
+  <title>Bontang Akuatik - Kelas Renang Bontang | Pelatih Renang Profesional Kolam Renang Bontang</title>
 </head>
 
 <body>
-
-  <!-- ============================== HERO (UPGRADED) ============================== -->
+  <!-- ============================== HERO ============================== -->
   <section class="hero" id="hero">
-    <!-- Layer dekoratif -->
     <div class="hero-bubbles" id="hero-bubbles" aria-hidden="true"></div>
-
     <div class="hero-inner">
       <div class="hero-copy">
-        <h1>Kelas Renang Profesional <span>Bontang Aquatik</span></h1>
+        <h1>Kelas Renang Profesional <span>Bontang Akuatik</span></h1>
         <p>Klub pelatihan renang terbaik di Bontang dengan pelatih profesional. Tingkatkan kemampuan renangmu dengan kelas pelatihan terstruktur dan menyenangkan.</p>
         <div class="hero-buttons">
           <a href="registrasi.html" class="btn btn-primary">Daftar Sekarang →</a>
-          <!-- <a href="#kelas" class="btn btn-secondary">Lihat Kelas Tersedia</a> -->
           <a href="login.html" class="btn btn-secondary">Masuk Pelatihan</a>
         </div>
       </div>
       <div class="hero-image">
-        <img src="assets/images/hero.jpeg" alt="Latihan Renang Bontang Aquatik" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+        <img src="assets/images/hero.jpeg" alt="Latihan Renang Bontang Akuatik" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
         <div class="hero-image-placeholder" style="display:none;">🏊‍♂️</div>
       </div>
     </div>
-
     <!-- Ombak bawah (timbul + shadow) -->
     <div class="hero-wave" aria-hidden="true">
       <svg viewBox="0 0 1440 120" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
@@ -117,13 +89,13 @@
     </div>
   </section>
 
-  <!-- TENTANG -->
+  <!-- ============================== TENTANG ============================== -->
   <section class="section" id="tentang">
     <div class="container">
       <div class="section-header">
         <span class="label">Tentang Kami</span>
         <h2>Klub Renang Terpercaya di Bontang</h2>
-        <p>Bontang Aquatik menyediakan kelas pelatihan renang dengan kurikulum terstruktur untuk semua level. Didukung pelatih profesional dan fasilitas terbaik di Bontang.</p>
+        <p>Bontang Akuatik menyediakan kelas pelatihan renang dengan kurikulum terstruktur untuk semua level. Didukung pelatih profesional dan fasilitas terbaik di Bontang.</p>
       </div>
       <div class="profile-grid">
         <div class="card profile-card">
@@ -145,13 +117,13 @@
     </div>
   </section>
 
-  <!-- ===== KELAS TERSEDIA (Request 6) ===== -->
+  <!-- ============================== KELAS TERSEDIA ============================== -->
   <section class="section section-alt" id="kelas">
     <div class="container">
       <div class="section-header">
         <span class="label">Pilihan Kelas</span>
         <h2>Kelas Pelatihan yang Tersedia</h2>
-        <p>Pilih grup yang paling cocok dengan kebutuhan dan jadwal Anda. Semua kelas didampingi pelatih profesional Bontang Aquatik.</p>
+        <p>Pilih grup yang paling cocok dengan kebutuhan dan jadwal Anda. Semua kelas didampingi pelatih profesional Bontang Akuatik.</p>
       </div>
       <div class="schedule-grid" id="schedule-grid">
         <!-- Auto-rendered by home.js -->
@@ -159,26 +131,12 @@
     </div>
   </section>
 
-  <!-- ===== JADWAL LATIHAN (Request 7 - Kids Friendly) ===== -->
-  <!-- <section class="section schedule-section" id="jadwal">
-    <div class="container">
-      <div class="section-header">
-        <span class="label">Jadwal Latihan</span>
-        <h2>Yuk Cek Jadwal Renang Kamu!</h2>
-        <p>Pilih tim sesuai jadwal yang kamu suka.</p>
-      </div>
-      <div class="schedule-grid" id="schedule-grid"> -->
-        <!-- Auto-rendered by home.js -->
-      <!-- </div>
-    </div>
-  </section> -->
-
-  <!-- PWA -->
+  <!-- ============================== PWA ============================== -->
   <section class="section" id="install-app" aria-labelledby="install-app-title">
   <div class="container">
     <div class="section-header">
       <span class="label">Aplikasi Mobile</span>
-      <h2 id="install-app-title">Download Aplikasi Bontang Aquatik di Perangkat Anda</h2>
+      <h2 id="install-app-title">Download Aplikasi Bontang Akuatik di Perangkat Anda</h2>
       <p>Pengalaman lebih mudah dan sederhana dengan sistem aplikasi digital.</p>
     </div>
 
@@ -188,34 +146,30 @@
         <span class="pwa-eyebrow">Progressive Web App</span>
         <h3>Akses Cepat,<br><span class="pwa-highlight">Tanpa Buka Browser</span></h3>
         <p class="pwa-lead">
-          Pasang situs Bontang Aquatik sebagai aplikasi langsung dari beranda ponsel Anda.
+          Download situs Bontang Akuatik sebagai aplikasi langsung dari beranda ponsel Anda.
           Tampilan fullscreen, loading instan, dan tetap bisa dibuka saat sinyal lemah.
         </p>
 
         <ul class="pwa-features" role="list">
           <li class="pwa-feature">
-            <!-- <span class="pwa-feature-icon" aria-hidden="true">⚡</span> -->
             <div>
               <h4>Loading Instan</h4>
               <p>Aset di-cache otomatis sehingga aplikasi terbuka dalam hitungan detik.</p>
             </div>
           </li>
           <li class="pwa-feature">
-            <!-- <span class="pwa-feature-icon" aria-hidden="true">📱</span> -->
             <div>
               <h4>Tampilan Fullscreen</h4>
               <p>Berjalan tanpa address bar dan tab browser — terasa seperti aplikasi native.</p>
             </div>
           </li>
           <li class="pwa-feature">
-            <!-- <span class="pwa-feature-icon" aria-hidden="true">📶</span> -->
             <div>
               <h4>Mode Offline</h4>
               <p>Tetap dapat dibuka untuk melihat jadwal & informasi saat tidak ada koneksi.</p>
             </div>
           </li>
           <li class="pwa-feature">
-            <!-- <span class="pwa-feature-icon" aria-hidden="true">🪶</span> -->
             <div>
               <h4>Hemat Memori</h4>
               <p>Ukuran kurang dari 1 MB. Tanpa Play Store, tanpa proses pemasangan rumit.</p>
@@ -226,7 +180,6 @@
         <div class="pwa-cta">
           <button id="pwa-install-btn" class="btn btn-accent btn-lg pwa-install-btn" type="button"
                   aria-describedby="pwa-install-status">
-            <!-- <span class="pwa-btn-icon" aria-hidden="true">⬇</span> -->
             <span class="pwa-btn-label">Download Aplikasi</span>
           </button>
           <span class="pwa-install-status" id="pwa-install-status">Gratis dan Mudah</span>
@@ -259,7 +212,7 @@
             </div>
             <div class="pwa-phone-hero">
               <div class="pwa-phone-logo">🏊</div>
-              <div class="pwa-phone-title">Bontang Aquatik</div>
+              <div class="pwa-phone-title">Bontang Akuatik</div>
               <div class="pwa-phone-sub">Sekolah Renang Profesional</div>
               <div class="pwa-phone-cta">Daftar Sekarang</div>
             </div>
@@ -292,7 +245,7 @@
               <img src="assets/images/logo.webp">
             </div>
           <div>
-            <strong>Terpasang</strong>
+            <strong>Terinstall</strong>
             <span>Di beranda Anda</span>
           </div>
         </div>
@@ -301,18 +254,15 @@
   </div>
 </section>
 
-  <!-- GALLERY -->
+  <!-- ============================== GALERY ============================== -->
   <section class="section section-alt" id="galeri">
     <div class="container">
       <div class="section-header">
         <span class="label">Galeri</span>
         <h2>Momen Kegiatan Latihan</h2>
-        <p>Lihat keseruan kegiatan latihan dan momen tak terlupakan dari para peserta Bontang Aquatik.</p>
+        <p>Lihat keseruan kegiatan latihan dan momen tak terlupakan dari para peserta Bontang Akuatik.</p>
       </div>
       <div class="gallery-grid">
-        <!-- <img src="assets/images/gallery/foto1.jpeg" alt="Latihan Renang Bontang">
-        <img src="assets/images/gallery/foto2.jpeg" alt="Latihan Renang Bontang">
-        <img src="assets/images/gallery/foto3.jpeg" alt="Latihan Renang Bontang"> -->
         <img src="assets/images/gallery/foto4.jpeg" alt="Latihan Renang Bontang">
         <img src="assets/images/gallery/foto5.jpeg" alt="Latihan Renang Bontang">
         <img src="assets/images/gallery/foto6.jpeg" alt="Latihan Renang Bontang">
@@ -320,16 +270,16 @@
     </div>
   </section>
 
-  <!-- CTA -->
+  <!-- ============================== CTA ============================== -->
   <section class="container">
     <div class="cta-section">
       <h2>Siap Mulai Belajar Renang?</h2>
-      <p>Daftarkan buah hati Anda di Bontang Aquatik dan rasakan pengalaman belajar renang yang menyenangkan dan terstruktur bersama pelatih profesional.</p>
+      <p>Daftarkan buah hati Anda di Bontang Akuatik dan rasakan pengalaman belajar renang yang menyenangkan dan terstruktur bersama pelatih profesional.</p>
       <a href="registrasi.html" class="btn btn-primary">Daftar Sekarang →</a>
     </div>
   </section>
 
-  <!-- KONTAK -->
+  <!-- ============================== KONTAK ============================== -->
   <section class="section section-alt" id="kontak">
     <div class="container">
       <div class="section-header">
@@ -360,12 +310,12 @@
     </div>
   </section>
 
-  <!-- ============== SECTION BERITA (Hidden by default; ditampilkan jika ada data) ============== -->
+  <!-- ============================== BERITA ============================== -->
   <section class="section news-section hidden" id="berita">
     <div class="container">
       <div class="section-header">
         <span class="label">📰 Berita Terbaru</span>
-        <h2>Informasi & Berita Bontang Aquatik</h2>
+        <h2>Informasi & Berita Bontang Akuatik</h2>
         <p>Info lomba, tips renang, dan kabar terbaru dari pelatih.</p>
       </div>
       <div class="news-carousel-wrapper">

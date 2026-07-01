@@ -1,28 +1,3 @@
-/* ============================================================================
-   BONTANG AQUATIK — PWA CONTROLLER
-   Versi profesional, fleksibel, lintas OS (iOS / Android / Windows / macOS /
-   Linux / ChromeOS) & lintas browser (Chrome / Edge / Safari / Firefox /
-   Samsung Internet / Opera / Brave / in-app webview).
-
-   Prinsip:
-   1. Tidak ada API untuk "memaksa" Chrome menganggap installable — itu murni
-      heuristik browser. Yang dilakukan modul ini:
-        a. Memperbaiki penyebab UMUM gagal installable (service worker /
-           manifest tidak termuat karena redirect Cloudflare / mixed content).
-        b. Mendeteksi secure-context dengan benar (window.isSecureContext),
-           bukan sekadar cek "https:" — sehingga localhost & 127.0.0.1 valid.
-        c. Menyediakan fallback install MANUAL yang selalu bekerja untuk setiap
-           kombinasi OS + browser. Tombol "Pasang" DIJAMIN selalu bereaksi.
-   2. Semua nama class / id UI dipertahankan agar pwa.css lama tetap kompatibel.
-
-   Konfigurasi opsional lewat atribut pada <script>:
-     <script src="pwa.js"
-             data-sw="/service-worker.js"
-             data-scope="/"
-             data-manifest="/manifest.json"
-             data-debug="true"></script>
-   ============================================================================ */
-
 (function () {
   'use strict';
 
@@ -187,7 +162,7 @@
       this.setupConnectionWatch();
       this.refreshUI();
 
-      // Auto-popup banner (sopan: hanya jika belum dismiss & belum terpasang)
+      // Auto-popup banner (sopan: hanya jika belum dismiss & belum terUnduh)
       if (!this.isInstalled() && !this.isDismissed() && !this.env().isInApp) {
         // Android/desktop Chromium: banner dipicu oleh beforeinstallprompt.
         // Selain itu (iOS, Safari desktop, Firefox, dll) tampilkan setelah delay.
@@ -328,7 +303,7 @@
         this.hideBanner();
         this.hideModal();
         this.refreshUI();
-        this.toast('Aplikasi berhasil dipasang! 🎉', 'success');
+        this.toast('Aplikasi berhasil di download! 🎉', 'success');
         this._log('[PWA] App installed.');
       });
 
@@ -414,9 +389,9 @@
       const e = this.env();
 
       if (this.isInstalled()) {
-        if (labelEl)  labelEl.textContent  = 'Aplikasi Sudah Terpasang';
+        if (labelEl)  labelEl.textContent  = 'Aplikasi Sudah Terinstall';
         if (iconEl)   iconEl.textContent   = '✓';
-        if (statusEl) statusEl.textContent = 'Terpasang di perangkat ini';
+        if (statusEl) statusEl.textContent = 'Terinstall di perangkat ini';
         btn.disabled = true;
         btn.classList.add('pwa-installed');
         return;
@@ -430,7 +405,7 @@
         if (iconEl)   iconEl.textContent   = '⬇';
         if (statusEl) statusEl.textContent = 'Gratis · Tanpa Play Store · < 1 MB';
       } else if (e.isIOS) {
-        if (labelEl)  labelEl.textContent  = 'Pasang di iPhone / iPad';
+        if (labelEl)  labelEl.textContent  = 'Install di iPhone / iPad';
         if (iconEl)   iconEl.textContent   = '';
         if (statusEl) statusEl.textContent = 'Lihat panduan singkat untuk iOS';
       } else if (e.isInApp) {
@@ -438,7 +413,7 @@
         if (iconEl)   iconEl.textContent   = '↗';
         if (statusEl) statusEl.textContent = `Buka lewat ${e.isIOS ? 'Safari' : 'Chrome'} untuk memasang`;
       } else {
-        if (labelEl)  labelEl.textContent  = 'Pasang Aplikasi';
+        if (labelEl)  labelEl.textContent  = 'Install Aplikasi';
         if (iconEl)   iconEl.textContent   = '⬇';
         if (statusEl) statusEl.textContent = 'Lihat panduan pemasangan';
       }
@@ -456,7 +431,7 @@
       });
 
       if (this.isInstalled()) {
-        this.toast('Aplikasi sudah terpasang di perangkat Anda.', 'info');
+        this.toast('Aplikasi sudah terinstall di perangkat Anda.', 'info');
         return;
       }
 
@@ -498,8 +473,8 @@
       const e = this.env();
       // Aksi utama: install native bila tersedia, selain itu buka modal panduan.
       const primary = this.deferredPrompt
-        ? `<button class="pwa-banner-btn pwa-banner-btn-primary" data-pwa-action="install">Pasang</button>`
-        : `<button class="pwa-banner-btn pwa-banner-btn-primary" data-pwa-action="modal">Cara Pasang</button>`;
+        ? `<button class="pwa-banner-btn pwa-banner-btn-primary" data-pwa-action="install">Install</button>`
+        : `<button class="pwa-banner-btn pwa-banner-btn-primary" data-pwa-action="modal">Cara Download</button>`;
 
       const html = `
         <div id="pwa-banner" class="pwa-banner" role="status" aria-live="polite">
@@ -510,7 +485,7 @@
             </svg>
           </div>
           <div class="pwa-banner-body">
-            <strong>Pasang aplikasi Bontang Aquatik</strong>
+            <strong>Unduh aplikasi Bontang Aquatik</strong>
             <span>Akses lebih cepat tanpa membuka browser.</span>
           </div>
           <div class="pwa-banner-actions">
@@ -548,11 +523,11 @@
       if (e.isInApp) {
         return {
           title: 'Buka di Browser Terlebih Dahulu',
-          intro: 'Aplikasi tidak bisa dipasang dari dalam browser aplikasi ini. Buka halaman di browser bawaan perangkat, lalu pasang dari sana.',
+          intro: 'Aplikasi tidak bisa diUnduh dari dalam browser aplikasi ini. Buka halaman di browser bawaan perangkat, lalu Unduh dari sana.',
           steps: [
             { icon: menu, text: `Ketuk menu <strong>(${menu} atau …)</strong> di pojok layar.` },
             { icon: '↗',  text: `Pilih <strong>Buka di ${e.isIOS ? 'Safari' : 'Chrome'}</strong> / "Open in browser".` },
-            { icon: '⬇',  text: 'Setelah terbuka di browser, ketuk tombol <strong>Pasang</strong> lagi.' }
+            { icon: '⬇',  text: 'Setelah terbuka di browser, ketuk tombol <strong>Unduh</strong> lagi.' }
           ],
           extraButton: `<button class="btn btn-primary btn-block" data-pwa-action="copy-url">Salin Tautan Halaman</button>`
         };
@@ -562,7 +537,7 @@
       if (e.isIOS) {
         if (e.isSafari) {
           return {
-            title: 'Pasang di iPhone / iPad',
+            title: 'Unduh di iPhone / iPad',
             intro: 'Tambahkan Bontang Aquatik ke Layar Utama lewat Safari.',
             steps: [
               { icon: this._svgShare(), text: 'Ketuk ikon <strong>Bagikan</strong> di bilah bawah Safari.' },
@@ -573,7 +548,7 @@
         }
         // Chrome/Edge/Firefox di iOS → tetap lewat share sheet
         return {
-          title: `Pasang di ${e.osName}`,
+          title: `Unduh di ${e.osName}`,
           intro: `Di iOS, pemasangan dilakukan lewat menu Bagikan ${e.browserName}.`,
           steps: [
             { icon: this._svgShare(), text: 'Ketuk ikon <strong>Bagikan</strong> pada bilah browser.' },
@@ -587,7 +562,7 @@
       if (e.isAndroid) {
         if (e.isFirefox) {
           return {
-            title: 'Pasang di Android (Firefox)',
+            title: 'Unduh di Android (Firefox)',
             intro: 'Tambahkan aplikasi lewat menu Firefox.',
             steps: [
               { icon: menu, text: `Ketuk menu <strong>(${menu})</strong> di pojok kanan atas.` },
@@ -598,7 +573,7 @@
         }
         if (e.isSamsung) {
           return {
-            title: 'Pasang di Android (Samsung Internet)',
+            title: 'Unduh di Android (Samsung Internet)',
             intro: 'Tambahkan aplikasi lewat menu Samsung Internet.',
             steps: [
               { icon: '≡',  text: 'Ketuk menu <strong>(≡)</strong> di bilah bawah.' },
@@ -608,7 +583,7 @@
           };
         }
         return {
-          title: 'Pasang di Android',
+          title: 'Unduh di Android',
           intro: `Tambahkan aplikasi lewat menu ${e.browserName}.`,
           steps: [
             { icon: menu, text: `Ketuk menu <strong>(${menu})</strong> di pojok kanan atas.` },
@@ -621,7 +596,7 @@
       // Desktop — macOS Safari
       if (e.isMac && e.isSafari) {
         return {
-          title: 'Pasang di Mac (Safari)',
+          title: 'Unduh di Mac (Safari)',
           intro: 'Tambahkan aplikasi ke Dock lewat Safari.',
           steps: [
             { icon: this._svgShare(), text: 'Klik menu <strong>Bagikan</strong> di bilah Safari.' },
@@ -646,8 +621,8 @@
 
       // Desktop — Chrome / Edge / Brave / Opera
       return {
-        title: `Pasang di ${e.osName}`,
-        intro: `Pasang Bontang Aquatik sebagai aplikasi desktop lewat ${e.browserName}.`,
+        title: `Unduh di ${e.osName}`,
+        intro: `Unduh Bontang Aquatik sebagai aplikasi desktop lewat ${e.browserName}.`,
         steps: [
           { icon: '⊕', text: 'Klik ikon <strong>Install</strong> (⊕ / monitor dengan panah) di ujung kanan bilah alamat.' },
           { icon: menu, text: `Atau buka menu <strong>(${menu})</strong> → <strong>Cast, save, and share</strong> / <strong>Apps</strong> → <strong>Install this site as an app</strong>.` },
