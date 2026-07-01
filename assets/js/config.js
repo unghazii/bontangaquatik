@@ -174,10 +174,3 @@ function getSemesterPeriode(tanggalMulai) {
   const end   = isSemester1 ? new Date(year, 5, 30) : new Date(year, 11, 31);
   return { start, end, label: isSemester1 ? 'Semester 1' : 'Semester 2' };
 }
-
-/**
- * Helper format Rupiah.
- */
-function formatRupiah(n) {
-  return 'Rp ' + Number(n).toLocaleString('id-ID');
-}

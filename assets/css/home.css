@@ -12,35 +12,6 @@
     radial-gradient(circle at 72% 95%, rgba(255,106,0,0.16) 0%, transparent 42%);
 }
 
-/* --- Spotlight mengikuti kursor --- */
-.hero-spotlight {
-  position: absolute;
-  left: 0;
-  top: 0;
-
-  width: 140px;
-  height: 140px;
-  border-radius: 50%;
-
-  background: radial-gradient(circle,
-    rgba(255,255,255,.22) 0%,
-    rgba(125,211,252,.12) 35%,
-    rgba(56,189,248,.05) 55%,
-    transparent 100%);
-
-  filter: blur(10px);
-
-  pointer-events: none;
-  z-index: 4;
-  opacity: 0;
-  transition: opacity .25s ease;
-  will-change: transform;
-}
-
-.hero.spotlight-active .hero-spotlight {
-  opacity: 1;
-}
-
 /* --- Gelembung kecil yang lahir mengikuti gerak kursor --- */
 .cursor-bubble {
   position: absolute; z-index: 4; border-radius: 50%;   /* di ATAS konten hero */
@@ -556,7 +527,6 @@
 @media (max-width: 968px) {
   .hero { padding: 72px 0 120px; }
   .hero-wave svg { height: 80px; }
-  .hero-spotlight { width: 360px; height: 360px; }
   .hero-inner { grid-template-columns: 1fr; gap: 40px; }
   .hero h1 { font-size: 32px; }
   .profile-grid, .gallery-grid, .contact-grid { grid-template-columns: 1fr; }

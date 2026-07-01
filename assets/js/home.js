@@ -29,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
 function initHeroFX() {
   const hero = document.getElementById('hero');
   if (!hero) return;
-  const spotlight = hero.querySelector('.hero-spotlight');
   const bubbles = document.getElementById('hero-bubbles');
 
   // Gelembung putih ambient (background tidak terkesan solid)
@@ -48,13 +47,11 @@ function initHeroFX() {
   }
 
   // Efek selalu aktif (mengabaikan preferensi reduced-motion atas permintaan)
-  let half = (spotlight ? spotlight.offsetWidth : 520) / 2;
   let tx = 0, ty = 0, cx = 0, cy = 0, raf = null, started = false, lastSpawn = 0;
 
   const loop = () => {
     cx += (tx - cx) * 0.15;
     cy += (ty - cy) * 0.15;
-    if (spotlight) spotlight.style.transform = `translate3d(${cx - half}px, ${cy - half}px, 0)`;
     if (bubbles) {
       const r = hero.getBoundingClientRect();
       const dx = (cx - r.width / 2) / r.width;
@@ -69,7 +66,7 @@ function initHeroFX() {
   const spawnBubble = (x, y) => {
     const b = document.createElement('span');
     b.className = 'cursor-bubble';
-    const size = 6 + Math.random() * 16;
+    const size = 25 + Math.random() * 16;
     b.style.left   = (x + (Math.random() * 24 - 12)) + 'px';
     b.style.top    = y + 'px';
     b.style.width  = size + 'px';
@@ -83,14 +80,11 @@ function initHeroFX() {
     tx = e.clientX - r.left;
     ty = e.clientY - r.top;
     if (!started) { started = true; cx = tx; cy = ty; }  // mulai dari kursor, bukan pojok
-    hero.classList.add('spotlight-active');
     if (!raf) raf = requestAnimationFrame(loop);
 
     const now = performance.now();
     if (now - lastSpawn > 90) { lastSpawn = now; spawnBubble(tx, ty); }
   });
-  hero.addEventListener('pointerleave', () => hero.classList.remove('spotlight-active'));
-  window.addEventListener('resize', () => { half = (spotlight ? spotlight.offsetWidth : 520) / 2; });
 }
 
 /* ===================== KELAS TERSEDIA ===================== */

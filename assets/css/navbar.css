@@ -101,51 +101,211 @@
 .navbar-toggle:focus-visible { outline: none; box-shadow: var(--shadow-glow); }
 
 /* ====== SWITCH TEMA MODERN (interaktif, selalu terlihat) ====== */
-.theme-switch {
-  --tsw-w: 58px; --tsw-h: 30px; --tsw-pad: 3px;
-  width: var(--tsw-w); height: var(--tsw-h);
-  padding: 0; border: none; background: none; cursor: pointer;
-  flex-shrink: 0; border-radius: 999px;
-  -webkit-tap-highlight-color: transparent;
+/* ======================================================
+   MODERN THEME BUTTON
+   Glassmorphism + Soft Neumorphism
+   ====================================================== */
+
+.theme-switch{
+    --size:44px;
+
+    position:relative;
+    width:var(--size);
+    height:var(--size);
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    border:none;
+    outline:none;
+    cursor:pointer;
+
+    border-radius:16px;
+
+    padding:0;
+
+    color:var(--color-text-heading);
+
+    background:rgba(255,255,255,.18);
+
+    backdrop-filter:blur(18px) saturate(180%);
+    -webkit-backdrop-filter:blur(18px) saturate(180%);
+
+    border:1px solid rgba(255,255,255,.28);
+
+    box-shadow:
+        inset 1px 1px 0 rgba(255,255,255,.45),
+        inset -1px -1px 0 rgba(255,255,255,.08),
+        0 8px 24px rgba(0,0,0,.12);
+
+    transition:
+        transform .28s cubic-bezier(.22,1,.36,1),
+        box-shadow .28s,
+        background .28s,
+        border-color .28s;
 }
-.theme-switch:focus-visible { outline: none; box-shadow: var(--shadow-glow); border-radius: 999px; }
-.theme-switch__track {
-  position: relative; display: block; width: 100%; height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #f6c453 0%, #ff9d2f 100%);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.18);
-  transition: background 0.4s ease;
-  overflow: hidden;
+
+.theme-switch:hover{
+
+    transform:
+        translateY(-2px)
+        scale(1.04);
+
+    background:rgba(255,255,255,.24);
+
+    box-shadow:
+        inset 1px 1px 0 rgba(255,255,255,.55),
+        0 12px 30px rgba(0,0,0,.18);
 }
-.theme-switch.is-dark .theme-switch__track {
-  background: linear-gradient(135deg, #1e293b 0%, #0b1220 100%);
-  border-color: rgba(255, 255, 255, 0.12);
+
+.theme-switch:active{
+
+    transform:
+        scale(.95);
+
+    box-shadow:
+        inset 0 3px 8px rgba(0,0,0,.18);
 }
-.theme-switch__ico {
-  position: absolute; top: 50%; transform: translateY(-50%);
-  width: 16px; height: 16px; display: flex; align-items: center; justify-content: center;
-  transition: opacity 0.3s ease;
+
+.theme-switch:focus-visible{
+
+    outline:none;
+
+    box-shadow:
+        0 0 0 4px rgba(56,189,248,.20),
+        0 12px 30px rgba(0,0,0,.18);
 }
-.theme-switch__ico svg { width: 14px; height: 14px; }
-.theme-switch__ico--sun  { left: 7px;  color: #fff7e6; opacity: 1; }
-.theme-switch__ico--moon { right: 7px; color: #cdd9ff; opacity: 0; }
-.theme-switch.is-dark .theme-switch__ico--sun  { opacity: 0; }
-.theme-switch.is-dark .theme-switch__ico--moon { opacity: 1; }
-.theme-switch__thumb {
-  position: absolute; top: var(--tsw-pad); left: var(--tsw-pad);
-  width: calc(var(--tsw-h) - var(--tsw-pad) * 2);
-  height: calc(var(--tsw-h) - var(--tsw-pad) * 2);
-  border-radius: 50%; background: #fff;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.30);
-  transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+
+/* ===========================
+        ICON
+=========================== */
+
+.theme-switch svg{
+
+    width:22px;
+    height:22px;
+
+    position:absolute;
+
+    transition:
+        opacity .45s ease,
+        transform .55s cubic-bezier(.22,1,.36,1),
+        color .35s ease;
 }
-.theme-switch.is-dark .theme-switch__thumb {
-  transform: translateX(calc(var(--tsw-w) - var(--tsw-h)));
-  background: #e8eefc;
+
+
+/* SUN */
+
+.theme-switch .icon-sun{
+
+    color:#FDB813;
+
+    opacity:1;
+
+    transform:
+        rotate(0deg)
+        scale(1);
 }
-.theme-switch:hover .theme-switch__thumb { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.40); }
-.theme-switch:active .theme-switch__thumb { width: calc(var(--tsw-h) - var(--tsw-pad) * 2 + 4px); }
+
+
+/* MOON */
+
+.theme-switch .icon-moon{
+
+    color:#D7E5FF;
+
+    opacity:0;
+
+    transform:
+        rotate(-90deg)
+        scale(.35);
+}
+
+
+/* ===========================
+      DARK MODE
+=========================== */
+
+.theme-switch.is-dark{
+
+    background:rgba(25,30,40,.38);
+
+    border:1px solid rgba(255,255,255,.10);
+
+    box-shadow:
+        inset 1px 1px 0 rgba(255,255,255,.05),
+        inset -1px -1px 0 rgba(0,0,0,.35),
+        0 10px 30px rgba(0,0,0,.35);
+}
+
+.theme-switch.is-dark .icon-sun{
+
+    opacity:0;
+
+    transform:
+        rotate(90deg)
+        scale(.35);
+}
+
+.theme-switch.is-dark .icon-moon{
+
+    opacity:1;
+
+    transform:
+        rotate(0deg)
+        scale(1);
+}
+
+
+/* Ripple kecil */
+
+.theme-switch::after{
+
+    content:"";
+
+    position:absolute;
+
+    inset:0;
+
+    border-radius:inherit;
+
+    background:radial-gradient(circle,
+        rgba(255,255,255,.35),
+        transparent 70%);
+
+    opacity:0;
+
+    transform:scale(.5);
+
+    transition:.45s;
+}
+
+.theme-switch:active::after{
+
+    opacity:1;
+
+    transform:scale(1.4);
+}
+
+
+/* Responsive */
+
+@media (max-width:768px){
+
+    .theme-switch{
+
+        --size:40px;
+    }
+
+    .theme-switch svg{
+
+        width:20px;
+        height:20px;
+    }
+
+}
 
 /* User info */
 .user-info {

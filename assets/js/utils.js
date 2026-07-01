@@ -189,21 +189,40 @@ const Utils = {
     const session = Auth.getSession();
     const isDark = Theme.get() === 'dark';
 
-    // Switch tema modern — HANYA untuk pengunjung (belum login).
-    // Untuk admin & peserta, kontrol tema dipindah ke menu Pengaturan.
     const themeSwitchHtml = (!session) ? `
-      <button type="button" id="theme-switch" class="theme-switch ${isDark ? 'is-dark' : ''}" role="switch"
-        aria-checked="${isDark ? 'true' : 'false'}" aria-label="Ganti tema gelap/terang" title="Ganti tema gelap/terang">
-        <span class="theme-switch__track">
-          <span class="theme-switch__ico theme-switch__ico--sun" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-          </span>
-          <span class="theme-switch__ico theme-switch__ico--moon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
-          </span>
-          <span class="theme-switch__thumb" aria-hidden="true"></span>
-        </span>
-      </button>` : '';
+<button
+    type="button"
+    id="theme-switch"
+    class="theme-switch ${isDark ? 'is-dark' : ''}"
+    aria-label="Toggle Theme"
+    title="Toggle Theme">
+
+    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+
+        <circle cx="12" cy="12" r="5"/>
+
+        <line x1="12" y1="1" x2="12" y2="3"/>
+        <line x1="12" y1="21" x2="12" y2="23"/>
+
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+
+        <line x1="1" y1="12" x2="3" y2="12"/>
+        <line x1="21" y1="12" x2="23" y2="12"/>
+
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+
+    </svg>
+
+    <svg class="icon-moon" viewBox="0 0 24 24" fill="currentColor">
+
+        <path d="M21 12.8A9 9 0 1111.2 3a7 7 0 109.8 9.8z"/>
+
+    </svg>
+
+</button>
+` : '';
 
     let userBlock = '';
     if (session && session.role === 'peserta') {

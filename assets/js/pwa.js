@@ -15,7 +15,7 @@ const PWA = {
   KEY_INSTALLED:  'pwa_installed',
   DISMISS_DAYS:   7,
   BANNER_DELAY:   3000,
-  SW_PATH:        'assets/js/service-worker.js',
+  SW_PATH:        '/service-worker.js',
 
   /* ---------- STATE ---------- */
   deferredPrompt: null,

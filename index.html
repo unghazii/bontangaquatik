@@ -75,9 +75,6 @@
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#169AC4">
 
-  <!-- Stylesheet PWA (WAJIB agar modal & banner terlihat) -->
-  <link rel="stylesheet" href="assets/css/pwa.css">
-
   <!-- iOS-specific (agar terbuka tanpa Safari UI saat dipasang) -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -87,14 +84,12 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icon-180.png">
 
 </head>
-<script src="assets/js/pwa.js" defer></script>
-<!-- <script src="pwa.js" defer></script> -->
+
 <body>
 
   <!-- ============================== HERO (UPGRADED) ============================== -->
   <section class="hero" id="hero">
     <!-- Layer dekoratif -->
-    <div class="hero-spotlight" aria-hidden="true"></div>
     <div class="hero-bubbles" id="hero-bubbles" aria-hidden="true"></div>
 
     <div class="hero-inner">
@@ -381,12 +376,12 @@
   </section>
 
   <script src="manifest.json"></script>
-  <script src="manifest.json"></script>
   <script src="assets/js/config.js"></script>
   <script src="assets/js/utils.js"></script>
   <script src="assets/js/auth.js"></script>
   <script src="assets/js/api.js"></script>
   <script src="assets/js/home.js"></script>
+  <script src="assets/js/pwa.js"></script>
   <script>
     document.getElementById('contact-email').href = 'mailto:' + CONFIG.CONTACT.email;
     document.getElementById('contact-email').textContent = CONFIG.CONTACT.email + ' →';
