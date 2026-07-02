@@ -904,13 +904,20 @@ async function saveBerita(id) {
 }
 
 async function deleteBeritaConfirm(id, judul) {
-  const ok = await Utils.confirm(`Hapus berita <strong>"${judul}"</strong>?`);
+  const safeJudul = Utils.escapeHtml(judul);
+  const ok = await Utils.confirm(
+    `Hapus berita <strong>"${safeJudul}"</strong>?`
+  );
   if (!ok) return;
   Utils.showLoader(true);
   const res = await API.call('deleteBerita', { id });
   Utils.showLoader(false);
-  if (res.success) { Utils.notify(res.message, 'success'); await loadBerita(); }
-  else Utils.notify(res.message, 'error');
+  if (res.success) {
+    Utils.notify(res.message, 'success');
+    await loadBerita();
+  } else {
+    Utils.notify(res.message, 'error');
+  }
 }
 
 // =============================================================

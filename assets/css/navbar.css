@@ -1,4 +1,3 @@
-/* ================== NAVBAR — Layout Fleksibel & Kontras (Request 3 & 4) ================== */
 .navbar {
   position: sticky; top: 0; z-index: 100;
   background: var(--color-card);
@@ -63,8 +62,6 @@
   width: 24px; height: 2px;
   background: var(--color-primary); border-radius: 2px;
 }
-
-/* === REQUEST 4: Tombol "Daftar Sekarang" — kontras tinggi (orange + putih) === */
 .nav-cta {
   background: var(--color-accent) !important;
   color: #FFFFFF !important;            /* PUTIH MURNI agar kontras */
@@ -82,13 +79,11 @@
   transform: translateY(-1px);
 }
 
-/* Cluster kanan yang SELALU terlihat (di luar menu yang bisa collapse) */
 .navbar-end {
   display: flex; align-items: center; gap: 10px;
   flex-shrink: 0;
 }
 
-/* Toggle mobile */
 .navbar-toggle {
   display: none;
   background: none; border: none;
@@ -99,46 +94,28 @@
 }
 .navbar-toggle:hover { color: var(--color-accent); }
 .navbar-toggle:focus-visible { outline: none; box-shadow: var(--shadow-glow); }
-
-/* ====== SWITCH TEMA MODERN (interaktif, selalu terlihat) ====== */
-/* ======================================================
-   MODERN THEME BUTTON
-   Glassmorphism + Soft Neumorphism
-   ====================================================== */
-
 .theme-switch{
     --size:44px;
-
     position:relative;
     width:var(--size);
     height:var(--size);
-
     display:flex;
     align-items:center;
     justify-content:center;
-
     border:none;
     outline:none;
     cursor:pointer;
-
     border-radius:16px;
-
     padding:0;
-
     color:var(--color-text-heading);
-
     background:rgba(255,255,255,.18);
-
     backdrop-filter:blur(18px) saturate(180%);
     -webkit-backdrop-filter:blur(18px) saturate(180%);
-
     border:1px solid rgba(255,255,255,.28);
-
     box-shadow:
         inset 1px 1px 0 rgba(255,255,255,.45),
         inset -1px -1px 0 rgba(255,255,255,.08),
         0 8px 24px rgba(0,0,0,.12);
-
     transition:
         transform .28s cubic-bezier(.22,1,.36,1),
         box-shadow .28s,
@@ -147,93 +124,56 @@
 }
 
 .theme-switch:hover{
-
     transform:
         translateY(-2px)
         scale(1.04);
-
     background:rgba(255,255,255,.24);
-
     box-shadow:
         inset 1px 1px 0 rgba(255,255,255,.55),
         0 12px 30px rgba(0,0,0,.18);
 }
 
 .theme-switch:active{
-
     transform:
         scale(.95);
-
     box-shadow:
         inset 0 3px 8px rgba(0,0,0,.18);
 }
 
 .theme-switch:focus-visible{
-
     outline:none;
-
     box-shadow:
         0 0 0 4px rgba(56,189,248,.20),
         0 12px 30px rgba(0,0,0,.18);
 }
 
-
-/* ===========================
-        ICON
-=========================== */
-
 .theme-switch svg{
-
     width:22px;
     height:22px;
-
     position:absolute;
-
     transition:
         opacity .45s ease,
         transform .55s cubic-bezier(.22,1,.36,1),
         color .35s ease;
 }
-
-
-/* SUN */
-
 .theme-switch .icon-sun{
-
     color:#FDB813;
-
     opacity:1;
-
     transform:
         rotate(0deg)
         scale(1);
 }
-
-
-/* MOON */
-
 .theme-switch .icon-moon{
-
     color:#D7E5FF;
-
     opacity:0;
-
     transform:
         rotate(-90deg)
         scale(.35);
 }
 
-
-/* ===========================
-      DARK MODE
-=========================== */
-
 .theme-switch.is-dark{
-
     background:rgba(25,30,40,.38);
-
     border:1px solid rgba(255,255,255,.10);
-
     box-shadow:
         inset 1px 1px 0 rgba(255,255,255,.05),
         inset -1px -1px 0 rgba(0,0,0,.35),
@@ -241,73 +181,47 @@
 }
 
 .theme-switch.is-dark .icon-sun{
-
     opacity:0;
-
     transform:
         rotate(90deg)
         scale(.35);
 }
 
 .theme-switch.is-dark .icon-moon{
-
     opacity:1;
-
     transform:
         rotate(0deg)
         scale(1);
 }
 
-
-/* Ripple kecil */
-
 .theme-switch::after{
-
     content:"";
-
     position:absolute;
-
     inset:0;
-
     border-radius:inherit;
-
     background:radial-gradient(circle,
         rgba(255,255,255,.35),
         transparent 70%);
-
     opacity:0;
-
     transform:scale(.5);
-
     transition:.45s;
 }
 
 .theme-switch:active::after{
-
     opacity:1;
-
     transform:scale(1.4);
 }
 
-
-/* Responsive */
-
 @media (max-width:768px){
-
     .theme-switch{
-
         --size:40px;
     }
-
     .theme-switch svg{
-
         width:20px;
         height:20px;
     }
-
 }
 
-/* User info */
 .user-info {
   display: flex; align-items: center; gap: 10px;
   color: var(--color-text-heading); font-size: 13px;
@@ -319,16 +233,12 @@
 }
 .user-info span { font-weight: 500; }
 
-/* ================== RESPONSIVE ================== */
-
-/* Tablet: kompakkan link */
 @media (max-width: 992px) {
   .navbar-menu { gap: 14px; }
   .nav-link { padding: 8px 10px; font-size: 13px; }
   .navbar-brand span { font-size: 16px; }
 }
 
-/* Mobile: collapse */
 @media (max-width: 768px) {
   .navbar-toggle { display: block; }
   .navbar-menu {
@@ -354,14 +264,11 @@
     border-top: 1px solid var(--color-border);
     padding-top: 12px; margin-top: 4px;
   }
-  .navbar-actions .theme-toggle {
-    width: 100%; height: 42px; border-radius: var(--radius-md);
-  }
   .nav-cta { width: 100%; text-align: center; }
   .user-info { width: 100%; justify-content: space-between; }
 }
 
-/* ================== FOOTER (dengan maps carousel - request 5) ================== */
+/* ================== FOOTER ================== */
 .footer {
   background: var(--color-bg-section); color: var(--color-text-secondary);
   padding: 50px 0 20px; margin-top: 80px;

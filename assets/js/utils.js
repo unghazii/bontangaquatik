@@ -1,43 +1,41 @@
-/* ============================================
-   THEME SWITCHER (anti-FOUC: apply sebelum DOM ready)
-   ============================================ */
+/* ============================== THEME ============================== */
 const Theme = {
   KEY: 'swim_theme',
-  get() { return localStorage.getItem(this.KEY) || this.systemPreference(); },
-  systemPreference() {
-    return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+  
+  get() {
+    return localStorage.getItem(this.KEY) || 'light';
   },
   apply(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem(this.KEY, theme);
-    const isDark = theme === 'dark';
-    // Backward-compat: tombol emoji lama (jika masih ada di halaman).
-    const btn = document.getElementById('theme-toggle-btn');
-    if (btn) btn.innerHTML = isDark ? '☀️' : '🌙';
-    // Switch modern: perbarui state aria + kelas untuk animasi thumb.
+    const currentTheme = (theme === 'dark') ? 'dark' : 'light';
+    const isDark = currentTheme === 'dark';
+    document.documentElement.setAttribute('data-theme', currentTheme);
+    localStorage.setItem(this.KEY, currentTheme);
     document.querySelectorAll('.theme-switch').forEach(sw => {
       sw.classList.toggle('is-dark', isDark);
-      sw.setAttribute('aria-checked', isDark ? 'true' : 'false');
+      sw.setAttribute('aria-checked', String(isDark));
     });
     let meta = document.querySelector('meta[name="theme-color"]');
     if (!meta) {
-      meta = document.createElement('meta'); meta.name = 'theme-color'; document.head.appendChild(meta);
+      meta = document.createElement('meta');
+      meta.name = 'theme-color';
+      document.head.appendChild(meta);
     }
     meta.content = isDark ? '#0B0F12' : '#FFFFFF';
   },
   toggle() {
-    const next = (document.documentElement.getAttribute('data-theme') === 'dark') ? 'light' : 'dark';
-    this.apply(next);
+    const current = document.documentElement.getAttribute('data-theme');
+    this.apply(current === 'dark' ? 'light' : 'dark');
   },
-  init() { this.apply(this.get()); }
+  init() {
+    this.apply(this.get());
+  }
 };
 Theme.init();
 
-/* ============================================
-    UTILS
-   ============================================ */
+/* ============================== UTILS ============================== */
 const Utils = {
-  notify(msg, type = 'info', duration = 3500) {
+  /* ============================== NOTIFIKASI ============================== */
+  notify(msg, type = 'info', duration = 4000) {
     let container = document.getElementById('notif-container');
     if (!container) {
       container = document.createElement('div');
@@ -54,7 +52,11 @@ const Utils = {
     }, duration);
   },
 
+  /* ============================== LOADING ============================== */
   showLoader(show = true) {
+    if (!this._loaderTimer) {
+      this._loaderTimer = null;
+    }
     let loader = document.getElementById('loader-overlay');
     if (!loader) {
       loader = document.createElement('div');
@@ -63,9 +65,20 @@ const Utils = {
       loader.innerHTML = '<div class="spinner"></div>';
       document.body.appendChild(loader);
     }
+    if (this._loaderTimer) {
+      clearTimeout(this._loaderTimer);
+      this._loaderTimer = null;
+    }
     loader.classList.toggle('active', show);
+    if (show) {
+      this._loaderTimer = setTimeout(() => {
+        loader.classList.remove('active');
+        this._loaderTimer = null;
+      }, 5000);
+    }
   },
 
+  /* ============================== FORMAT TANGGAL ============================== */
   formatDate(d) {
     if (!d) return '-';
     const date = (d instanceof Date) ? d : new Date(d);
@@ -92,12 +105,10 @@ const Utils = {
     return `${yyyy}-${mm}-${dd}`;
   },
 
-  /** Tambahkan N bulan ke sebuah Date dan return Date baru. */
   addMonths(date, months) {
     const d = new Date(date.getTime());
     const targetMonth = d.getMonth() + months;
     d.setMonth(targetMonth);
-    // handle overflow (mis. 31 Jan + 1 bulan → 28/29 Feb, bukan 3 Mar)
     if (d.getMonth() !== ((targetMonth % 12) + 12) % 12) d.setDate(0);
     return d;
   },
@@ -132,12 +143,11 @@ const Utils = {
     return 'Group 6';
   },
 
-  /** Validasi & normalisasi waktu mm:ss:ms (digit auto-pad) */
+  /** Validasi & normalisasi waktu mm:ss:ms */
   normalizeWaktu(input) {
     if (!input) return '';
     const cleaned = String(input).trim();
     if (cleaned === '' || cleaned === '-') return '';
-    // Accept: mm:ss:ms / mm.ss.ms / mm:ss / single number etc
     const parts = cleaned.split(/[:.]/);
     if (parts.length < 2) return cleaned;
     const mm = String(parts[0] || '00').padStart(2, '0');
@@ -171,76 +181,80 @@ const Utils = {
     });
   },
 
+  /* ============================== MENGHINDARI BUG SQL INJECTION ============================== */
   escapeHtml(str) {
     if (str === null || str === undefined) return '';
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
   },
 
-  /** WhatsApp link helper */
+  /* ============================== WHATSAPP LINK HELPER ============================== */
   waLink(phone, message) {
     return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
   },
 
-  /* ============================================
-      NAVBAR
-     ============================================ */
+/* ============================== NAVBAR ============================== */
   mountNavbar(activeRoute = '') {
     const session = Auth.getSession();
     const isDark = Theme.get() === 'dark';
-
     const themeSwitchHtml = (!session) ? `
-<button
-    type="button"
-    id="theme-switch"
-    class="theme-switch ${isDark ? 'is-dark' : ''}"
-    aria-label="Toggle Theme"
-    title="Toggle Theme">
-
-    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-
-        <circle cx="12" cy="12" r="5"/>
-
-        <line x1="12" y1="1" x2="12" y2="3"/>
-        <line x1="12" y1="21" x2="12" y2="23"/>
-
-        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-
-        <line x1="1" y1="12" x2="3" y2="12"/>
-        <line x1="21" y1="12" x2="23" y2="12"/>
-
-        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-
-    </svg>
-
-    <svg class="icon-moon" viewBox="0 0 24 24" fill="currentColor">
-
-        <path d="M21 12.8A9 9 0 1111.2 3a7 7 0 109.8 9.8z"/>
-
-    </svg>
-
-</button>
-` : '';
-
-    let userBlock = '';
-    if (session && session.role === 'peserta') {
-      const gearSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
-      userBlock = `
-        <a href="profile.html" class="user-info user-info-link ${activeRoute === 'profile' ? 'active' : ''}" title="Lihat & ubah profil"><span> ${this.escapeHtml(session.data.nama || session.data.username)}</span></a>
-        <button class="theme-toggle nav-settings-btn" onclick="window.PesertaSettings && PesertaSettings.open()" title="Pengaturan" aria-label="Pengaturan">${gearSvg}</button>
-        <button class="btn btn-sm btn-secondary" onclick="Auth.logout()">Logout</button>`;
-    } else if (session && session.role === 'admin') {
-      userBlock = `
-        <div class="user-info"><span> ${this.escapeHtml(session.data.username)}</span></div>
-        <button class="btn btn-sm btn-secondary" onclick="Auth.logout()">Logout</button>`;
+      <button type="button" id="theme-switch" class="theme-switch ${isDark ? 'is-dark' : ''}" aria-label="Toggle Theme" title="Toggle Theme">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M21 12.8A9 9 0 1111.2 3a7 7 0 109.8 9.8z"/>
+        </svg>
+      </button>
+    ` : '';
+    let authLinks = '';
+    let actionButtons = '';
+    if (session) {
+      const dashboardHref = session.role === 'admin' ? 'admin.html' : 'peserta.html';
+      authLinks = `
+        <a href="${dashboardHref}" class="nav-link ${ activeRoute === 'dashboard' || activeRoute === 'peserta' || activeRoute === 'admin'
+            ? 'active'
+            : ''
+          }">Dashboard
+        </a>
+        ${
+          session.role === 'peserta'
+            ? `<a href="profile.html" class="nav-link ${activeRoute === 'profile' ? 'active' : ''}">Profile</a>`
+            : ''
+        }
+      `;
+      if (session.role === 'peserta') {
+        const gearSvg = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        `;
+        actionButtons = `
+          <button class="theme-toggle nav-settings-btn" onclick="window.PesertaSettings && PesertaSettings.open()" title="Pengaturan" aria-label="Pengaturan">
+            ${gearSvg}
+          </button>
+          <button class="btn btn-sm btn-secondary" onclick="Auth.logout()">Logout</button>
+        `;
+      } else {
+        actionButtons = `
+          <button class="btn btn-sm btn-secondary" onclick="Auth.logout()">Logout</button>
+        `;
+      }
     } else {
-      userBlock = `
+      actionButtons = `
         <a href="login.html" class="nav-link ${activeRoute === 'login' ? 'active' : ''}">Login</a>
-        <a href="registrasi.html" class="btn btn-accent btn-sm nav-cta">Daftar Sekarang</a>`;
+        <a href="registrasi.html" class="btn btn-accent btn-sm nav-cta">Daftar Sekarang</a>
+      `;
     }
-
     const html = `
       <nav class="navbar">
         <div class="navbar-inner">
@@ -253,11 +267,10 @@ const Utils = {
           <div class="navbar-menu" id="navbar-menu">
             <div class="navbar-links">
               <a href="index.html" class="nav-link ${activeRoute === 'home' ? 'active' : ''}">Home</a>
-              ${session && session.role === 'peserta' ? `<a href="peserta.html" class="nav-link ${activeRoute === 'peserta' ? 'active' : ''}">Dashboard</a>` : ''}
-              ${session && session.role === 'admin' ? `<a href="admin.html" class="nav-link ${activeRoute === 'admin' ? 'active' : ''}">Admin Panel</a>` : ''}
+              ${authLinks}
             </div>
             <div class="navbar-actions">
-              ${userBlock}
+              ${actionButtons}
             </div>
           </div>
           <div class="navbar-end">
@@ -265,22 +278,24 @@ const Utils = {
             <button class="navbar-toggle" id="navbar-toggle" aria-label="Menu" aria-expanded="false">☰</button>
           </div>
         </div>
-      </nav>`;
+      </nav>
+    `;
     document.body.insertAdjacentHTML('afterbegin', html);
-
     const toggleBtn = document.getElementById('navbar-toggle');
-    if (toggleBtn) toggleBtn.addEventListener('click', () => {
-      const menu = document.getElementById('navbar-menu');
-      const shown = menu.classList.toggle('show');
-      toggleBtn.setAttribute('aria-expanded', shown ? 'true' : 'false');
-    });
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        const menu = document.getElementById('navbar-menu');
+        const shown = menu.classList.toggle('show');
+        toggleBtn.setAttribute('aria-expanded', shown ? 'true' : 'false');
+      });
+    }
     const themeSwitch = document.getElementById('theme-switch');
-    if (themeSwitch) themeSwitch.addEventListener('click', () => Theme.toggle());
+    if (themeSwitch) {
+      themeSwitch.addEventListener('click', () => Theme.toggle());
+    }
   },
 
-  /* ============================================
-      FOOTER (dengan maps carousel — request 5)
-     ============================================ */
+/* ============================== FOOTER ============================== */
   mountFooter() {
     const locs = CONFIG.LOCATIONS;
     const slides = locs.map((loc, i) => `
@@ -296,11 +311,9 @@ const Utils = {
           <span>${loc.address}</span>
         </div>
       </div>`).join('');
-
     const dots = locs.map((_, i) =>
       `<button class="map-dot ${i === 0 ? 'active' : ''}" data-target="${i}" aria-label="Lokasi ${i + 1}"></button>`
     ).join('');
-
     const html = `
       <footer class="footer">
         <div class="container">
@@ -308,7 +321,6 @@ const Utils = {
             <div class="footer-about">
               <h4>${CONFIG.BRAND_NAME}</h4>
               <p>Klub pelatihan renang profesional di Bontang dengan pelatih berpengalaman. Latihan lebih terstruktur dan menyenangkan bersama Bontang Aquatik Swimming Club.</p>
-              <p>📱 ${CONFIG.CONTACT.whatsapp}<br>✉️ ${CONFIG.CONTACT.email}</p>
             </div>
             <div class="footer-maps">
               <h4>📍 Lokasi Latihan</h4>
@@ -322,7 +334,6 @@ const Utils = {
         </div>
       </footer>`;
     document.body.insertAdjacentHTML('beforeend', html);
-
     // Maps carousel logic
     const carousel = document.getElementById('maps-carousel');
     const dotEls = document.querySelectorAll('#map-dots .map-dot');
