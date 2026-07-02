@@ -238,6 +238,3 @@
 .auth-forgot { text-align: center; margin-top: 16px; }
 .auth-forgot a { font-size: 13px; font-weight: 600; color: var(--color-accent); }
 .auth-forgot a:hover { color: var(--color-accent-hover); text-decoration: underline; }
-/* .user-info-link { cursor: pointer; text-decoration: none; transition: opacity .2s ease, transform .2s ease; }
-.user-info-link:hover { opacity: .85; transform: translateY(-1px); }
-.user-info-link.active { font-weight: 700; } */

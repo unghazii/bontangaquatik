@@ -197,7 +197,7 @@ const Utils = {
   mountNavbar(activeRoute = '') {
     const session = Auth.getSession();
     const isDark = Theme.get() === 'dark';
-    const themeSwitchHtml = (!session) ? `
+    const themeSwitchHtml = `
       <button type="button" id="theme-switch" class="theme-switch ${isDark ? 'is-dark' : ''}" aria-label="Toggle Theme" title="Toggle Theme">
         <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="5"/>
@@ -214,41 +214,28 @@ const Utils = {
           <path d="M21 12.8A9 9 0 1111.2 3a7 7 0 109.8 9.8z"/>
         </svg>
       </button>
-    ` : '';
+    `;
     let authLinks = '';
     let actionButtons = '';
     if (session) {
       const dashboardHref = session.role === 'admin' ? 'admin.html' : 'peserta.html';
       authLinks = `
-        <a href="${dashboardHref}" class="nav-link ${ activeRoute === 'dashboard' || activeRoute === 'peserta' || activeRoute === 'admin'
+        <a href="${dashboardHref}" class="nav-link ${
+          activeRoute === 'dashboard' ||
+          activeRoute === 'peserta' ||
+          activeRoute === 'admin'
             ? 'active'
             : ''
-          }">Dashboard
-        </a>
+        }">Dashboard</a>
         ${
           session.role === 'peserta'
             ? `<a href="profile.html" class="nav-link ${activeRoute === 'profile' ? 'active' : ''}">Profile</a>`
             : ''
         }
       `;
-      if (session.role === 'peserta') {
-        const gearSvg = `
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-          </svg>
-        `;
-        actionButtons = `
-          <button class="theme-toggle nav-settings-btn" onclick="window.PesertaSettings && PesertaSettings.open()" title="Pengaturan" aria-label="Pengaturan">
-            ${gearSvg}
-          </button>
-          <button class="btn btn-sm btn-secondary" onclick="Auth.logout()">Logout</button>
-        `;
-      } else {
-        actionButtons = `
-          <button class="btn btn-sm btn-secondary" onclick="Auth.logout()">Logout</button>
-        `;
-      }
+      actionButtons = `
+        <button class="btn btn-sm btn-secondary" onclick="Auth.logout()">Logout</button>
+      `;
     } else {
       actionButtons = `
         <a href="login.html" class="nav-link ${activeRoute === 'login' ? 'active' : ''}">Login</a>
@@ -257,6 +244,7 @@ const Utils = {
     }
     const html = `
       <nav class="navbar">
+        <div class="navbar-aura" aria-hidden="true"></div>
         <div class="navbar-inner">
           <a href="index.html" class="navbar-brand">
             <div class="navbar-brand-logo">
