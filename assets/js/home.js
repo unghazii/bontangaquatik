@@ -1,15 +1,10 @@
-// Logic halaman Home — render section kelas & jadwal dari CONFIG
 document.addEventListener('DOMContentLoaded', () => {
   Utils.mountNavbar('home');
-
   initHeroFX();
-  renderClassesSection();
   renderScheduleSection();
   loadBerita();
-
   Utils.mountFooter();
 
-  // Smooth scroll
   document.querySelectorAll('a[href^="#"]').forEach(a => {
     a.addEventListener('click', (e) => {
       const href = a.getAttribute('href');
@@ -19,7 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Update kontak
   document.querySelectorAll('[data-wa]').forEach(a => {
     a.href = Utils.waLink(CONFIG.CONTACT.whatsapp, 'Halo Bontang Aquatik, saya tertarik untuk bergabung kelas pelatihan renang. Mohon informasinya.');
   });
@@ -30,7 +24,6 @@ function initHeroFX() {
   const hero = document.getElementById('hero');
   if (!hero) return;
   const bubbles = document.getElementById('hero-bubbles');
-
   // Gelembung putih ambient (background tidak terkesan solid)
   if (bubbles) {
     let html = '';
@@ -45,10 +38,8 @@ function initHeroFX() {
     }
     bubbles.innerHTML = html;
   }
-
   // Efek selalu aktif (mengabaikan preferensi reduced-motion atas permintaan)
   let tx = 0, ty = 0, cx = 0, cy = 0, raf = null, started = false, lastSpawn = 0;
-
   const loop = () => {
     cx += (tx - cx) * 0.15;
     cy += (ty - cy) * 0.15;
@@ -61,7 +52,6 @@ function initHeroFX() {
     raf = (Math.abs(tx - cx) > 0.4 || Math.abs(ty - cy) > 0.4)
       ? requestAnimationFrame(loop) : null;
   };
-
   // Lahirkan gelembung kecil di posisi kursor
   const spawnBubble = (x, y) => {
     const b = document.createElement('span');
@@ -74,58 +64,25 @@ function initHeroFX() {
     hero.appendChild(b);
     setTimeout(() => b.remove(), 1200);
   };
-
   hero.addEventListener('pointermove', (e) => {
     const r = hero.getBoundingClientRect();
     tx = e.clientX - r.left;
     ty = e.clientY - r.top;
-    if (!started) { started = true; cx = tx; cy = ty; }  // mulai dari kursor, bukan pojok
+    if (!started) { started = true; cx = tx; cy = ty; }
     if (!raf) raf = requestAnimationFrame(loop);
-
     const now = performance.now();
     if (now - lastSpawn > 90) { lastSpawn = now; spawnBubble(tx, ty); }
   });
-}
-
-/* ===================== KELAS TERSEDIA ===================== */
-function renderClassesSection() {
-  const container = document.getElementById('classes-grid');
-  if (!container) return;
-
-  container.innerHTML = Object.entries(CONFIG.KELAS_DETAIL).map(([nama, d]) => `
-    <div class="class-card class-${d.color} ${d.recommended ? 'class-recommended' : ''}">
-      ${d.recommended ? '<div class="class-ribbon">⭐ PALING POPULER</div>' : ''}
-      <div class="class-card-head">
-        <div class="class-mascot">${d.mascot}</div>
-        <h3>${nama}</h3>
-        <p class="class-team">${d.mascot_name}</p>
-      </div>
-      <ul class="class-features">
-        ${d.fasilitas.map(f => `<li>✓ ${f}</li>`).join('')}
-      </ul>
-      <div class="class-meta">
-        <div>📍 ${d.lokasi}</div>
-        <div>📅 ${d.frekuensi}</div>
-        <div>🕐 ${d.jadwal_label}</div>
-      </div>
-      <a href="registrasi.html" class="btn btn-block ${d.recommended ? 'btn-accent' : 'btn-primary'}">
-        Pilih ${nama}
-      </a>
-    </div>
-  `).join('');
 }
 
 /* ===================== JADWAL LATIHAN (KIDS-FRIENDLY) ===================== */
 function renderScheduleSection() {
   const container = document.getElementById('schedule-grid');
   if (!container) return;
-
-  // Day name → emoji
   const dayEmoji = {
     'Senin': '🌅', 'Selasa': '☀️', 'Rabu': '🌤️',
     'Kamis': '⛅', 'Jumat': '🌟', 'Sabtu': '🎉', 'Minggu': '🌈'
   };
-
   container.innerHTML = Object.entries(CONFIG.WEEKLY_SCHEDULE).map(([nama, sesi]) => {
     const detail = CONFIG.KELAS_DETAIL[nama];
     return `
@@ -147,26 +104,17 @@ function renderScheduleSection() {
     `;
   }).join('');
 }
-
-/* ============================================================
-   SECTION BERITA — Carousel horizontal
-   - Section hidden by default; ditampilkan hanya jika ada data
-   - Berita SEDIKIT  → card di tengah (align center), tanpa autoplay
-   - Berita BANYAK   → carousel auto-geser tiap beberapa detik
-   - Tanpa tombol prev/next
-   ============================================================ */
+/* ============================== BERITA ============================== */
 async function loadBerita() {
   const section  = document.getElementById('berita');
   const carousel = document.getElementById('news-carousel');
   if (!section || !carousel) return;
-
   const res = await API.call('getActiveBerita');
   if (!res.success || !res.data || res.data.length === 0) {
     // Hide section seluruhnya jika tidak ada berita
     section.classList.add('hidden');
     return;
   }
-
   const berita = res.data;
   carousel.innerHTML = berita.map((b, i) => `
     <article class="news-card" data-index="${i}">
@@ -181,40 +129,27 @@ async function loadBerita() {
         : `<span class="text-muted" style="font-size:12px;">Tidak ada link lanjutan</span>`}
     </article>
   `).join('');
-
-  // Show section
   section.classList.remove('hidden');
-
   const dotsContainer = document.getElementById('news-dots');
   const cards = carousel.querySelectorAll('.news-card');
-
   const scrollToIdx = (idx) => {
     const card = cards[idx];
     if (card) carousel.scrollTo({ left: card.offsetLeft - 12, behavior: 'smooth' });
   };
-
-  // Ukur layout setelah render selesai
   requestAnimationFrame(() => {
     const fits = carousel.scrollWidth <= carousel.clientWidth + 4;
-
-    // ---- BERITA SEDIKIT → di tengah, tanpa dots & autoplay ----
     if (fits) {
       carousel.classList.add('news-centered');
       if (dotsContainer) dotsContainer.innerHTML = '';
       return;
     }
-
-    // ---- BERITA BANYAK → carousel auto-geser ----
     carousel.classList.remove('news-centered');
-
     if (dotsContainer) {
       dotsContainer.innerHTML = berita.map((_, i) =>
         `<button class="news-dot ${i === 0 ? 'active' : ''}" data-idx="${i}" aria-label="Berita ${i + 1}"></button>`
       ).join('');
     }
     const dots = dotsContainer ? Array.from(dotsContainer.querySelectorAll('.news-dot')) : [];
-
-    // Sinkronkan dot aktif saat di-scroll
     let scrollTimer;
     carousel.addEventListener('scroll', () => {
       clearTimeout(scrollTimer);
@@ -227,8 +162,6 @@ async function loadBerita() {
         dots.forEach((d, i) => d.classList.toggle('active', i === activeIdx));
       }, 90);
     });
-
-    // ---- Autoplay ----
     let current = 0, timer = null;
     const nextSlide = () => {
       const atEnd = carousel.scrollLeft + carousel.clientWidth >= carousel.scrollWidth - 8;
@@ -237,18 +170,13 @@ async function loadBerita() {
     };
     const start = () => { if (!timer) timer = setInterval(nextSlide, 4000); };
     const stop  = () => { clearInterval(timer); timer = null; };
-
-    // Klik dot → loncat + reset timer
     dots.forEach(d => d.addEventListener('click', () => {
       scrollToIdx(Number(d.dataset.idx)); stop(); start();
     }));
-
-    // Pause saat pengguna berinteraksi
     ['mouseenter', 'pointerdown', 'touchstart'].forEach(ev =>
       carousel.addEventListener(ev, stop, { passive: true }));
     ['mouseleave', 'touchend'].forEach(ev =>
       carousel.addEventListener(ev, start, { passive: true }));
-
     start();
   });
 }

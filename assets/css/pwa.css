@@ -1,9 +1,3 @@
-/* =============================================================
-   PWA SECTION & UI COMPONENTS — Bontang Aquatik
-   Tambahkan ke home.css (atau import sebagai pwa.css)
-   Memakai variable theme yang sudah ada di global.css
-   ============================================================= */
-
 /* ============================================================
    SECTION LAYOUT
    ============================================================ */
@@ -19,7 +13,6 @@
     radial-gradient(circle at 90% 80%, rgba(255, 106, 0, 0.07) 0%, transparent 40%);
   pointer-events: none;
 }
-
 .pwa-section-grid {
   display: grid;
   grid-template-columns: 1.05fr 1fr;
@@ -28,7 +21,6 @@
   position: relative;
   z-index: 1;
 }
-
 /* ============================================================
    KONTEN (KIRI)
    ============================================================ */
@@ -45,7 +37,6 @@
   text-transform: uppercase;
   margin-bottom: 18px;
 }
-
 .pwa-content h3 {
   font-size: 38px;
   line-height: 1.15;
@@ -73,7 +64,6 @@
   margin-bottom: 28px;
   max-width: 520px;
 }
-
 /* ============================================================
    FEATURES LIST
    ============================================================ */
@@ -121,7 +111,6 @@
   color: var(--color-text-secondary);
   line-height: 1.5;
 }
-
 /* ============================================================
    CTA BUTTON
    ============================================================ */
@@ -182,7 +171,6 @@
   color: var(--color-text-secondary);
   font-weight: 500;
 }
-
 /* Badges kompatibilitas */
 .pwa-badges {
   display: flex;
@@ -201,7 +189,6 @@
   font-weight: 600;
   color: var(--color-text-main);
 }
-
 /* ============================================================
    VISUAL (KANAN) — PHONE MOCKUP
    ============================================================ */
@@ -211,7 +198,6 @@
   place-items: center;
   min-height: 520px;
 }
-
 /* Decorative blobs */
 .pwa-visual-blob {
   position: absolute;
@@ -230,7 +216,6 @@
   bottom: 8%; right: 8%;
   background: radial-gradient(circle, rgba(255, 106, 0, 0.32) 0%, transparent 70%);
 }
-
 /* Floating bubbles */
 .pwa-bubble {
   position: absolute;
@@ -259,7 +244,6 @@
   0%, 100% { transform: translateY(0) translateX(0); }
   50%      { transform: translateY(-18px) translateX(6px); }
 }
-
 /* Phone frame */
 .pwa-phone {
   position: relative;
@@ -395,7 +379,6 @@
 }
 .pwa-phone-card-lines span:first-child { width: 80%; background: var(--color-border-strong); }
 .pwa-phone-card-lines span:last-child  { width: 55%; }
-
 /* Floating "Installed" badge */
 .pwa-badge-float {
   position: absolute;
@@ -437,7 +420,6 @@
   font-size: 10.5px;
   color: var(--color-text-secondary);
 }
-
 /* ============================================================
    FLOATING BANNER (auto-popup)
    ============================================================ */
@@ -541,7 +523,6 @@
   background: var(--color-bg-section);
   color: var(--color-text-heading);
 }
-
 /* ============================================================
    MODAL INSTRUKSI
    ============================================================ */
@@ -653,7 +634,6 @@
 }
 .pwa-modal-step-icon svg { display: block; }
 .pwa-modal-step-text { line-height: 1.45; }
-
 /* ============================================================
    UPDATE BANNER
    ============================================================ */
@@ -694,7 +674,6 @@
   display: flex;
   gap: 8px;
 }
-
 /* ============================================================
    OFFLINE INDICATOR
    ============================================================ */
@@ -727,7 +706,6 @@
   0%, 100% { opacity: 1; }
   50%      { opacity: 0.35; }
 }
-
 /* ============================================================
    RESPONSIVE
    ============================================================ */
@@ -739,7 +717,6 @@
   .pwa-content h3 { font-size: 32px; }
   .pwa-visual { min-height: 480px; }
 }
-
 @media (max-width: 600px) {
   .pwa-content h3 { font-size: 26px; }
   .pwa-lead { font-size: 14.5px; }
@@ -753,7 +730,6 @@
   .pwa-badge-float { right: -4px; padding: 8px 12px; }
   .pwa-badge-float strong { font-size: 11.5px; }
   .pwa-badge-float span { font-size: 10px; }
-
   .pwa-banner {
     grid-template-columns: 1fr;
     grid-template-areas: "icon" "body" "actions";
@@ -764,7 +740,6 @@
   .pwa-banner-body { padding-right: 0; }
   .pwa-banner-actions { justify-content: center; }
 }
-
 /* ============================================================
    REDUCED MOTION
    ============================================================ */

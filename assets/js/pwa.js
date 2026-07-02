@@ -1,13 +1,10 @@
 (function () {
   'use strict';
-
-  // Referensi ke tag <script> ini (untuk membaca data-* & resolusi path relatif)
   const SCRIPT = document.currentScript || (function () {
     const list = document.getElementsByTagName('script');
     return list[list.length - 1];
   })();
   const DS = (SCRIPT && SCRIPT.dataset) ? SCRIPT.dataset : {};
-
   const PWA = {
     /* ---------- KONFIGURASI ---------- */
     KEY_DISMISSED: 'pwa_install_dismissed',
@@ -15,46 +12,35 @@
     DISMISS_DAYS:  7,
     BANNER_DELAY:  3000,
     SW_PATH:       DS.sw    || '/service-worker.js',
-    SW_SCOPE:      DS.scope || null,          // null = biarkan browser menentukan dari lokasi SW
-    MANIFEST_HREF: DS.manifest || null,        // null = ambil dari <link rel="manifest">
+    SW_SCOPE:      DS.scope || null,
+    MANIFEST_HREF: DS.manifest || null,
     DEBUG: (function () {
       if (DS.debug != null) return DS.debug !== 'false';
-      // Default: verbose di localhost / ?pwadebug, ringkas di produksi
       return /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)
           || /[?&]pwadebug\b/.test(location.search)
-          || true; // tetap true default agar diagnosa konsol tersedia; set data-debug="false" untuk mematikan
+          || true;
     })(),
-
     /* ---------- STATE ---------- */
     deferredPrompt: null,
     registration:   null,
     lastFocused:    null,
-    _installable:   false,   // true bila beforeinstallprompt pernah fire
-    _env:           null,    // cache hasil deteksi lingkungan
-
-    /* ============================================================
-       LOGGING (menghormati DEBUG)
-       ============================================================ */
+    _installable:   false,
+    _env:           null,
+    /* ---------- LOGGING ---------- */
     _log(...a)   { if (this.DEBUG) console.log(...a); },
     _warn(...a)  { if (this.DEBUG) console.warn(...a); },
     _info(...a)  { if (this.DEBUG) console.info(...a); },
     _group(t)    { if (this.DEBUG && console.group) console.group(t); },
     _groupEnd()  { if (this.DEBUG && console.groupEnd) console.groupEnd(); },
-
-    /* ============================================================
-       DETEKSI LINGKUNGAN (OS + BROWSER) — dihitung sekali, di-cache
-       ============================================================ */
+    /* ---------- DETEKSI ---------- */
     env() {
       if (this._env) return this._env;
-
       const ua = navigator.userAgent || '';
       const uaData = navigator.userAgentData || null;
       const plat = (navigator.platform || '').toLowerCase();
       const maxTouch = navigator.maxTouchPoints || 0;
-
-      // ----- OS -----
+      /* ---------- IOS ---------- */
       const isIOSClassic = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
-      // iPadOS 13+ menyamar sebagai Mac: deteksi lewat touch + platform Mac
       const isIPadOS = /Macintosh/.test(ua) && maxTouch > 1;
       const isIOS = isIOSClassic || isIPadOS;
       const isAndroid = /Android/i.test(ua);
@@ -62,27 +48,20 @@
       const isMac = (/Macintosh|Mac OS X/i.test(ua) || plat.indexOf('mac') === 0) && !isIOS;
       const isLinux = (/Linux/i.test(ua) || plat.indexOf('linux') === 0) && !isAndroid;
       const isChromeOS = /CrOS/i.test(ua);
-
-      // ----- Browser -----
+      /* ---------- BROWSER ---------- */
       const isEdge      = /Edg\//i.test(ua) || /EdgA\//i.test(ua) || /EdgiOS\//i.test(ua);
       const isOpera     = /OPR\//i.test(ua) || /Opera|OPT\//i.test(ua);
       const isSamsung   = /SamsungBrowser/i.test(ua);
       const isFirefox   = /Firefox\//i.test(ua) || /FxiOS\//i.test(ua);
       const isBrave     = !!(navigator.brave && typeof navigator.brave.isBrave === 'function');
-      // Chrome "asli" = Chromium tanpa varian di atas
+      /* ---------- CHROME ---------- */
       const isChromiumUA = /Chrome\//i.test(ua) || /CriOS\//i.test(ua) || (uaData && uaData.brands || []).some(b => /Chrom(e|ium)/i.test(b.brand));
       const isChrome    = isChromiumUA && !isEdge && !isOpera && !isSamsung && !isBrave;
       const isSafari    = /Safari/i.test(ua) && !isChromiumUA && !isFirefox && !isEdge && !isOpera && !isSamsung;
-
-      // In-app browser / webview yang biasanya MEMBLOKIR install
       const isInApp =
         /(FBAN|FBAV|FB_IAB|Instagram|Line\/|Twitter|WhatsApp|WeChat|MicroMessenger|Snapchat|TikTok|Musical_ly|GSA\/|; wv\)|WebView)/i.test(ua)
-        // Android WebView murni: ada "wv" atau Version/x.x + Chrome tanpa aplikasi browser
         || (isAndroid && /Version\/[\d.]+/.test(ua) && /Chrome\/[.0-9]+ Mobile/.test(ua) && !isSamsung && !isEdge && !isOpera && !isFirefox && !/Chrome\/[.0-9]+ Mobile Safari/.test(ua));
-
-      // Kemampuan Chromium untuk menerima beforeinstallprompt (Chrome/Edge/Samsung/Opera/Brave di Android/Desktop)
       const supportsBIP = isChromiumUA && !isIOS && !isFirefox;
-
       let osName = 'Perangkat';
       if (isIOS)          osName = isIPadOS ? 'iPadOS' : 'iOS';
       else if (isAndroid) osName = 'Android';
@@ -90,7 +69,6 @@
       else if (isWindows) osName = 'Windows';
       else if (isMac)     osName = 'macOS';
       else if (isLinux)   osName = 'Linux';
-
       let browserName = 'Browser';
       if (isInApp)        browserName = 'In-App Browser';
       else if (isEdge)    browserName = 'Edge';
@@ -100,9 +78,7 @@
       else if (isFirefox) browserName = 'Firefox';
       else if (isChrome)  browserName = 'Chrome';
       else if (isSafari)  browserName = 'Safari';
-
       const isDesktop = !isIOS && !isAndroid && (isWindows || isMac || isLinux || isChromeOS);
-
       this._env = {
         ua, isIOS, isIPadOS, isAndroid, isWindows, isMac, isLinux, isChromeOS,
         isEdge, isOpera, isSamsung, isFirefox, isBrave, isChrome, isSafari,
@@ -111,21 +87,16 @@
       };
       return this._env;
     },
-
-    /* ---------- Shortcut detektor (kompatibel dgn kode lama) ---------- */
+    /* ---------- SHORTCUT DETEKTOR ---------- */
     isIOS()        { return this.env().isIOS; },
     isAndroid()    { return this.env().isAndroid; },
     isDesktop()    { return this.env().isDesktop; },
     isInAppBrowser() { return this.env().isInApp; },
-
     isSecure() {
-      // Sumber kebenaran untuk fitur ter-gerbang keamanan (SW, beforeinstallprompt).
-      // Bernilai true untuk HTTPS, localhost, 127.0.0.1, [::1]. false untuk http & file://
       if (typeof window.isSecureContext === 'boolean') return window.isSecureContext;
       return location.protocol === 'https:'
           || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
     },
-
     isStandalone() {
       return window.matchMedia('(display-mode: standalone)').matches
           || window.matchMedia('(display-mode: fullscreen)').matches
@@ -145,35 +116,24 @@
       if (e.isAndroid) return 'android';
       return 'desktop';
     },
-
-    /* ============================================================
-       INIT
-       ============================================================ */
+    /* ---------- INIT ---------- */
     init() {
       this._log('%c[PWA] Initializing…', 'color:#169AC4;font-weight:bold');
-
       this._diagnose();
       this._testCSSLoaded();
-      this._checkManifest();          // async — mendeteksi masalah Cloudflare/redirect
-
-      this.setupDelegatedClicks();    // PENTING: event delegation lebih dulu
+      this._checkManifest();
+      this.setupDelegatedClicks();
       this.bindGlobalEvents();
       this.registerServiceWorker();
       this.setupConnectionWatch();
       this.refreshUI();
-
-      // Auto-popup banner (sopan: hanya jika belum dismiss & belum terUnduh)
       if (!this.isInstalled() && !this.isDismissed() && !this.env().isInApp) {
-        // Android/desktop Chromium: banner dipicu oleh beforeinstallprompt.
-        // Selain itu (iOS, Safari desktop, Firefox, dll) tampilkan setelah delay.
         if (!this.env().supportsBIP) {
           setTimeout(() => this.showBanner(), this.BANNER_DELAY);
         }
       }
-
       this._log('%c[PWA] Ready ✓', 'color:#16A34A;font-weight:bold');
     },
-
     _diagnose() {
       if (!this.DEBUG) return;
       const ok = (b) => b ? '✅' : '⚠️';
@@ -182,7 +142,6 @@
       const hasManifest = !!document.querySelector('link[rel="manifest"]');
       const swSupport   = 'serviceWorker' in navigator;
       const btnFound    = !!document.getElementById('pwa-install-btn');
-
       this._group('[PWA] Diagnostic');
       this._log(`${ok(isSecure)}  Secure context (HTTPS/localhost) : ${isSecure}`);
       this._log(`${ok(hasManifest)}  <link rel="manifest">            : ${hasManifest}`);
@@ -191,7 +150,6 @@
       this._log(`ℹ️  OS / Browser                    : ${e.osName} / ${e.browserName}`);
       this._log(`ℹ️  Mendukung install otomatis      : ${e.supportsBIP}`);
       this._log(`ℹ️  Standalone (berjalan sbg app)   : ${this.isStandalone()}`);
-
       if (!isSecure)    this._warn('[PWA] beforeinstallprompt TIDAK akan fire tanpa secure context (HTTPS atau localhost).');
       if (!hasManifest) this._warn('[PWA] Manifest tidak ter-link. Tambahkan <link rel="manifest" href="manifest.json"> di <head>.');
       if (!btnFound)    this._warn('[PWA] #pwa-install-btn tidak ditemukan saat init. Event delegation tetap aktif (tombol bisa muncul belakangan).');
@@ -199,7 +157,6 @@
       if (e.isFirefox && e.isDesktop) this._warn('[PWA] Firefox desktop belum mendukung install PWA native — akan memakai instruksi manual.');
       this._groupEnd();
     },
-
     _testCSSLoaded() {
       if (!document.body) return false;
       const probe = document.createElement('div');
@@ -215,13 +172,7 @@
       }
       return loaded;
     },
-
-    /* ------------------------------------------------------------
-       PEMERIKSAAN MANIFEST — akar masalah "Cloudflare Flexible /
-       redirect tidak konsisten". Bila manifest 404 / redirect ke HTML /
-       gagal karena mixed content, Chrome tidak akan menganggap installable.
-       Fungsi ini mengambil manifest & melapor persis apa yang salah.
-       ------------------------------------------------------------ */
+    /* ---------- CHECK KESALAHAN ---------- */
     async _checkManifest() {
       const link = document.querySelector('link[rel="manifest"]');
       const href = this.MANIFEST_HREF || (link ? link.href : null);
@@ -229,7 +180,6 @@
       try {
         const res = await fetch(href, { credentials: 'same-origin', cache: 'no-cache' });
         const ct = (res.headers.get('content-type') || '').toLowerCase();
-
         if (!res.ok) {
           this._warn(`[PWA] Manifest mengembalikan HTTP ${res.status} (${href}). Pastikan file dapat diakses & tidak diblokir redirect.`);
           return;
@@ -242,13 +192,11 @@
           this._warn('[PWA] Manifest tidak dapat di-parse sebagai JSON. Cek isi file / redirect.');
           return;
         }
-        // Validasi kriteria minimum installability Chrome
         const icons = Array.isArray(json.icons) ? json.icons : [];
         const has192 = icons.some(i => /(^|\s)192x192(\s|$)/.test(i.sizes || ''));
         const has512 = icons.some(i => /(^|\s)512x512(\s|$)/.test(i.sizes || ''));
         const displayOK = ['standalone', 'fullscreen', 'minimal-ui'].includes(json.display)
           || (Array.isArray(json.display_override) && json.display_override.some(d => ['standalone','fullscreen','minimal-ui'].includes(d)));
-
         if (!has192 || !has512) this._warn('[PWA] Manifest kurang ikon 192x192 dan/atau 512x512 (purpose "any"). Chrome mewajibkannya untuk installable.');
         if (!displayOK)          this._warn('[PWA] Manifest "display" bukan standalone/fullscreen/minimal-ui. Chrome tidak akan menawarkan install.');
         if (!json.name && !json.short_name) this._warn('[PWA] Manifest tidak punya name/short_name.');
@@ -257,10 +205,7 @@
         this._warn(`[PWA] Gagal mengambil manifest (${href}): ${err && err.message}. Kemungkinan mixed content / redirect / CORS. Ini menghalangi installability.`);
       }
     },
-
-    /* ============================================================
-       EVENT DELEGATION — bekerja walau tombol belum ada saat init
-       ============================================================ */
+    /* ---------- EVEN DELEGASI ---------- */
     setupDelegatedClicks() {
       document.addEventListener('click', (e) => {
         const installBtn = e.target.closest('#pwa-install-btn');
@@ -282,7 +227,6 @@
         else if (action === 'copy-url') this._copyUrl();
       });
     },
-
     bindGlobalEvents() {
       window.addEventListener('beforeinstallprompt', (e) => {
         // Cegah mini-infobar bawaan, simpan event untuk dipakai tombol kita.
@@ -295,7 +239,6 @@
           setTimeout(() => this.showBanner(), this.BANNER_DELAY);
         }
       });
-
       window.addEventListener('appinstalled', () => {
         localStorage.setItem(this.KEY_INSTALLED, '1');
         this.deferredPrompt = null;
@@ -306,12 +249,9 @@
         this.toast('Aplikasi berhasil di download! 🎉', 'success');
         this._log('[PWA] App installed.');
       });
-
-      // Perubahan display-mode (mis. baru saja di-install & dibuka standalone)
       try {
         window.matchMedia('(display-mode: standalone)').addEventListener('change', () => this.refreshUI());
       } catch (_) { /* Safari lama */ }
-
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
           if (document.getElementById('pwa-modal'))  this.hideModal();
@@ -319,16 +259,11 @@
         }
       });
     },
-
-    /* ============================================================
-       SERVICE WORKER — path & scope fleksibel, tahan subpath/Cloudflare
-       ============================================================ */
+    /* ---------- SERVICE WORKER ---------- */
     _resolveSWPath() {
-      // Path absolut ('/sw.js') tetap absolut; path relatif di-resolve ke halaman.
       try { return new URL(this.SW_PATH, location.href).href; }
       catch (_) { return this.SW_PATH; }
     },
-
     registerServiceWorker() {
       if (!('serviceWorker' in navigator)) {
         this._warn('[PWA] Service Worker tidak didukung browser ini.');
@@ -338,16 +273,13 @@
         this._warn('[PWA] Service Worker butuh secure context (HTTPS/localhost). Registrasi dilewati.');
         return;
       }
-
       const swUrl = this._resolveSWPath();
-      const opts = { updateViaCache: 'none' };            // jangan cache SW → hindari SW basi (isu umum Cloudflare)
+      const opts = { updateViaCache: 'none' };
       if (this.SW_SCOPE) opts.scope = this.SW_SCOPE;
-
       navigator.serviceWorker.register(swUrl, opts)
         .then((reg) => {
           this.registration = reg;
           this._log('[PWA] Service Worker registered:', reg.scope);
-
           reg.addEventListener('updatefound', () => {
             const sw = reg.installing;
             if (!sw) return;
@@ -357,8 +289,6 @@
               }
             });
           });
-
-          // Cek pembaruan berkala + saat tab kembali fokus
           setInterval(() => reg.update().catch(() => {}), 60 * 60 * 1000);
           document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') reg.update().catch(() => {});
@@ -368,7 +298,6 @@
           this._warn('[PWA] Service Worker registration GAGAL:', err && err.message);
           this._warn('[PWA] Penyebab umum: file SW 404, path/scope salah, mixed content, atau redirect HTTPS Cloudflare tidak konsisten. Ini membuat aplikasi TIDAK installable di Chrome.');
         });
-
       let reloading = false;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (reloading) return;
@@ -376,10 +305,7 @@
         window.location.reload();
       });
     },
-
-    /* ============================================================
-       UI REFRESH
-       ============================================================ */
+    /* ---------- UI REFRESH ---------- */
     refreshUI() {
       const btn = document.getElementById('pwa-install-btn');
       if (!btn) return;
@@ -387,7 +313,6 @@
       const iconEl   = btn.querySelector('.pwa-btn-icon');
       const statusEl = document.getElementById('pwa-install-status');
       const e = this.env();
-
       if (this.isInstalled()) {
         if (labelEl)  labelEl.textContent  = 'Aplikasi Sudah Terinstall';
         if (iconEl)   iconEl.textContent   = '✓';
@@ -396,10 +321,8 @@
         btn.classList.add('pwa-installed');
         return;
       }
-
       btn.disabled = false;
       btn.classList.remove('pwa-installed');
-
       if (this.deferredPrompt) {
         if (labelEl)  labelEl.textContent  = 'Download Aplikasi';
         if (iconEl)   iconEl.textContent   = '⬇';
@@ -418,10 +341,7 @@
         if (statusEl) statusEl.textContent = 'Lihat panduan pemasangan';
       }
     },
-
-    /* ============================================================
-       INSTALL HANDLER — DIJAMIN selalu memberi reaksi visual
-       ============================================================ */
+    /* ---------- INSTALL HANDLER ---------- */
     async handleInstallClick() {
       const e = this.env();
       this._log('[PWA] handleInstallClick →', {
@@ -429,19 +349,14 @@
         hasDeferredPrompt: !!this.deferredPrompt,
         os: e.osName, browser: e.browserName
       });
-
       if (this.isInstalled()) {
         this.toast('Aplikasi sudah terinstall di perangkat Anda.', 'info');
         return;
       }
-
-      // In-app browser → tidak bisa install; arahkan buka di browser sistem.
       if (e.isInApp) {
         this.showModal();
         return;
       }
-
-      // Jalur native (Chrome/Edge/Samsung/Opera/Brave — Android & desktop)
       if (this.deferredPrompt) {
         try {
           this.deferredPrompt.prompt();
@@ -454,28 +369,21 @@
           this.refreshUI();
         } catch (err) {
           this._warn('[PWA] Install prompt error:', err);
-          this.showModal();   // fallback ke instruksi manual
+          this.showModal();
         }
         return;
       }
-
-      // FALLBACK universal: instruksi manual sesuai OS + browser.
       this._log('[PWA] Tidak ada native prompt — menampilkan instruksi manual.');
       this.showModal();
     },
-
-    /* ============================================================
-       FLOATING BANNER
-       ============================================================ */
+    /* ---------- FLOATING BANNER ---------- */
     showBanner() {
       if (document.getElementById('pwa-banner')) return;
       if (this.isInstalled() || this.isDismissed()) return;
       const e = this.env();
-      // Aksi utama: install native bila tersedia, selain itu buka modal panduan.
       const primary = this.deferredPrompt
         ? `<button class="pwa-banner-btn pwa-banner-btn-primary" data-pwa-action="install">Install</button>`
         : `<button class="pwa-banner-btn pwa-banner-btn-primary" data-pwa-action="modal">Cara Download</button>`;
-
       const html = `
         <div id="pwa-banner" class="pwa-banner" role="status" aria-live="polite">
           <button class="pwa-banner-close" data-pwa-action="dismiss" aria-label="Tutup">×</button>
@@ -499,27 +407,20 @@
         if (b) b.classList.add('show');
       });
     },
-
     hideBanner() {
       const el = document.getElementById('pwa-banner');
       if (!el) return;
       el.classList.remove('show');
       setTimeout(() => el.remove(), 320);
     },
-
     dismiss() {
       localStorage.setItem(this.KEY_DISMISSED, String(Date.now()));
       this.hideBanner();
     },
-
-    /* ============================================================
-       INSTRUKSI MANUAL — spesifik per OS + BROWSER
-       ============================================================ */
+    /* ---------- INSTRUKSI MANUAL ---------- */
     _instructions() {
       const e = this.env();
       const menu = '⋮';
-
-      // In-app browser (Instagram/FB/Line/dll)
       if (e.isInApp) {
         return {
           title: 'Buka di Browser Terlebih Dahulu',
@@ -532,8 +433,6 @@
           extraButton: `<button class="btn btn-primary btn-block" data-pwa-action="copy-url">Salin Tautan Halaman</button>`
         };
       }
-
-      // iOS / iPadOS
       if (e.isIOS) {
         if (e.isSafari) {
           return {
@@ -546,7 +445,6 @@
             ]
           };
         }
-        // Chrome/Edge/Firefox di iOS → tetap lewat share sheet
         return {
           title: `Unduh di ${e.osName}`,
           intro: `Di iOS, pemasangan dilakukan lewat menu Bagikan ${e.browserName}.`,
@@ -557,8 +455,6 @@
           ]
         };
       }
-
-      // Android
       if (e.isAndroid) {
         if (e.isFirefox) {
           return {
@@ -592,8 +488,6 @@
           ]
         };
       }
-
-      // Desktop — macOS Safari
       if (e.isMac && e.isSafari) {
         return {
           title: 'Unduh di Mac (Safari)',
@@ -605,8 +499,6 @@
           ]
         };
       }
-
-      // Desktop — Firefox (belum ada install native)
       if (e.isFirefox && e.isDesktop) {
         return {
           title: 'Firefox Desktop',
@@ -618,8 +510,6 @@
           extraButton: `<button class="btn btn-primary btn-block" data-pwa-action="copy-url">Salin Tautan Halaman</button>`
         };
       }
-
-      // Desktop — Chrome / Edge / Brave / Opera
       return {
         title: `Unduh di ${e.osName}`,
         intro: `Unduh Bontang Aquatik sebagai aplikasi desktop lewat ${e.browserName}.`,
@@ -630,11 +520,9 @@
         ]
       };
     },
-
     showModal() {
       if (document.getElementById('pwa-modal')) return;
       this.lastFocused = document.activeElement;
-
       const cfg = this._instructions();
       const stepsHTML = cfg.steps.map((s, i) => `
         <li class="pwa-modal-step">
@@ -642,11 +530,9 @@
           <span class="pwa-modal-step-icon">${s.icon}</span>
           <span class="pwa-modal-step-text">${s.text}</span>
         </li>`).join('');
-
       const footer = cfg.extraButton
         ? cfg.extraButton
         : `<button class="btn btn-primary btn-block" data-pwa-action="close">Mengerti</button>`;
-
       const html = `
         <div id="pwa-modal" class="pwa-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="pwa-modal-title">
           <div class="pwa-modal">
@@ -661,7 +547,6 @@
           </div>
         </div>`;
       document.body.insertAdjacentHTML('beforeend', html);
-
       const modal = document.getElementById('pwa-modal');
       modal.addEventListener('click', (e) => { if (e.target === modal) this.hideModal(); });
       requestAnimationFrame(() => {
@@ -671,7 +556,6 @@
       });
       this._log('[PWA] Modal shown:', cfg.title);
     },
-
     hideModal() {
       const modal = document.getElementById('pwa-modal');
       if (!modal) return;
@@ -681,10 +565,7 @@
         if (this.lastFocused && this.lastFocused.focus) this.lastFocused.focus();
       }, 280);
     },
-
-    /* ============================================================
-       UPDATE BANNER
-       ============================================================ */
+    /* ---------- UPDATE BANNER ---------- */
     showUpdateBanner() {
       if (document.getElementById('pwa-update')) return;
       const html = `
@@ -704,29 +585,23 @@
         if (u) u.classList.add('show');
       });
     },
-
     hideUpdateBanner() {
       const el = document.getElementById('pwa-update');
       if (!el) return;
       el.classList.remove('show');
       setTimeout(() => el.remove(), 300);
     },
-
     applyUpdate() {
       const reg = this.registration;
       if (reg && reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
       else window.location.reload();
     },
-
-    /* ============================================================
-       CONNECTION
-       ============================================================ */
+    /* ---------- CONNECTION ---------- */
     setupConnectionWatch() {
       window.addEventListener('online',  () => { this.removeOfflineBadge(); this.toast('Koneksi internet kembali pulih.', 'success'); });
       window.addEventListener('offline', () => { this.showOfflineBadge();  this.toast('Anda offline. Konten dari cache tetap tersedia.', 'warning'); });
       if (!navigator.onLine) this.showOfflineBadge();
     },
-
     showOfflineBadge() {
       if (document.getElementById('pwa-offline')) return;
       const el = document.createElement('div');
@@ -737,17 +612,13 @@
       document.body.appendChild(el);
       requestAnimationFrame(() => el.classList.add('show'));
     },
-
     removeOfflineBadge() {
       const el = document.getElementById('pwa-offline');
       if (!el) return;
       el.classList.remove('show');
       setTimeout(() => el.remove(), 300);
     },
-
-    /* ============================================================
-       TOAST — fallback bila Utils.notify tidak ada
-       ============================================================ */
+    /* ---------- TOAST ---------- */
     toast(msg, type = 'info') {
       this._log(`%c[PWA:${type}] ${msg}`, 'color:#0F7FA3');
       if (typeof Utils !== 'undefined' && typeof Utils.notify === 'function') {
@@ -756,7 +627,6 @@
       }
       this._inlineToast(msg, type);
     },
-
     _inlineToast(msg, type) {
       const colors = { success: '#16A34A', warning: '#F59E0B', error: '#DC2626', info: '#169AC4' };
       const div = document.createElement('div');
@@ -780,10 +650,7 @@
         setTimeout(() => div.remove(), 300);
       }, 3500);
     },
-
-    /* ============================================================
-       HELPERS
-       ============================================================ */
+    /* ---------- HELPER ---------- */
     _svgShare() {
       return `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/>
@@ -791,7 +658,6 @@
         <line x1="12" y1="2" x2="12" y2="15"/>
       </svg>`;
     },
-
     _copyUrl() {
       const url = location.href;
       const done = () => this.toast('Tautan disalin. Tempel di browser (Chrome/Safari) untuk memasang.', 'success');
@@ -808,11 +674,7 @@
       try { document.execCommand('copy'); cb && cb(); } catch (_) {}
       ta.remove();
     },
-
-    /* ============================================================
-       PUBLIC DEBUG / CONTROL API
-       Panggil dari konsol: PWA.diagnose() · PWA.install() · PWA.info()
-       ============================================================ */
+    /* ---------- PUBLIK DEBUG ---------- */
     diagnose() { const d = this.DEBUG; this.DEBUG = true; this._diagnose(); this._testCSSLoaded(); this._checkManifest(); this.DEBUG = d; },
     install()  { this.handleInstallClick(); },
     info()     { return this.env(); }
@@ -825,7 +687,5 @@
   } else {
     boot();
   }
-
-  // Ekspos ke window untuk debugging dari DevTools
   window.PWA = PWA;
 })();
