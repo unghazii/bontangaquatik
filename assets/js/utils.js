@@ -308,7 +308,7 @@ const Utils = {
           <div class="footer-grid">
             <div class="footer-about">
               <h4>${CONFIG.BRAND_NAME}</h4>
-              <p>Klub pelatihan renang profesional di Bontang dengan pelatih berpengalaman. Latihan lebih terstruktur dan menyenangkan bersama Bontang Aquatik Swimming Club.</p>
+              <p>Klub pelatihan renang profesional di Bontang dengan pelatih berpengalaman. Latihan lebih terstruktur dan menyenangkan bersama Bontang Akuatik Swimming Club.</p>
             </div>
             <div class="footer-maps">
               <h4>📍 Lokasi Latihan</h4>

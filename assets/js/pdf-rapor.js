@@ -85,7 +85,7 @@ const PDFRapor = {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
     doc.setTextColor(0, 0, 0);
-    doc.text('BONTANG AQUATIK SWIMMING CLUB', textCenterX, headerTopY + 6, { align: 'center' });
+    doc.text('BONTANG AKUATIK SWIMMING CLUB', textCenterX, headerTopY + 6, { align: 'center' });
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9.5);
@@ -229,7 +229,7 @@ const PDFRapor = {
     // Baris nama klub
     doc.setFont('helvetica', 'bold');
     const clubY = cursorY;
-    doc.text('BONTANG AQUATIK SWIMMING CLUB', footerCenterX, clubY, { align: 'center' });
+    doc.text('BONTANG AKUATIK SWIMMING CLUB', footerCenterX, clubY, { align: 'center' });
 
     // Baris nama pelatih (di bawah, beri ruang untuk stempel di tengah)
     // const pelatih = (namaPelatih || r.Nama_Pelatih || 'Muhtar Efendi').toUpperCase();

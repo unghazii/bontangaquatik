@@ -1,5 +1,5 @@
 /* ================================================================
-   SERVICE WORKER — Bontang Aquatik
+   SERVICE WORKER — Bontang Akuatik
    Strategi cache:
    - Aset statis (HTML/CSS/JS/icons) → Cache First + revalidate
    - Request lain (HTML pages)      → Network First, fallback cache
@@ -7,8 +7,8 @@
    ================================================================ */
 
 const VERSION       = 'v1.1.0';
-const STATIC_CACHE  = `aquatik-static-${VERSION}`;
-const RUNTIME_CACHE = `aquatik-runtime-${VERSION}`;
+const STATIC_CACHE  = `akuatik-static-${VERSION}`;
+const RUNTIME_CACHE = `akuatik-runtime-${VERSION}`;
 
 /* Daftar aset yang dipra-cache saat install. Sesuaikan dengan struktur file Anda. */
 const PRECACHE_URLS = [

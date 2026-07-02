@@ -38,7 +38,7 @@
   function shareRecommendation() {
     const user = getUser();
     const referral = user.kode_referral || user.Kode_Referral || '';
-    const msg = `Saya rekomendasikan pelatihan renang di Bontang Aquatik, kunjungi bontangaquatik.com untuk informasi lebih lengkapnya! Gunakan referral ${referral} untuk keuntungan yang lebih banyak`;
+    const msg = `Saya rekomendasikan pelatihan renang di Bontang Akuatik, kunjungi bontangaquatik.com untuk informasi lebih lengkapnya! Gunakan referral ${referral} untuk keuntungan yang lebih banyak`;
     window.open(waLink(CONFIG.CONTACT.whatsapp, msg), '_blank');
   }
 
@@ -61,7 +61,7 @@
     function compose(channel) {
       const typed = (m.el.querySelector('#contact-msg').value || '').trim();
       const pesan = typed || '(Sampaikan Pesan)';
-      const full = `Halo admin Bontang Aquatik, saya ${nama} peserta dari pelatihan renang bontang aquatik ingin ${pesan}`;
+      const full = `Halo admin Bontang Akuatik, saya ${nama} peserta dari pelatihan renang bontang akuatik ingin ${pesan}`;
       if (channel === 'wa') {
         window.open(waLink(CONFIG.CONTACT.whatsapp, full), '_blank');
       } else {

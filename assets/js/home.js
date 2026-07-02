@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.querySelectorAll('[data-wa]').forEach(a => {
-    a.href = Utils.waLink(CONFIG.CONTACT.whatsapp, 'Halo Bontang Aquatik, saya tertarik untuk bergabung kelas pelatihan renang. Mohon informasinya.');
+    a.href = Utils.waLink(CONFIG.CONTACT.whatsapp, 'Halo Bontang Akuatik, saya tertarik untuk bergabung kelas pelatihan renang. Mohon informasinya.');
   });
 });
 

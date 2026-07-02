@@ -1,6 +1,6 @@
 /**
  * ===================================================================
- * KONFIGURASI APLIKASI — Bontang Aquatik Swimming Club
+ * KONFIGURASI APLIKASI — Bontang Akuatik Swimming Club
  * ===================================================================
  */
 
@@ -9,8 +9,8 @@ const CONFIG = {
   API_URL: 'https://script.google.com/macros/s/AKfycbyNTcjN9PU3LH1HqOZRpCD7wqI4ehjhHMSC9q3Jyx5_9Cb0AOQ-KAVs6VNVaYw4IkJZ9g/exec',
 
   // Brand
-  BRAND_NAME: 'Bontang Aquatik',
-  BRAND_CLUB: 'BONTANG AQUATIK SWIMMING CLUB',
+  BRAND_NAME: 'Bontang Akuatik',
+  BRAND_CLUB: 'BONTANG AKUATIK SWIMMING CLUB',
   BRAND_TAGLINE: 'Klub Pelatihan Renang Profesional di Bontang',
 
   // Kontak
@@ -22,7 +22,7 @@ const CONFIG = {
 
   // Pesan otomatis ke admin setelah registrasi (request 10)
   WA_REGISTRATION_MESSAGE:
-    'Halo, saya telah melakukan pendaftaran pelatihan renang Bontang Aquatik. ' +
+    'Halo, saya telah melakukan pendaftaran pelatihan renang Bontang Akuatik. ' +
     'Apakah bisa dibantu untuk melanjutkan sistem pembayaran. Terima Kasih',
 
   // Pilihan kelas

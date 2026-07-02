@@ -393,7 +393,7 @@
             </svg>
           </div>
           <div class="pwa-banner-body">
-            <strong>Unduh aplikasi Bontang Aquatik</strong>
+            <strong>Unduh aplikasi Bontang Akuatik</strong>
             <span>Akses lebih cepat tanpa membuka browser.</span>
           </div>
           <div class="pwa-banner-actions">
@@ -437,7 +437,7 @@
         if (e.isSafari) {
           return {
             title: 'Unduh di iPhone / iPad',
-            intro: 'Tambahkan Bontang Aquatik ke Layar Utama lewat Safari.',
+            intro: 'Tambahkan Bontang Akuatik ke Layar Utama lewat Safari.',
             steps: [
               { icon: this._svgShare(), text: 'Ketuk ikon <strong>Bagikan</strong> di bilah bawah Safari.' },
               { icon: '➕',              text: 'Gulir dan pilih <strong>Tambah ke Layar Utama</strong>.' },
@@ -512,7 +512,7 @@
       }
       return {
         title: `Unduh di ${e.osName}`,
-        intro: `Unduh Bontang Aquatik sebagai aplikasi desktop lewat ${e.browserName}.`,
+        intro: `Unduh Bontang Akuatik sebagai aplikasi desktop lewat ${e.browserName}.`,
         steps: [
           { icon: '⊕', text: 'Klik ikon <strong>Install</strong> (⊕ / monitor dengan panah) di ujung kanan bilah alamat.' },
           { icon: menu, text: `Atau buka menu <strong>(${menu})</strong> → <strong>Cast, save, and share</strong> / <strong>Apps</strong> → <strong>Install this site as an app</strong>.` },

@@ -1,6 +1,6 @@
 /**
  * ===================================================================
- * BACKEND API v4 — Bontang Aquatik Swimming Club
+ * BACKEND API v4 — Bontang Akuatik Swimming Club
  * Monolithic codebase (Google Apps Script + Google Spreadsheet)
  * ===================================================================
  *
