@@ -1,15 +1,4 @@
-/**
- * ===================================================================
- * PESERTA SETTINGS
- * ===================================================================
- * Berisi:
- *   • Tema default (terang / gelap)
- *   • Tampilan jadwal (grid / kalender) — disimpan & memicu re-render dashboard
- *   • Bagikan rekomendasi via WhatsApp (memuat kode referral peserta)
- *   • Pengaduan / pertanyaan ke admin via WhatsApp atau Email
- *
- * Bergantung pada global UI (components/ui.js), Theme & Auth & CONFIG.
- */
+
 (function (global) {
   'use strict';
 
@@ -37,8 +26,7 @@
   /* ---------- Bagikan rekomendasi (WhatsApp) ---------- */
   function shareRecommendation() {
     const user = getUser();
-    const referral = user.kode_referral || user.Kode_Referral || '';
-    const msg = `Saya rekomendasikan pelatihan renang di Bontang Akuatik, kunjungi bontangaquatik.com untuk informasi lebih lengkapnya! Gunakan referral ${referral} untuk keuntungan yang lebih banyak`;
+    const msg = `Saya rekomendasikan pelatihan renang di Bontang Akuatik, kunjungi bontangaquatik.com untuk informasi lebih lengkapnya!`;
     window.open(waLink(CONFIG.CONTACT.whatsapp, msg), '_blank');
   }
 

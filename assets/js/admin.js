@@ -319,7 +319,6 @@ function openPesertaEditModal(id) {
             <div class="form-group"><label>Jenis Kelamin</label><div class="readonly-field">${ro(p.Jenis_Kelamin)}</div></div>
             <div class="form-group"><label>Tanggal Lahir</label><div class="readonly-field">${Utils.formatDate(p.Tanggal_Lahir)}</div></div>
             <div class="form-group"><label>Asal Sekolah</label><div class="readonly-field">${ro(p.Asal_Sekolah)}</div></div>
-            <div class="form-group"><label>Kode Referral</label><div class="readonly-field">${ro(p.Kode_Referral)}</div></div>
           </div>
 
           <h4 class="form-section-title" style="margin-top:18px;">${Icons.pool()} Data Pelatihan <span class="lock-note"> (Admin dapat mengubah data berikut)</span></h4>
@@ -1420,9 +1419,27 @@ function openTaskModal(type, id) {
 }
 
 /** Task pembayaran — HANYA nomor punggung & status (tidak bisa edit data peserta). */
-function openTaskPaymentModal(idPeserta) {
+async function openTaskPaymentModal(idPeserta) {
   const p = pesertaCache.find(x => x.Id_Peserta === idPeserta);
   if (!p) return;
+
+  // Pastikan Nomor Peserta SUDAH TERISI otomatis sebelum modal ditampilkan
+  // (fallback untuk peserta lama yang belum punya nomor — peserta baru sudah
+  // auto-generate saat registrasi). Memakai fungsi backend yang sama dengan
+  // tombol "Generate" di modal Rapor.
+  if (!String(p.Nomor_Peserta || '').trim()) {
+    Utils.showLoader(true);
+    const genRes = await API.call('generateNomorPeserta', { id_peserta: idPeserta });
+    Utils.showLoader(false);
+    if (genRes.success && genRes.data) {
+      p.Nomor_Peserta = genRes.data.nomor_peserta;
+      const lp = pesertaListLunas.find(x => x.Id_Peserta === idPeserta);
+      if (lp) lp.Nomor_Peserta = genRes.data.nomor_peserta;
+    } else {
+      Utils.notify(genRes.message || 'Nomor peserta belum dapat dibuat otomatis, mohon isi manual.', 'warning');
+    }
+  }
+
   const isPaid = Utils.formatBool(p.Status_Pembayaran) === 'TRUE';
   const html = `
     <div class="modal-backdrop active" id="task-modal">
@@ -1434,7 +1451,11 @@ function openTaskPaymentModal(idPeserta) {
         <div class="modal-body">
           <div class="info-banner">${Icons.user()}<p>Peserta: <strong>${Utils.escapeHtml(p.Nama_Lengkap)}</strong> • ${Utils.escapeHtml(p.Kelas) || '-'}</p></div>
           <div class="form-group"><label>Nomor Peserta</label>
-            <input id="t-nomor" class="form-control" value="${Utils.escapeHtml(p.Nomor_Peserta || '')}" placeholder="Contoh: 001 / A12" inputmode="numeric"></div>
+            <div class="input-with-action">
+              <input id="t-nomor" class="form-control" value="${Utils.escapeHtml(p.Nomor_Peserta || '')}" placeholder="Contoh: 001 / A12" inputmode="numeric">
+              <button type="button" class="btn btn-secondary btn-sm" id="t-generate-nomor" title="Generate ulang otomatis dari tanggal lahir + nomor urut">${Icons.star()} <span>Generate</span></button>
+            </div>
+          </div>
           <div class="form-group"><label>Status Pembayaran</label>
             <select id="t-bayar" class="form-control">
               <option value="false" ${!isPaid ? 'selected' : ''}>Belum Lunas</option>
@@ -1449,6 +1470,26 @@ function openTaskPaymentModal(idPeserta) {
     </div>`;
   document.body.insertAdjacentHTML('beforeend', html);
   ModalHelper.focusFirst(document.getElementById('task-modal'));
+
+  // Tombol Generate: untuk koreksi manual bila admin ingin membuat ulang nomor.
+  const genBtn = document.getElementById('t-generate-nomor');
+  const nomorEl = document.getElementById('t-nomor');
+  if (genBtn && nomorEl) {
+    genBtn.addEventListener('click', async () => {
+      genBtn.classList.add('is-loading'); genBtn.disabled = true;
+      const res = await API.call('generateNomorPeserta', { id_peserta: idPeserta });
+      genBtn.classList.remove('is-loading'); genBtn.disabled = false;
+      if (res.success && res.data) {
+        nomorEl.value = res.data.nomor_peserta;
+        Utils.notify(res.message, 'success');
+        p.Nomor_Peserta = res.data.nomor_peserta;
+        const lp = pesertaListLunas.find(x => x.Id_Peserta === idPeserta);
+        if (lp) lp.Nomor_Peserta = res.data.nomor_peserta;
+      } else {
+        Utils.notify(res.message || 'Gagal membuat nomor peserta', 'error');
+      }
+    });
+  }
 }
 
 async function saveTaskPayment(idPeserta) {

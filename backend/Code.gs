@@ -1,49 +1,3 @@
-/**
- * ===================================================================
- * BACKEND API v4 — Bontang Akuatik Swimming Club
- * Monolithic codebase (Google Apps Script + Google Spreadsheet)
- * ===================================================================
- *
- * SHEET STRUCTURE (kolom baru DITAMBAHKAN DI AKHIR agar data &
- * index lama tetap valid — aman untuk migrasi):
- *
- * Peserta (23 kolom):
- *   1  Id_Peserta        2  Nama_Lengkap      3  Username
- *   4  Password          5  Nomor_Whatsapp    6  Jenis_Kelamin
- *   7  Tempat_Lahir      8  Tanggal_Lahir     9  NISNAS
- *   10 Asal_Sekolah      11 Kelas_Sekolah     12 Wali_Kelas
- *   13 Kelompok_Umur     14 Kelas             15 Tanggal_Mulai
- *   16 Tanggal_Akhir     17 Status_Pembayaran
- *   18 Nomor_Peserta  (wajib sebelum LUNAS)
- *   19 (deprecated)      20 (deprecated)       <- bekas Pertanyaan/Jawaban Unik 1
- *   21 (deprecated)      22 (deprecated)       <- bekas Pertanyaan/Jawaban Unik 2
- *   23 Kode_Referral (BARU — 6 huruf, auto-generate jika kosong)
- *
- *   CATATAN: fitur "pertanyaan keamanan" SUDAH DIHAPUS dari aplikasi.
- *   Kolom 19-22 dipertahankan secara fisik HANYA agar index data lama
- *   tidak bergeser (migrasi aman & non-destruktif). Tidak ada kode yang
- *   membaca/menulis kolom tersebut lagi. Verifikasi lupa-password kini
- *   memakai: Nama_Lengkap + Tanggal_Lahir + Nomor_Whatsapp + NISNAS.
- *
- * Pelatih: Id_Pelatih | Nama | Username | Password
- *
- * Jadwal: Id_Jadwal | Id_Pelatih | Id_Peserta | Tanggal | Pukul | Lokasi | Kelas | Status
- *
- * Kehadiran: Id_Kehadiran | Id_Jadwal | Id_Peserta | Status | Catatan
- *
- * Rapor (18 kolom):
- *   1  Id_Rapor          2  Id_Peserta        3  Predikat
- *   4  Catatan
- *   5  Waktu_25_Bebas    6  Waktu_25_Dada     7  Waktu_25_Kupu     8  Waktu_25_Punggung   (TANPA pelampung)
- *   9  Waktu_50_Bebas    10 Waktu_50_Dada     11 Waktu_50_Kupu     12 Waktu_50_Punggung
- *   13 Tanggal_Rapor     14 Id_Pelatih
- *   15 Waktu_25_Bebas_Pelampung   16 Waktu_25_Dada_Pelampung   (BARU)
- *   17 Waktu_25_Kupu_Pelampung    18 Waktu_25_Punggung_Pelampung
- *
- * Berita: Id_Berita | Judul | Tanggal | Deskripsi | Link | Status (BARU)
- *   Status: Publik | Semua Peserta | Peserta Grup A | Peserta Grup B | Peserta Grup C
- */
-
 const SPREADSHEET_ID = '1Jvndc1jgdlx4iSw2nNp9ezAM-MbU12Y8o1R_nrmLmQw';
 
 /** Header lengkap tiap sheet — dipakai oleh migrateSheets() untuk menambah kolom baru. */
@@ -52,8 +6,7 @@ const SHEET_HEADERS = {
     'Id_Peserta','Nama_Lengkap','Username','Password','Nomor_Whatsapp','Jenis_Kelamin',
     'Tempat_Lahir','Tanggal_Lahir','NISNAS','Asal_Sekolah','Kelas_Sekolah','Wali_Kelas',
     'Kelompok_Umur','Kelas','Tanggal_Mulai','Tanggal_Akhir','Status_Pembayaran',
-    'Nomor_Peserta','Pertanyaan_Unik_1','Jawaban_Unik_1','Pertanyaan_Unik_2','Jawaban_Unik_2',
-    'Kode_Referral'
+    'Nomor_Peserta'
   ],
   Rapor: [
     'Id_Rapor','Id_Peserta','Predikat','Catatan',
@@ -80,9 +33,7 @@ const BERITA_STATUS = ['Publik', 'Semua Peserta', 'Peserta Grup A', 'Peserta Gru
 const PESERTA_COL = {
   Id:1, Nama:2, Username:3, Password:4, Wa:5, Jk:6, TempatLahir:7, TanggalLahir:8,
   Nisnas:9, Sekolah:10, KelasSekolah:11, Wali:12, KelompokUmur:13, Kelas:14,
-  Mulai:15, Akhir:16, Status:17, NomorPeserta:18,
-  // 19-22 = legacy (deprecated, tidak dipakai). 23 = Kode_Referral (BARU).
-  Referral:23
+  Mulai:15, Akhir:16, Status:17, NomorPeserta:18
 };
 const RAPOR_COL = {
   Id:1, IdPeserta:2, Predikat:3, Catatan:4,
@@ -188,32 +139,6 @@ function formatDate(d) {
 function isTrue(v) { return v === true || String(v).toUpperCase() === 'TRUE'; }
 function norm(v) { return String(v == null ? '' : v).trim().toLowerCase(); }
 
-/** Generate kode referral: 6 huruf kapital acak (A-Z). */
-function generateReferral() {
-  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  let code = '';
-  for (let i = 0; i < 6; i++) code += letters.charAt(Math.floor(Math.random() * letters.length));
-  return code;
-}
-
-/** Validasi format kode referral: tepat 6 huruf (case-insensitive). */
-function isValidReferralFormat(code) {
-  return /^[A-Za-z]{6}$/.test(String(code || '').trim());
-}
-
-/**
- * Pastikan baris peserta punya Kode_Referral. Jika kosong, generate + simpan
- * ke sheet (idempotent, dipanggil saat baca data). Mengembalikan kode final.
- */
-function ensureReferral(sheet, pesertaObj, rowIndex) {
-  let code = String(pesertaObj.Kode_Referral || '').trim();
-  if (!code) {
-    code = generateReferral();
-    if (rowIndex && rowIndex > 0) sheet.getRange(rowIndex, PESERTA_COL.Referral).setValue(code);
-  }
-  return code;
-}
-
 /**
  * Migrasi sekali-jalan: pastikan header kolom baru ada di sheet Peserta & Rapor.
  * Aman dijalankan berkali-kali (idempotent). Jalankan dari editor atau action=migrate.
@@ -263,20 +188,21 @@ function registerPeserta(p) {
   const id = generateId('PST');
   const kelompokUmur = calculateKelompokUmur(p.tanggal_lahir);
 
-  // Kode referral: pakai input jika valid (6 huruf), selain itu generate otomatis.
-  let referral = String(p.kode_referral || '').trim().toUpperCase();
-  if (!isValidReferralFormat(referral)) referral = generateReferral();
+  // Nomor_Peserta digenerate otomatis saat pendaftaran (ddmmyy + urut) agar admin
+  // tidak perlu men-generate manual lagi saat Tindak Lanjut Pembayaran. Tetap dapat
+  // dikoreksi manual oleh admin kapan saja (mis. via modal Rapor / Tindak Lanjut Pembayaran).
+  let nomorPeserta = '';
+  const nomorGen = reserveNomorPeserta(p.tanggal_lahir, p.kelas, null);
+  if (nomorGen.success) nomorPeserta = nomorGen.nomor;
 
   sheet.appendRow([
     id, p.nama_lengkap, p.username, p.password, p.nomor_whatsapp,
     p.jenis_kelamin || '', p.tempat_lahir || '', p.tanggal_lahir || '',
     p.nisnas || '', p.asal_sekolah || '', p.kelas_sekolah || '', p.wali_kelas || '',
     kelompokUmur, p.kelas || '', p.tanggal_mulai || '', p.tanggal_akhir || '', false,
-    '',                 // 18 Nomor_Peserta (diisi admin sebelum LUNAS)
-    '', '', '', '',     // 19-22 legacy (deprecated)
-    referral            // 23 Kode_Referral
+    nomorPeserta        // 18 Nomor_Peserta (auto-generate saat registrasi; admin dapat koreksi manual)
   ]);
-  return { success: true, message: 'Registrasi berhasil. Lanjutkan via WhatsApp untuk pembayaran.', id: id, kode_referral: referral };
+  return { success: true, message: 'Registrasi berhasil. Lanjutkan via WhatsApp untuk pembayaran.', id: id };
 }
 
 function login(p) {
@@ -289,12 +215,9 @@ function login(p) {
   const peserta = pesertas.find(x => x.Username === p.username && String(x.Password) === String(p.password));
   if (peserta) {
     if (!isTrue(peserta.Status_Pembayaran)) return { success: false, message: 'Pembayaran belum dikonfirmasi admin. Hubungi admin via WhatsApp.' };
-    const refRow = findRowIndex(pesertaSheet, 0, peserta.Id_Peserta);
-    const referral = ensureReferral(pesertaSheet, peserta, refRow);
     return { success: true, role: 'peserta', data: {
       id: peserta.Id_Peserta, nama: peserta.Nama_Lengkap, username: peserta.Username,
       kelas: peserta.Kelas, nomor_peserta: peserta.Nomor_Peserta || '',
-      kode_referral: referral,
       tanggal_mulai: formatDate(peserta.Tanggal_Mulai), tanggal_akhir: formatDate(peserta.Tanggal_Akhir)
     } };
   }
@@ -390,9 +313,7 @@ function getDataLengkapPeserta(p) {
   const sheet = getSheet('Peserta');
   const peserta = sheetToObjects(sheet).find(x => x.Id_Peserta === p.id_peserta);
   if (!peserta) return { success: false, message: 'Peserta tidak ditemukan' };
-  const row = findRowIndex(sheet, 0, peserta.Id_Peserta);
-  const referral = ensureReferral(sheet, peserta, row);
-  return { success: true, data: { ...peserta, Kode_Referral: referral, Tanggal_Mulai: formatDate(peserta.Tanggal_Mulai), Tanggal_Akhir: formatDate(peserta.Tanggal_Akhir), Tanggal_Lahir: formatDate(peserta.Tanggal_Lahir) } };
+  return { success: true, data: { ...peserta, Tanggal_Mulai: formatDate(peserta.Tanggal_Mulai), Tanggal_Akhir: formatDate(peserta.Tanggal_Akhir), Tanggal_Lahir: formatDate(peserta.Tanggal_Lahir) } };
 }
 
 /** Peserta memperbarui data dirinya sendiri (subset field yang aman). */
@@ -434,7 +355,6 @@ function getAllPeserta() {
   const allJadwal = sheetToObjects(getSheet('Jadwal'));
   const allKehadiran = sheetToObjects(getSheet('Kehadiran'));
   return { success: true, data: pesertas.map((p, i) => {
-    const referral = ensureReferral(pesertaSheet, p, i + 2); // row = index + header(1) + 1-based(1)
     const totalJadwal = allJadwal.filter(j => j.Id_Peserta === p.Id_Peserta || (!j.Id_Peserta && j.Kelas === p.Kelas)).length;
     const totalHadir = allKehadiran.filter(k => k.Id_Peserta === p.Id_Peserta && isTrue(k.Status)).length;
     const persentase = totalJadwal > 0 ? Math.round((totalHadir / totalJadwal) * 100) : 0;
@@ -448,7 +368,7 @@ function getAllPeserta() {
         if (m < 0 || (m === 0 && now.getDate() < lahir.getDate())) usia--;
       }
     }
-    return { ...p, Kode_Referral: referral, Tanggal_Mulai: formatDate(p.Tanggal_Mulai), Tanggal_Akhir: formatDate(p.Tanggal_Akhir), Tanggal_Lahir: formatDate(p.Tanggal_Lahir), Usia: usia, total_jadwal: totalJadwal, total_hadir: totalHadir, persentase: persentase };
+    return { ...p, Tanggal_Mulai: formatDate(p.Tanggal_Mulai), Tanggal_Akhir: formatDate(p.Tanggal_Akhir), Tanggal_Lahir: formatDate(p.Tanggal_Lahir), Usia: usia, total_jadwal: totalJadwal, total_hadir: totalHadir, persentase: persentase };
   })};
 }
 
@@ -904,22 +824,23 @@ function existingNomorSet(excludeId) {
 }
 
 /**
- * Generate Nomor_Peserta otomatis untuk seorang peserta:
+ * Inti logika pembuatan Nomor_Peserta otomatis:
  *   format = ddmmyy(6) + urut(4).
- * Counter diambil dari Script Properties (ac/b), di-increment, dijamin unik,
- * lalu disimpan kembali. Nomor ditulis ke baris peserta.
+ * Counter diambil dari Script Properties (ac/b), di-increment, dijamin unik
+ * terhadap Nomor_Peserta yang sudah terpakai, lalu disimpan kembali.
+ * TIDAK menulis ke sheet Peserta — dipakai baik saat registrasi (peserta belum
+ * punya baris) maupun oleh generateNomorPeserta() untuk peserta yang sudah ada.
+ *
+ * @param {string} tanggalLahir  Tanggal lahir peserta (untuk komponen ddmmyy).
+ * @param {string} kelas         Kelas/grup peserta (untuk memilih counter ac/b).
+ * @param {string|null} excludeId  Id_Peserta yang diabaikan saat cek keunikan
+ *                                 (dipakai saat regenerate peserta yang sudah ada;
+ *                                 null saat registrasi peserta baru).
  */
-function generateNomorPeserta(p) {
-  const sheet = getSheet('Peserta');
-  const row = findRowIndex(sheet, 0, p.id_peserta);
-  if (row === -1) return { success: false, message: 'Peserta tidak ditemukan' };
-
-  const peserta = sheetToObjects(sheet).find(x => x.Id_Peserta === p.id_peserta);
-  const tgl = peserta.Tanggal_Lahir;
-  const ddmmyy = ddmmyyFromDate(tgl);
+function reserveNomorPeserta(tanggalLahir, kelas, excludeId) {
+  const ddmmyy = ddmmyyFromDate(tanggalLahir);
   if (!ddmmyy) return { success: false, message: 'Tanggal lahir peserta tidak valid sehingga nomor tidak dapat dibuat.' };
 
-  const kelas = peserta.Kelas;
   const which = counterKeyForKelas(kelas);
   const propKey = SETTINGS_KEYS[which];
   const props = PropertiesService.getScriptProperties();
@@ -927,7 +848,7 @@ function generateNomorPeserta(p) {
   let seq = parseInt(props.getProperty(propKey), 10);
   if (isNaN(seq) || seq < 0) seq = 0;
 
-  const used = existingNomorSet(p.id_peserta);
+  const used = existingNomorSet(excludeId);
   let nomor = '';
   // Increment hingga ditemukan nomor unik (urut + ddmmyy).
   for (let i = 0; i < 100000; i++) {
@@ -938,10 +859,27 @@ function generateNomorPeserta(p) {
   }
 
   props.setProperty(propKey, String(seq));
-  sheet.getRange(row, PESERTA_COL.NomorPeserta).setValue(nomor);
+  return { success: true, nomor: nomor, counter: which, seq: seq };
+}
 
-  return { success: true, message: 'Nomor peserta dibuat: ' + nomor, data: {
-    nomor_peserta: nomor, counter: which, seq: seq
+/**
+ * Generate Nomor_Peserta otomatis untuk SEORANG PESERTA YANG SUDAH ADA di sheet
+ * (dipanggil dari tombol "Generate" di admin, mis. modal Rapor). Menulis hasilnya
+ * ke baris peserta yang bersangkutan.
+ */
+function generateNomorPeserta(p) {
+  const sheet = getSheet('Peserta');
+  const row = findRowIndex(sheet, 0, p.id_peserta);
+  if (row === -1) return { success: false, message: 'Peserta tidak ditemukan' };
+
+  const peserta = sheetToObjects(sheet).find(x => x.Id_Peserta === p.id_peserta);
+  const r = reserveNomorPeserta(peserta.Tanggal_Lahir, peserta.Kelas, p.id_peserta);
+  if (!r.success) return r;
+
+  sheet.getRange(row, PESERTA_COL.NomorPeserta).setValue(r.nomor);
+
+  return { success: true, message: 'Nomor peserta dibuat: ' + r.nomor, data: {
+    nomor_peserta: r.nomor, counter: r.counter, seq: r.seq
   }};
 }
 
