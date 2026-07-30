@@ -266,11 +266,40 @@ function resetPassword(p) {
 }
 
 // ====================== PESERTA - DASHBOARD ======================
+/**
+ * Filter jadwal milik seorang peserta:
+ *   - Jadwal personal (Id_Peserta terisi) → hanya miliknya sendiri.
+ *   - Jadwal kelas (Id_Peserta kosong, dipakai bersama satu Kelas) → HARUS
+ *     berada di dalam rentang periode pendaftaran peserta (Tanggal_Mulai s.d
+ *     Tanggal_Akhir). Ini penting karena jadwal kelas di-generate untuk
+ *     rentang tanggal siapa pun yang pertama LUNAS (lihat generateScheduleForPeserta),
+ *     jadi satu kelas bisa berisi jadwal gabungan dari peserta 1 bulan & 3 bulan.
+ *     Tanpa filter tanggal ini, peserta yang daftar singkat akan ikut
+ *     menghitung seluruh jadwal milik peserta lain yang periodenya lebih panjang.
+ */
+function filterJadwalByPeserta(allJadwal, peserta, idPeserta) {
+  let start = peserta.Tanggal_Mulai ? new Date(peserta.Tanggal_Mulai) : null;
+  let end = peserta.Tanggal_Akhir ? new Date(peserta.Tanggal_Akhir) : null;
+  if (start && isNaN(start.getTime())) start = null;
+  if (end && isNaN(end.getTime())) end = null;
+  if (start) start.setHours(0, 0, 0, 0);
+  if (end) end.setHours(23, 59, 59, 999);
+
+  return allJadwal.filter(j => {
+    if (j.Id_Peserta) return j.Id_Peserta === idPeserta; // jadwal personal: hanya miliknya sendiri
+    if (j.Kelas !== peserta.Kelas) return false;           // jadwal kelas lain: skip
+    if (!start || !end) return true;                        // fallback jika periode belum diisi
+    const tgl = new Date(j.Tanggal);
+    if (isNaN(tgl.getTime())) return true;                  // fallback aman jika tanggal tidak valid
+    return tgl >= start && tgl <= end;
+  });
+}
+
 function getJadwalPeserta(p) {
   const peserta = sheetToObjects(getSheet('Peserta')).find(x => x.Id_Peserta === p.id_peserta);
   if (!peserta) return { success: false, message: 'Peserta tidak ditemukan' };
   const allJadwal = sheetToObjects(getSheet('Jadwal'));
-  const jadwal = allJadwal.filter(j => j.Id_Peserta === p.id_peserta || (!j.Id_Peserta && j.Kelas === peserta.Kelas));
+  const jadwal = filterJadwalByPeserta(allJadwal, peserta, p.id_peserta);
   const kehadiran = sheetToObjects(getSheet('Kehadiran')).filter(k => k.Id_Peserta === p.id_peserta);
   const result = jadwal.map(j => {
     const k = kehadiran.find(x => x.Id_Jadwal === j.Id_Jadwal);
@@ -301,7 +330,7 @@ function izin(p) {
 function getKehadiranPeserta(p) {
   const peserta = sheetToObjects(getSheet('Peserta')).find(x => x.Id_Peserta === p.id_peserta);
   if (!peserta) return { success: false, message: 'Peserta tidak ditemukan' };
-  const allJadwal = sheetToObjects(getSheet('Jadwal')).filter(j => j.Id_Peserta === p.id_peserta || (!j.Id_Peserta && j.Kelas === peserta.Kelas));
+  const allJadwal = filterJadwalByPeserta(sheetToObjects(getSheet('Jadwal')), peserta, p.id_peserta);
   const kehadiran = sheetToObjects(getSheet('Kehadiran')).filter(k => k.Id_Peserta === p.id_peserta);
   const totalHadir = kehadiran.filter(k => isTrue(k.Status)).length;
   const totalIzin = kehadiran.filter(k => !isTrue(k.Status)).length;
@@ -355,7 +384,7 @@ function getAllPeserta() {
   const allJadwal = sheetToObjects(getSheet('Jadwal'));
   const allKehadiran = sheetToObjects(getSheet('Kehadiran'));
   return { success: true, data: pesertas.map((p, i) => {
-    const totalJadwal = allJadwal.filter(j => j.Id_Peserta === p.Id_Peserta || (!j.Id_Peserta && j.Kelas === p.Kelas)).length;
+    const totalJadwal = filterJadwalByPeserta(allJadwal, p, p.Id_Peserta).length;
     const totalHadir = allKehadiran.filter(k => k.Id_Peserta === p.Id_Peserta && isTrue(k.Status)).length;
     const persentase = totalJadwal > 0 ? Math.round((totalHadir / totalJadwal) * 100) : 0;
     let usia = '';
