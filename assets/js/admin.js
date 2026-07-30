@@ -315,16 +315,16 @@ function openPesertaEditModal(id) {
             <div class="form-group"><label>Nama Lengkap</label><div class="readonly-field">${ro(p.Nama_Lengkap)}</div></div>
             <div class="form-group"><label>Username</label><div class="readonly-field">${ro(p.Username)}</div></div>
             <div class="form-group"><label>WhatsApp</label><div class="readonly-field">${ro(p.Nomor_Whatsapp)}</div></div>
-            <div class="form-group"><label>NISN</label><div class="readonly-field">${ro(p.NISNAS)}</div></div>
             <div class="form-group"><label>Jenis Kelamin</label><div class="readonly-field">${ro(p.Jenis_Kelamin)}</div></div>
             <div class="form-group"><label>Tanggal Lahir</label><div class="readonly-field">${Utils.formatDate(p.Tanggal_Lahir)}</div></div>
             <div class="form-group"><label>Asal Sekolah</label><div class="readonly-field">${ro(p.Asal_Sekolah)}</div></div>
-          </div>
-
-          <h4 class="form-section-title" style="margin-top:18px;">${Icons.pool()} Data Pelatihan <span class="lock-note"> (Admin dapat mengubah data berikut)</span></h4>
-          <div class="form-grid-2">
+            </div>
+            
+            <h4 class="form-section-title" style="margin-top:18px;">${Icons.pool()} Data Pelatihan <span class="lock-note"> (Admin dapat mengubah data berikut)</span></h4>
+            <div class="form-grid-2">
             <div class="form-group"><label>Grup Renang *</label><select id="e-kelas" class="form-control">${kelasOpts}</select></div>
             <div class="form-group"><label>Nomor Peserta ${isPaid ? '*' : ''}</label><input id="e-nomor" class="form-control" value="${Utils.escapeHtml(p.Nomor_Peserta || '')}" placeholder="Contoh: 001 / A12" inputmode="numeric"></div>
+            <div class="form-group"><label>NISNAS</label><div class="readonly-field">${ro(p.NISNAS)}</div></div>
             <div class="form-group"><label>Tanggal Mulai</label><input id="e-mulai" class="form-control" type="date" value="${Utils.formatDateInput(p.Tanggal_Mulai)}"></div>
             <div class="form-group"><label>Tanggal Akhir</label><input id="e-akhir" class="form-control" type="date" value="${Utils.formatDateInput(p.Tanggal_Akhir)}"></div>
             <div class="form-group"><label>Status Pembayaran</label><select id="e-bayar" class="form-control"><option value="false" ${!isPaid ? 'selected' : ''}>Belum Lunas</option><option value="true" ${isPaid ? 'selected' : ''}>Lunas</option></select></div>
@@ -1202,14 +1202,6 @@ function openRaporAdminModal(idPeserta) {
         <div class="modal-body">
           <div class="form-group"><label>Peserta *</label><select id="rp-peserta" class="form-control" ${existing ? 'disabled' : ''}><option value="">- Pilih peserta -</option>${pesertaOpts}</select></div>
 
-          <div class="form-group">
-            <label>Nomor Peserta</label>
-            <div class="input-with-action">
-              <input id="rp-nomor" class="form-control" value="${Utils.escapeHtml(currentNomor)}" placeholder="10 digit (ddmmyy + urut)" inputmode="numeric" maxlength="10">
-              <button type="button" class="btn btn-secondary btn-sm" id="rp-generate-nomor" title="Generate otomatis dari tanggal lahir + nomor urut">${Icons.star()} <span>Generate</span></button>
-            </div>
-          </div>
-
           <h4 class="form-section-title">Capaian Waktu Latihan</h4>
           <p class="form-helper">Format waktu: <code>mm.ss.ms</code> (contoh: <code>01.08.12</code>). Kosongkan jika belum ada data.</p>
           <table class="rapor-input-table">
@@ -1450,12 +1442,6 @@ async function openTaskPaymentModal(idPeserta) {
         </div>
         <div class="modal-body">
           <div class="info-banner">${Icons.user()}<p>Peserta: <strong>${Utils.escapeHtml(p.Nama_Lengkap)}</strong> • ${Utils.escapeHtml(p.Kelas) || '-'}</p></div>
-          <div class="form-group"><label>Nomor Peserta</label>
-            <div class="input-with-action">
-              <input id="t-nomor" class="form-control" value="${Utils.escapeHtml(p.Nomor_Peserta || '')}" placeholder="Contoh: 001 / A12" inputmode="numeric">
-              <button type="button" class="btn btn-secondary btn-sm" id="t-generate-nomor" title="Generate ulang otomatis dari tanggal lahir + nomor urut">${Icons.star()} <span>Generate</span></button>
-            </div>
-          </div>
           <div class="form-group"><label>Status Pembayaran</label>
             <select id="t-bayar" class="form-control">
               <option value="false" ${!isPaid ? 'selected' : ''}>Belum Lunas</option>

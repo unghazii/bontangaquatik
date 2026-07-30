@@ -51,13 +51,46 @@ document.addEventListener('DOMContentLoaded', async () => {
     el.addEventListener('change', applyJadwalPesertaFilters);
   });
 
-  // Re-render saat mode tampilan jadwal diubah dari Pengaturan (req #9)
+  // Re-render saat mode tampilan jadwal diubah (toggle di section jadwal / Pengaturan)
   document.addEventListener('jadwalviewchange', () => {
     if (cacheJadwalPeserta.length || lastFilteredJadwal.length) applyJadwalPesertaFilters();
   });
 
+  setupJadwalViewToggle();
+
   await loadDashboard();
 });
+
+/** Button toggle Grid / Kalender pada section-head "Jadwal Pelatihan". */
+function setupJadwalViewToggle() {
+  const group = document.getElementById('jadwal-view-toggle');
+  if (!group) return;
+  const buttons = group.querySelectorAll('button[data-val]');
+
+  const syncActiveState = () => {
+    const mode = (window.PesertaSettings && PesertaSettings.getViewMode()) ? PesertaSettings.getViewMode() : 'grid';
+    buttons.forEach(b => {
+      const active = b.dataset.val === mode;
+      b.classList.toggle('active', active);
+      b.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+  };
+
+  group.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-val]');
+    if (!btn || btn.classList.contains('active')) return;
+    if (window.PesertaSettings && typeof PesertaSettings.setViewMode === 'function') {
+      PesertaSettings.setViewMode(btn.dataset.val);
+    } else {
+      // Fallback bila PesertaSettings tidak tersedia
+      syncActiveState();
+      renderJadwalView(lastFilteredJadwal.length ? lastFilteredJadwal : cacheJadwalPeserta);
+    }
+  });
+
+  document.addEventListener('jadwalviewchange', syncActiveState);
+  syncActiveState();
+}
 
 /** Ambil user dari salah satu API yang tersedia (Auth.getUser / Auth.getSession). */
 function getCurrentUser() {
@@ -402,24 +435,51 @@ function openBeritaPesertaModal(i) {
   });
 }
 
+/**
+ * Pengingat jadwal yang PERLU DITINDAKLANJUTI (belum absen/izin), tampil sebagai
+ * kartu bersih ala task-section admin — klik kartu → buka modal absen/izin.
+ * Section otomatis tersembunyi bila tidak ada jadwal yang perlu ditindaklanjuti.
+ */
 function renderUpcomingReminder() {
-  const box = document.getElementById('upcoming-reminder');
-  if (!box) return;
+  const section  = document.getElementById('upcoming-reminder-section');
+  const scroller = document.getElementById('reminder-scroller');
+  const badge    = document.getElementById('reminder-count');
+  if (!section || !scroller) return;
+
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const upcoming = cacheJadwalPeserta
-    .filter(j => new Date(j.Tanggal) >= today && String(j.Status).toLowerCase() !== 'cancel')
-    .sort((a, b) => new Date(a.Tanggal) - new Date(b.Tanggal))[0];
-  if (!upcoming) { box.hidden = true; return; }
-  box.hidden = false;
-  const status = String(upcoming.Status).toLowerCase();
-  const badgeClass = status === 'aktif' ? 'badge-success' : 'badge-warning';
-  box.innerHTML = `
-    <div class="reminder-body">
-      <div class="reminder-label">Jadwal Terdekat Anda</div>
-      <div class="reminder-main">${Utils.formatDateLong(upcoming.Tanggal)} • ${Utils.escapeHtml(upcoming.Pukul)}</div>
-      <div class="reminder-meta">📍 ${Utils.escapeHtml(upcoming.Lokasi)} • ${Utils.escapeHtml(upcoming.Kelas)} ${upcoming.is_personal ? '<span class="badge badge-personal">⭐ Personal</span>' : ''}</div>
-    </div>
-    <span class="badge ${badgeClass} reminder-badge">${Utils.escapeHtml(upcoming.Status)}</span>`;
+  const todayISO = Utils.formatDateInput(today);
+
+  const items = cacheJadwalPeserta
+    .filter(j => new Date(j.Tanggal) >= today
+                 && String(j.Status).toLowerCase() === 'aktif'
+                 && !j.sudah_absen)
+    .sort((a, b) => new Date(a.Tanggal) - new Date(b.Tanggal))
+    .slice(0, 5); // batasi agar scroller tetap ringkas
+
+  if (!items.length) { section.hidden = true; scroller.innerHTML = ''; return; }
+  section.hidden = false;
+  if (badge) badge.textContent = items.length;
+
+  scroller.innerHTML = items.map(j => {
+    const isToday = jadwalDateISO(j) === todayISO;
+    const tag = isToday ? '⏰ Hari Ini' : '📅 Akan Datang';
+    const personalBadge = j.is_personal
+      ? `<span class="badge badge-personal" title="Jadwal personal">⭐</span>`
+      : '';
+    return `
+      <div class="reminder-card${isToday ? ' is-today' : ''}" data-jadwal-id="${j.Id_Jadwal}" role="button" tabindex="0"
+          onclick="openAbsenModal('${j.Id_Jadwal}')"
+          onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openAbsenModal('${j.Id_Jadwal}')}">
+        <span class="reminder-card__tag">${tag}</span>
+        <div class="reminder-card__title">${Utils.escapeHtml(j.Kelas)} ${personalBadge}</div>
+        <div class="reminder-card__meta">
+          <span>📅 ${Utils.escapeHtml(Utils.formatDateLong(j.Tanggal))}</span>
+          <span>🕐 ${Utils.escapeHtml(j.Pukul)}</span>
+          <span>📍 ${Utils.escapeHtml(j.Lokasi)}</span>
+        </div>
+        <div class="reminder-card__cta">Absen / Izin sekarang ›</div>
+      </div>`;
+  }).join('');
 }
 
 /* =====================================================================

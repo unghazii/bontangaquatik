@@ -143,6 +143,12 @@
   white-space: nowrap;
 }
 
+/* Wrapper kanan section-head: counter + toggle tampilan grid/kalender */
+.section-head-actions {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+#jadwal-view-toggle button { white-space: nowrap; }
+
 .jadwal-card.aktif { border-left: 4px solid var(--color-success); }
 .jadwal-card.pending { border-left: 4px solid var(--color-warning); }
 .jadwal-card.cancel { border-left: 4px solid var(--color-danger); opacity: 0.7; }
@@ -176,6 +182,11 @@
 .jadwal-badge.personal {
   background: var(--color-accent-soft); color: var(--color-accent);
   border: 1px solid var(--color-accent);
+}
+/* Dipakai bersama class .badge dasar (global.css) di grid card, hari kalender & reminder card */
+.badge-personal {
+  background: var(--color-accent-soft); color: var(--color-accent);
+  border-color: var(--color-accent);
 }
 .jadwal-status-done {
   padding: 8px 14px; border-radius: var(--radius-sm);
@@ -252,20 +263,62 @@
    PESERTA ADD-ONS (Fase 3) — reminder, berita, kalender, settings.
    ===================================================================== */
 
-/* ---------- PENGINGAT JADWAL TERDEKAT (req #6) ---------- */
-.upcoming-reminder {
-  display: flex; align-items: center; gap: 14px; margin-bottom: 18px;
-  padding: 16px 18px; border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, var(--color-primary-light), var(--color-accent-soft));
-  border: 1px solid var(--color-border); animation: fadeIn .35s ease;
+/* ---------- JADWAL PERLU DITINDAKLANJUTI ----------
+   UI bersih senada dengan .task-section di halaman admin: header + badge
+   jumlah, lalu deretan kartu yang bisa discroll horizontal. Klik kartu
+   membuka modal absen/izin (openAbsenModal). Section otomatis sembunyi
+   bila tidak ada jadwal yang perlu direspons. */
+.reminder-section {
+  margin: 4px 0 22px; padding: 18px;
+  border: 1px solid var(--color-border); border-radius: var(--radius-lg);
+  animation: fadeIn .35s ease;
 }
-.reminder-icon { font-size: 30px; flex: 0 0 auto; }
-.reminder-body { flex: 1 1 auto; min-width: 0; }
-.reminder-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--color-text-subheading); }
-.reminder-main { font-size: 16px; font-weight: 700; color: var(--color-text-heading); margin: 2px 0; }
-.reminder-meta { font-size: 13px; color: var(--color-text-secondary); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.reminder-badge { flex: 0 0 auto; }
-@media (max-width: 560px) { .upcoming-reminder { flex-wrap: wrap; } .reminder-badge { order: 3; } }
+.reminder-section-head { margin-bottom: 14px; }
+.reminder-section-title {
+  display: flex; align-items: center; gap: 9px; font-size: 17px;
+  color: var(--color-text-heading); margin: 0;
+}
+.reminder-count-badge {
+  font-size: 12px; font-weight: 700; min-width: 22px; height: 22px; padding: 0 7px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--color-accent); color: #fff; border-radius: 999px;
+}
+.reminder-section-sub { font-size: 12.5px; color: var(--color-text-secondary); margin: 4px 0 0; }
+
+.reminder-scroller {
+  display: flex; gap: 13px; overflow-x: auto; padding: 4px 2px 10px;
+  scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+.reminder-scroller::-webkit-scrollbar { height: 7px; }
+.reminder-scroller::-webkit-scrollbar-thumb { background: var(--color-border-strong); border-radius: 999px; }
+
+.reminder-card {
+  scroll-snap-align: start; flex: 0 0 clamp(230px, 78vw, 280px);
+  background: var(--color-card); border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-accent); border-radius: var(--radius-md);
+  padding: 14px 15px; cursor: pointer; transition: var(--transition);
+  display: flex; flex-direction: column; gap: 8px; position: relative;
+}
+.reminder-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-left-color: var(--color-primary); }
+.reminder-card:focus-visible { outline: none; box-shadow: var(--shadow-glow); }
+.reminder-card.is-today { border-left-color: var(--color-danger); }
+.reminder-card__tag {
+  display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px;
+  padding: 3px 9px; border-radius: 999px;
+  background: var(--badge-info-bg); color: var(--badge-info-text);
+}
+.reminder-card.is-today .reminder-card__tag { background: var(--badge-danger-bg); color: var(--badge-danger-text); }
+.reminder-card__title {
+  font-size: 15px; font-weight: 700; color: var(--color-text-heading); line-height: 1.3;
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+.reminder-card__meta { font-size: 12.5px; color: var(--color-text-secondary); display: flex; flex-direction: column; gap: 3px; }
+.reminder-card__cta {
+  margin-top: 4px; font-size: 12.5px; font-weight: 600; color: var(--color-primary);
+  display: flex; align-items: center; gap: 5px;
+}
 
 /* ---------- BERITA (req #6) ---------- */
 .berita-scroller {

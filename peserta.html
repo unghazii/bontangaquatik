@@ -43,8 +43,18 @@
         </div>
       </div>
 
-      <!-- Pengingat 1 jadwal terdekat (req #6) -->
-      <!-- <div id="upcoming-reminder" class="upcoming-reminder" hidden></div> -->
+      <!-- Pengingat jadwal yang perlu ditindaklanjuti (absen/izin) -->
+      <section class="reminder-section" id="upcoming-reminder-section" hidden aria-label="Jadwal yang perlu ditindaklanjuti">
+        <div class="reminder-section-head">
+          <h2 class="reminder-section-title">
+            <span aria-hidden="true">🔔</span>
+            <span>Ayo Absen Kehadiran</span>
+            <span class="reminder-count-badge" id="reminder-count">0</span>
+          </h2>
+          <p class="reminder-section-sub">Klik kartu untuk melakukan absensi atau izin</p>
+        </div>
+        <div class="reminder-scroller" id="reminder-scroller"></div>
+      </section>
 
       <!-- Stats -->
       <div class="stats-grid">
@@ -80,7 +90,13 @@
       <div class="dashboard-section">
         <div class="section-head">
           <h2>Jadwal Pelatihan</h2>
-          <span class="jadwal-count" id="jadwal-count">0 jadwal</span>
+          <div class="section-head-actions">
+            <span class="jadwal-count" id="jadwal-count">0 jadwal</span>
+            <div class="ui-segment" id="jadwal-view-toggle" role="group" aria-label="Ubah tampilan jadwal">
+              <button type="button" data-val="grid">▦ Grid</button>
+              <button type="button" data-val="calendar">📅 Kalender</button>
+            </div>
+          </div>
         </div>
 
         <!-- Toolbar Search & Filter (BARU) -->
@@ -101,9 +117,9 @@
               <option value="belum">Belum Direspons</option>
             </select>
             <select id="sort-jadwal-peserta" class="filter-select">
+              <option value="upcoming" selected>Mendatang Dulu</option>
               <option value="tanggal-desc">Terbaru</option>
               <option value="tanggal-asc">Terlama</option>
-              <option value="upcoming">Mendatang Dulu</option>
             </select>
           </div>
         </div>
