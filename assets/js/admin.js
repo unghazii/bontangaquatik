@@ -434,7 +434,11 @@ function applyJadwalFilters() {
   if (fStatus !== 'all') filtered = filtered.filter(j => j.Status === fStatus);
   if (fTipe === 'kelas') filtered = filtered.filter(j => !j.is_personal);
   if (fTipe === 'personal') filtered = filtered.filter(j => j.is_personal);
-  filtered.sort((a, b) => new Date(b.Tanggal) - new Date(a.Tanggal));
+  // Urutkan berdasarkan jadwal yang waktunya PALING DEKAT dengan hari ini (bisa lampau/mendatang),
+  // bukan berdasarkan urutan dibuat atau tanggal terjauh (mis. jadwal tahun depan yang baru dibuat sistem).
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  filtered.sort((a, b) => Math.abs(new Date(a.Tanggal) - today) - Math.abs(new Date(b.Tanggal) - today));
   renderJadwal(filtered);
 }
 
