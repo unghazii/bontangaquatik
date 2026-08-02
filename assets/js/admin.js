@@ -117,8 +117,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderSkeleton('tbody-kehadiran', 7, 6);
   renderSkeleton('tbody-rapor', 6, 5);
 
-  await Promise.all([loadPeserta(), loadJadwal(), loadKehadiran(), loadRapor(), loadBerita()]);
-  updateStats();
+  // Sinkronkan seluruh cache yang dibutuhkan panel admin dalam 1 gelombang,
+  // lalu seluruh tab (Peserta/Jadwal/Kehadiran/Rapor/Berita) memakai data
+  // lokal (Store) — tanpa request tambahan ke Apps Script tiap pindah tab.
+  const refreshAllTabs = () => {
+    loadPeserta(); loadJadwal(); loadKehadiran(); loadRapor(); loadBerita();
+    updateStats();
+  };
+  await Sync.init(['Peserta', 'Jadwal', 'Kehadiran', 'Rapor', 'Berita', 'Pelatih', '__settings__'], refreshAllTabs);
+  refreshAllTabs();
   setupFilters();
 
   // Menu Pengaturan (tema, tampilan jadwal/kehadiran, variabel nomor peserta).
@@ -184,8 +191,8 @@ function updateStats() {
 // =============================================================
 // PESERTA
 // =============================================================
-async function loadPeserta() {
-  const res = await API.call('getAllPeserta');
+function loadPeserta() {
+  const res = BizLogic.getAllPeserta();
   if (!res.success) { Utils.notify(res.message, 'error'); return; }
   pesertaCache = res.data || [];
   pesertaListLunas = pesertaCache.filter(p => Utils.formatBool(p.Status_Pembayaran) === 'TRUE');
@@ -365,12 +372,12 @@ async function savePeserta(id) {
     status_pembayaran: wantLunas
   };
 
-  const res = await API.call('updatePeserta', payload);
+  const res = await BizLogic.updatePeserta(payload);
   if (res.success) {
     Utils.notify(res.message, 'success', 5000);
     document.getElementById('peserta-edit-modal').remove();
-    await loadPeserta();
-    await loadJadwal();
+    loadPeserta();
+    loadJadwal();
     updateStats();
   } else if (res.code === 'NOMOR_PESERTA_REQUIRED') {
     showAlertModal('Nomor Peserta Wajib Diisi', Utils.escapeHtml(res.message));
@@ -401,17 +408,17 @@ async function deletePesertaConfirm(id, nama) {
   const ok = await Utils.confirm(`Hapus peserta <strong>${nama}</strong>?<br>Data akan hilang permanen.`);
   if (!ok) return;
   Utils.showLoader(true);
-  const res = await API.call('deletePeserta', { id });
+  const res = await BizLogic.deletePeserta({ id });
   Utils.showLoader(false);
-  if (res.success) { Utils.notify(res.message, 'success'); await loadPeserta(); updateStats(); }
+  if (res.success) { Utils.notify(res.message, 'success'); loadPeserta(); updateStats(); }
   else Utils.notify(res.message, 'error');
 }
 
 // =============================================================
 // JADWAL
 // =============================================================
-async function loadJadwal() {
-  const res = await API.call('getAllJadwal');
+function loadJadwal() {
+  const res = BizLogic.getAllJadwal();
   if (!res.success) { Utils.notify(res.message, 'error'); return; }
   jadwalCache = res.data || [];
   applyJadwalFilters();
@@ -704,13 +711,13 @@ async function saveJadwalNew() {
   if (ids.length === 0) { Utils.notify('Mohon pilih minimal 1 peserta dari daftar', 'warning'); return; }
   if (!tanggal || !pukul || !lokasi) { Utils.notify('Mohon lengkapi tanggal, pukul, dan lokasi', 'warning'); return; }
 
-  const res = await API.call('createJadwalBatch', {
+  const res = await BizLogic.createJadwalBatch({
     id_pelatih: session.data.id, peserta: ids, tanggal, pukul, lokasi, status
   });
   if (res.success) {
     Utils.notify(res.message, 'success');
     document.getElementById('jadwal-modal').remove();
-    await loadJadwal(); updateStats();
+    loadJadwal(); updateStats();
   } else Utils.notify(res.message, 'error');
 }
 
@@ -753,12 +760,12 @@ async function saveJadwalEdit(id) {
     status: document.getElementById('je-status').value
   };
   Utils.showLoader(true);
-  const res = await API.call('updateJadwal', payload);
+  const res = await BizLogic.updateJadwal(payload);
   Utils.showLoader(false);
   if (res.success) {
     Utils.notify(res.message, 'success');
     document.getElementById('jadwal-edit-modal').remove();
-    await loadJadwal();
+    loadJadwal();
   } else Utils.notify(res.message, 'error');
 }
 
@@ -766,16 +773,14 @@ async function deleteJadwalConfirm(id) {
   const ok = await Utils.confirm('Hapus jadwal ini?');
   if (!ok) return;
   Utils.showLoader(true);
-  const res = await API.call('deleteJadwal', { id });
+  const res = await BizLogic.deleteJadwal({ id });
   Utils.showLoader(false);
-  if (res.success) { Utils.notify(res.message, 'success'); await loadJadwal(); updateStats(); }
+  if (res.success) { Utils.notify(res.message, 'success'); loadJadwal(); updateStats(); }
   else Utils.notify(res.message, 'error');
 }
 
-async function openAttendeesModal(idJadwal) {
-  Utils.showLoader(true);
-  const res = await API.call('getJadwalAttendees', { id_jadwal: idJadwal });
-  Utils.showLoader(false);
+function openAttendeesModal(idJadwal) {
+  const res = BizLogic.getJadwalAttendees({ id_jadwal: idJadwal });
   if (!res.success) { Utils.notify(res.message, 'error'); return; }
   const { data, jadwal } = res;
   const stats = {
@@ -812,8 +817,8 @@ async function openAttendeesModal(idJadwal) {
 // =============================================================
 // BERITA
 // =============================================================
-async function loadBerita() {
-  const res = await API.call('getAllBerita');
+function loadBerita() {
+  const res = BizLogic.getAllBerita();
   if (!res.success) { Utils.notify(res.message, 'error'); return; }
   beritaCache = res.data || [];
   applyBeritaFilters();
@@ -894,15 +899,14 @@ async function saveBerita(id) {
   const link = document.getElementById('b-link').value.trim();
   if (!judul || !tanggal || !deskripsi) { Utils.notify('Judul, tanggal, dan deskripsi wajib diisi', 'warning'); return; }
   Utils.showLoader(true);
-  const action = id ? 'updateBerita' : 'createBerita';
   const payload = { judul, tanggal, deskripsi, link, status };
   if (id) payload.id = id;
-  const res = await API.call(action, payload);
+  const res = id ? await BizLogic.updateBerita(payload) : await BizLogic.createBerita(payload);
   Utils.showLoader(false);
   if (res.success) {
     Utils.notify(res.message, 'success');
     document.getElementById('berita-modal').remove();
-    await loadBerita();
+    loadBerita();
   } else Utils.notify(res.message, 'error');
 }
 
@@ -913,11 +917,11 @@ async function deleteBeritaConfirm(id, judul) {
   );
   if (!ok) return;
   Utils.showLoader(true);
-  const res = await API.call('deleteBerita', { id });
+  const res = await BizLogic.deleteBerita({ id });
   Utils.showLoader(false);
   if (res.success) {
     Utils.notify(res.message, 'success');
-    await loadBerita();
+    loadBerita();
   } else {
     Utils.notify(res.message, 'error');
   }
@@ -926,9 +930,9 @@ async function deleteBeritaConfirm(id, judul) {
 // =============================================================
 // KEHADIRAN + EXPORT EXCEL
 // =============================================================
-async function loadKehadiran() {
+function loadKehadiran() {
   const periode = document.getElementById('filter-periode')?.value || 'all';
-  const res = await API.call('getAllKehadiran', { periode });
+  const res = BizLogic.getAllKehadiran({ periode });
   if (!res.success) { Utils.notify(res.message, 'error'); return; }
   kehadiranCache = res.data || [];
   applyKehadiranFilters();
@@ -1048,9 +1052,9 @@ async function deleteKehadiranConfirm(id) {
   const ok = await Utils.confirm('Hapus record kehadiran ini?');
   if (!ok) return;
   Utils.showLoader(true);
-  const res = await API.call('deleteKehadiran', { id });
+  const res = await BizLogic.deleteKehadiran({ id });
   Utils.showLoader(false);
-  if (res.success) { Utils.notify(res.message, 'success'); await loadKehadiran(); }
+  if (res.success) { Utils.notify(res.message, 'success'); loadKehadiran(); }
   else Utils.notify(res.message, 'error');
 }
 
@@ -1089,9 +1093,7 @@ async function doExportExcel() {
   if (!kelas || !dari || !sampai) { Utils.notify('Mohon lengkapi semua field', 'warning'); return; }
   if (new Date(dari) > new Date(sampai)) { Utils.notify('Tanggal dari harus sebelum tanggal sampai', 'warning'); return; }
 
-  Utils.showLoader(true);
-  const res = await API.call('getKehadiranForExport', { kelas, tanggal_dari: dari, tanggal_sampai: sampai });
-  Utils.showLoader(false);
+  const res = BizLogic.getKehadiranForExport({ kelas, tanggal_dari: dari, tanggal_sampai: sampai });
   if (!res.success) { Utils.notify(res.message, 'error'); return; }
 
   ExcelExport.kehadiran(res.data);
@@ -1101,8 +1103,8 @@ async function doExportExcel() {
 // =============================================================
 // RAPOR
 // =============================================================
-async function loadRapor() {
-  const res = await API.call('getAllRapor');
+function loadRapor() {
+  const res = BizLogic.getAllRapor();
   if (!res.success) { Utils.notify(res.message, 'error'); return; }
   raporCache = res.data || [];
   applyRaporFilters();
@@ -1242,7 +1244,7 @@ function openRaporAdminModal(idPeserta) {
       const pid = selEl ? selEl.value : idPeserta;
       if (!pid) { Utils.notify('Pilih peserta terlebih dahulu', 'warning'); return; }
       genBtn.classList.add('is-loading'); genBtn.disabled = true;
-      const res = await API.call('generateNomorPeserta', { id_peserta: pid });
+      const res = await BizLogic.generateNomorPeserta({ id_peserta: pid });
       genBtn.classList.remove('is-loading'); genBtn.disabled = false;
       if (res.success && res.data) {
         nomorEl.value = res.data.nomor_peserta;
@@ -1293,7 +1295,7 @@ async function saveRapor() {
     const ps = pesertaCache.find(p => p.Id_Peserta === idPeserta);
     const nomorLama = ps ? String(ps.Nomor_Peserta || '').trim() : '';
     if (nomorBaru !== nomorLama) {
-      const upd = await API.call('updatePeserta', { id: idPeserta, nomor_peserta: nomorBaru });
+      const upd = await BizLogic.updatePeserta({ id: idPeserta, nomor_peserta: nomorBaru });
       if (!upd.success) {
         Utils.showLoader(false);
         Utils.notify(upd.message || 'Gagal menyimpan nomor peserta', 'error');
@@ -1304,12 +1306,12 @@ async function saveRapor() {
       if (lp) lp.Nomor_Peserta = nomorBaru;
     }
   }
-  const res = await API.call('upsertRapor', payload);
+  const res = await BizLogic.upsertRapor(payload);
   Utils.showLoader(false);
   if (res.success) {
     Utils.notify(res.message, 'success');
     document.getElementById('rapor-admin-modal').remove();
-    await loadRapor();
+    loadRapor();
   } else Utils.notify(res.message, 'error');
 }
 
@@ -1317,9 +1319,9 @@ async function deleteRaporConfirm(id) {
   const ok = await Utils.confirm('Hapus rapor ini?');
   if (!ok) return;
   Utils.showLoader(true);
-  const res = await API.call('deleteRapor', { id });
+  const res = await BizLogic.deleteRapor({ id });
   Utils.showLoader(false);
-  if (res.success) { Utils.notify(res.message, 'success'); await loadRapor(); }
+  if (res.success) { Utils.notify(res.message, 'success'); loadRapor(); }
   else Utils.notify(res.message, 'error');
 }
 
@@ -1335,10 +1337,8 @@ async function downloadAdminRaporPDF(idPeserta, btn) {
   if (btn) btn.classList.add('is-loading');
   Utils.showLoader(true);
   try {
-    const [pesertaRes, raporRes] = await Promise.all([
-      API.call('getDataLengkapPeserta', { id_peserta: idPeserta }),
-      API.call('getRaporPeserta', { id_peserta: idPeserta })
-    ]);
+    const pesertaRes = BizLogic.getDataLengkapPeserta({ id_peserta: idPeserta });
+    const raporRes = BizLogic.getRaporPeserta({ id_peserta: idPeserta });
     if (!pesertaRes.success) { Utils.notify('Gagal memuat data peserta', 'error'); return; }
     if (!raporRes.success || !raporRes.data) { Utils.notify('Rapor peserta belum tersedia', 'warning'); return; }
     await PDFRapor.generate(pesertaRes.data, raporRes.data, raporRes.data.Nama_Pelatih);
@@ -1425,7 +1425,7 @@ async function openTaskPaymentModal(idPeserta) {
   // tombol "Generate" di modal Rapor.
   if (!String(p.Nomor_Peserta || '').trim()) {
     Utils.showLoader(true);
-    const genRes = await API.call('generateNomorPeserta', { id_peserta: idPeserta });
+    const genRes = await BizLogic.generateNomorPeserta({ id_peserta: idPeserta });
     Utils.showLoader(false);
     if (genRes.success && genRes.data) {
       p.Nomor_Peserta = genRes.data.nomor_peserta;
@@ -1467,7 +1467,7 @@ async function openTaskPaymentModal(idPeserta) {
   if (genBtn && nomorEl) {
     genBtn.addEventListener('click', async () => {
       genBtn.classList.add('is-loading'); genBtn.disabled = true;
-      const res = await API.call('generateNomorPeserta', { id_peserta: idPeserta });
+      const res = await BizLogic.generateNomorPeserta({ id_peserta: idPeserta });
       genBtn.classList.remove('is-loading'); genBtn.disabled = false;
       if (res.success && res.data) {
         nomorEl.value = res.data.nomor_peserta;
@@ -1491,11 +1491,11 @@ async function saveTaskPayment(idPeserta) {
     Utils.notify('Nomor Peserta wajib diisi sebelum status Lunas.', 'warning');
     return;
   }
-  const res = await API.call('updatePeserta', { id: idPeserta, nomor_peserta: nomor, status_pembayaran: wantLunas });
+  const res = await BizLogic.updatePeserta({ id: idPeserta, nomor_peserta: nomor, status_pembayaran: wantLunas });
   if (res.success) {
     Utils.notify(res.message, 'success');
     document.getElementById('task-modal').remove();
-    await loadPeserta(); await loadJadwal(); updateStats();
+    loadPeserta(); loadJadwal(); updateStats();
   } else if (res.code === 'NOMOR_PESERTA_REQUIRED') {
     showAlertModal('Nomor Peserta Wajib Diisi', Utils.escapeHtml(res.message));
   } else Utils.notify(res.message, 'error');
@@ -1530,10 +1530,10 @@ function openTaskJadwalModal(idJadwal) {
 }
 
 async function saveTaskJadwal(idJadwal, status) {
-  const res = await API.call('updateJadwal', { id: idJadwal, status });
+  const res = await BizLogic.updateJadwal({ id: idJadwal, status });
   if (res.success) {
     Utils.notify('Jadwal diperbarui: ' + status, 'success');
     document.getElementById('task-modal').remove();
-    await loadJadwal(); updateStats();
+    loadJadwal(); updateStats();
   } else Utils.notify(res.message, 'error');
 }

@@ -68,7 +68,7 @@
     const user = getUser();
     if (!user) { window.location.href = 'login.html'; return; }
 
-    const res = await API.call('getDataLengkapPeserta', { id_peserta: user.id });
+    const res = BizLogic.getDataLengkapPeserta({ id_peserta: user.id });
     if (!res.success || !res.data) {
       Utils.notify(res.message || 'Gagal memuat profil', 'error');
       document.getElementById('profile-skeleton').innerHTML =
@@ -108,7 +108,7 @@
 
     const btn = document.getElementById('pf-save');
     btn.disabled = true;
-    const res = await API.call('updateProfilePeserta', payload);
+    const res = await BizLogic.updateProfilePeserta(payload);
     btn.disabled = false;
 
     if (res.success) {
@@ -131,7 +131,7 @@
     // Jika "Kembali" -> tetap di halaman, user lanjut mengedit.
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     const session = Auth.getSession();
     if (!session || session.role !== 'peserta') { window.location.href = 'login.html'; return; }
     Utils.mountNavbar('profile');
@@ -140,6 +140,8 @@
     document.getElementById('pf-reset').addEventListener('click', cancelEdit);
     // Toggle password (SVG eye) di-bind otomatis oleh UI via [data-password-toggle].
 
+    // Sinkronkan cache Peserta (dibutuhkan untuk membaca & menyimpan profil secara lokal).
+    await Sync.init(['Peserta'], () => load());
     load();
   });
 })();

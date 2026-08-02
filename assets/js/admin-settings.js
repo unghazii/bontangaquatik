@@ -98,7 +98,7 @@
   async function loadNomorSettings(node) {
     const wrap = node.querySelector('#settings-nomor-wrap');
     if (!wrap) return;
-    const res = await API.call('getSettings');
+    const res = BizLogic.getSettings();
     if (!res || !res.success) {
       UI.errorState(wrap, { message: 'Gagal memuat variabel nomor peserta.', onRetry: () => loadNomorSettings(node) });
       return;
@@ -130,7 +130,7 @@
       }
       const btn = wrap.querySelector('#set-seq-save');
       btn.classList.add('is-loading'); btn.disabled = true;
-      const r = await API.call('updateSettings', { seq_ac, seq_b });
+      const r = await BizLogic.updateSettings({ seq_ac, seq_b });
       btn.classList.remove('is-loading'); btn.disabled = false;
       if (r && r.success) UI.toast(r.message || 'Pengaturan disimpan', 'success');
       else UI.toast((r && r.message) || 'Gagal menyimpan pengaturan', 'error');

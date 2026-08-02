@@ -58,6 +58,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   setupJadwalViewToggle();
 
+  // Sinkronkan seluruh cache yang dibutuhkan dashboard peserta dalam 1 gelombang,
+  // lalu seluruh render/filter/kalkulasi memakai data lokal (Store) — tanpa
+  // request tambahan ke Apps Script tiap berpindah tab/modal di halaman ini.
+  await Sync.init(['Peserta', 'Jadwal', 'Kehadiran', 'Rapor', 'Berita', 'Pelatih'], () => loadDashboard());
+
   await loadDashboard();
 });
 
@@ -99,12 +104,10 @@ function getCurrentUser() {
   return session ? session.data : {};
 }
 
-async function loadDashboard() {
+function loadDashboard() {
   const user = getCurrentUser();
-  const [jadwalRes, hadirRes] = await Promise.all([
-    API.call('getJadwalPeserta', { id_peserta: user.id }),
-    API.call('getKehadiranPeserta', { id_peserta: user.id })
-  ]);
+  const jadwalRes = BizLogic.getJadwalPeserta({ id_peserta: user.id });
+  const hadirRes = BizLogic.getKehadiranPeserta({ id_peserta: user.id });
 
   if (hadirRes.success) {
     const d = hadirRes.data;
@@ -393,10 +396,10 @@ function openCalendarDay(iso) {
    ===================================================================== */
 let beritaCachePeserta = [];
 
-async function loadBeritaPeserta() {
+function loadBeritaPeserta() {
   const user = (Auth && Auth.getUser && Auth.getUser()) || {};
   const kelas = user.kelas || user.Kelas || '';
-  const res = await API.call('getAllBerita', { kelas });
+  const res = BizLogic.getAllBerita({ kelas });
   if (!res.success) return;
   beritaCachePeserta = res.data || [];
   renderBeritaPeserta();
@@ -586,12 +589,12 @@ async function submitAbsen(idJadwal) {
   }
   Utils.showLoader && Utils.showLoader(true);
   const user = getCurrentUser();
-  const res = await API.call('absen', { id_jadwal: idJadwal, id_peserta: user.id });
+  const res = await BizLogic.absen({ id_jadwal: idJadwal, id_peserta: user.id });
   Utils.showLoader && Utils.showLoader(false);
   if (res.success) {
     Utils.notify(res.message, 'success');
     closeAbsenModal();
-    await loadDashboard();
+    loadDashboard();
   } else {
     Utils.notify(res.message, 'error');
   }
@@ -612,12 +615,12 @@ async function submitIzin() {
   }
   Utils.showLoader && Utils.showLoader(true);
   const user = getCurrentUser();
-  const res = await API.call('izin', { id_jadwal: idJadwal, id_peserta: user.id, catatan });
+  const res = await BizLogic.izin({ id_jadwal: idJadwal, id_peserta: user.id, catatan });
   Utils.showLoader && Utils.showLoader(false);
   if (res.success) {
     Utils.notify(res.message, 'success');
     closeAbsenModal();
-    await loadDashboard();
+    loadDashboard();
   } else {
     Utils.notify(res.message, 'error');
   }
@@ -627,14 +630,10 @@ async function submitIzin() {
    RAPOR — Tabel 4 gaya × 2 jarak + Download PDF (logika dari kode 1)
    ===================================================================== */
 async function openRaporModal() {
-  Utils.showLoader && Utils.showLoader(true);
   const user = getCurrentUser();
 
-  const [raporRes, pesertaRes] = await Promise.all([
-    API.call('getRaporPeserta',        { id_peserta: user.id }),
-    API.call('getDataLengkapPeserta',  { id_peserta: user.id })
-  ]);
-  Utils.showLoader && Utils.showLoader(false);
+  const raporRes = BizLogic.getRaporPeserta({ id_peserta: user.id });
+  const pesertaRes = BizLogic.getDataLengkapPeserta({ id_peserta: user.id });
 
   if (pesertaRes.success) pesertaLengkapCache = pesertaRes.data;
   raporCache = raporRes.success ? raporRes.data : null;
@@ -727,7 +726,7 @@ async function openRaporModal() {
 async function downloadRaporPDF() {
   if (!pesertaLengkapCache) {
     const user = getCurrentUser();
-    const res = await API.call('getDataLengkapPeserta', { id_peserta: user.id });
+    const res = BizLogic.getDataLengkapPeserta({ id_peserta: user.id });
     if (!res.success) { Utils.notify('Gagal memuat data peserta', 'error'); return; }
     pesertaLengkapCache = res.data;
   }

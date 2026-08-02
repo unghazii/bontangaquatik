@@ -1,7 +1,8 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   Utils.mountNavbar('home');
   initHeroFX();
   renderScheduleSection();
+  await Sync.init(['Berita']);
   loadBerita();
   Utils.mountFooter();
 
@@ -105,11 +106,11 @@ function renderScheduleSection() {
   }).join('');
 }
 /* ============================== BERITA ============================== */
-async function loadBerita() {
+function loadBerita() {
   const section  = document.getElementById('berita');
   const carousel = document.getElementById('news-carousel');
   if (!section || !carousel) return;
-  const res = await API.call('getActiveBerita');
+  const res = BizLogic.getActiveBerita();
   if (!res.success || !res.data || res.data.length === 0) {
     // Hide section seluruhnya jika tidak ada berita
     section.classList.add('hidden');

@@ -1,8 +1,12 @@
 let currentStep = 1;
 const TOTAL_STEPS = 4;
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   Utils.mountNavbar('registrasi');
+
+  // Sinkronkan cache Peserta & Settings (dibutuhkan untuk cek username &
+  // pembuatan Nomor Peserta otomatis secara lokal saat submit).
+  await Sync.init(['Peserta', '__settings__']);
 
   // Password toggle (SVG eye reusable)
   const passInput = document.getElementById('password');
@@ -161,7 +165,9 @@ async function submitForm(e) {
 
   const submitBtn = document.getElementById('btn-submit');
   submitBtn.disabled = true;
-  const res = await API.call('register', data);
+  Utils.showLoader(true);
+  const res = await BizLogic.registerPeserta(data);
+  Utils.showLoader(false);
   submitBtn.disabled = false;
 
   if (res.success) {

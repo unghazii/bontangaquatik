@@ -31,7 +31,7 @@
     if (!/^[0-9]{8,15}$/.test(wa)) { UI.toast('Nomor WhatsApp tidak valid (8-15 digit)', 'warning'); return; }
 
     const payload = { nama_lengkap: nama, tanggal_lahir: tglLahir, nomor_whatsapp: wa };
-    const res = await API.call('verifyResetIdentity', payload);
+    const res = BizLogic.verifyResetIdentity(payload);
     if (!res.success) { UI.toast(res.message || 'Verifikasi gagal', 'error'); return; }
 
     Object.assign(state, payload);
@@ -47,7 +47,7 @@
     if (p1.length < 6) { UI.toast('Password baru minimal 6 karakter', 'warning'); return; }
     if (p1 !== p2) { UI.toast('Konfirmasi password tidak cocok', 'warning'); return; }
 
-    const res = await API.call('resetPassword', { ...state, new_password: p1 });
+    const res = await BizLogic.resetPassword({ ...state, new_password: p1 });
     if (res.success) {
       UI.toast(res.message || 'Password berhasil diperbarui. Silakan login.', 'success', { duration: 3500 });
       setTimeout(() => { window.location.href = 'login.html'; }, 1600);
@@ -56,7 +56,10 @@
     }
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
+    // Sinkronkan cache Peserta (dibutuhkan untuk verifikasi identitas & reset password secara lokal).
+    await Sync.init(['Peserta']);
+
     document.getElementById('form-verify').addEventListener('submit', handleVerify);
     document.getElementById('form-newpass').addEventListener('submit', handleNewPass);
     document.getElementById('fp-back-1').addEventListener('click', () => showStep('form-verify'));

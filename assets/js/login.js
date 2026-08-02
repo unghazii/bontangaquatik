@@ -2,8 +2,13 @@
  * Login. Sesi disimpan persisten (localStorage via Auth) sehingga user tidak
  * perlu login ulang tiap membuka PWA. Setelah login, route default langsung
  * ke dashboard (peserta) / admin panel (admin) — tidak kembali ke index.
+ *
+ * Autentikasi kini dilakukan SEPENUHNYA secara lokal: data Peserta & Pelatih
+ * disinkronkan ke cache perangkat (IndexedDB) lebih dulu, lalu username/
+ * password dicocokkan dari cache tersebut (lihat BizLogic.login) — tanpa
+ * request login ke Apps Script setiap kali pengguna membuka aplikasi.
  */
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   Utils.mountNavbar('login');
 
   // Sudah login -> langsung ke dashboard/admin (hindari halaman login).
@@ -12,6 +17,9 @@ document.addEventListener('DOMContentLoaded', () => {
     window.location.replace(session.role === 'admin' ? 'admin.html' : 'peserta.html');
     return;
   }
+
+  // Sinkronkan cache Peserta & Pelatih (dibutuhkan agar login bisa dicocokkan lokal).
+  await Sync.init(['Peserta', 'Pelatih']);
 
   // SVG eye toggle reusable
   const passInput = document.getElementById('password');
@@ -28,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const btn = e.target.querySelector('button[type="submit"]');
     if (btn) btn.disabled = true;
-    const res = await API.call('login', data);
+    const res = BizLogic.login(data);
     if (btn) btn.disabled = false;
 
     if (res.success) {
